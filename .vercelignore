@@ -1,0 +1,9 @@
+# Never let local env files leak into a `vercel deploy` upload — only
+# Vercel's own Environment Variables (Project Settings -> Environment
+# Variables, or `vercel env add`) should apply to deployed environments.
+.env
+.env.*
+!.env.example
+
+Media/
+extras/
