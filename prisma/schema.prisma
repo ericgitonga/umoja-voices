@@ -1,0 +1,164 @@
+// Umoja Voices — choir management app
+//
+// Enum-like fields are plain String columns, not Prisma `enum`, because the
+// POC datasource is SQLite (no Docker/Postgres available in this dev
+// environment) and SQLite has no native enum type. Allowed values are
+// documented next to each field and enforced at the application layer
+// (see src/lib/validation.ts). Swapping `datasource.provider` to
+// "postgresql" later needs no schema changes to these fields.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  // "admin" | "chorister"
+  role          String    @default("chorister")
+  // "invited" | "active" | "disabled"
+  status        String    @default("invited")
+  passwordHash  String?
+  calendarToken String?   @unique
+  invitedById   String?
+  invitedBy     User?     @relation("UserInvites", fields: [invitedById], references: [id])
+  invitedUsers  User[]    @relation("UserInvites")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  songsCreated  Song[]
+  tripsCreated  Trip[]
+  invitesSent   Invite[]  @relation("InviteSender")
+  passwordResets PasswordResetToken[]
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  email       String
+  token       String    @unique
+  // "admin" | "chorister"
+  role        String    @default("chorister")
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  invitedById String
+  invitedBy   User      @relation("InviteSender", fields: [invitedById], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Song {
+  id               String   @id @default(cuid())
+  title            String
+  // "S" | "A" | "T" | "B" | "SATB_COMPULSORY"
+  sectionLabel     String
+  labelDescription String
+  createdById      String
+  createdBy        User     @relation(fields: [createdById], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  parts         SongPart[]
+  lyricSections LyricSection[]
+}
+
+model SongPart {
+  id        String @id @default(cuid())
+  songId    String
+  song      Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  // "S" | "A" | "T" | "B" | "All"
+  part      String
+  label     String
+  mediaUrl  String
+  // "audio" | "video" | "youtube" | "drive" | "soundcloud" | "direct_url"
+  mediaKind String
+  sortOrder Int    @default(0)
+}
+
+model LyricSection {
+  id           String @id @default(cuid())
+  songId       String
+  song         Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  // "verse" | "chorus" | "bridge" | "intro" | "outro" | "vamp" | "custom"
+  sectionType  String
+  sectionLabel String
+  content      String
+  // comma-separated subset of "S" | "A" | "T" | "B" | "SATB" — no array type in SQLite
+  voiceTags    String @default("SATB")
+  sortOrder    Int    @default(0)
+}
+
+model ExternalLink {
+  id        String @id @default(cuid())
+  title     String
+  url       String
+  // "social" | "news" | "media" | "other"
+  category  String
+  sortOrder Int    @default(0)
+}
+
+model Trip {
+  id            String   @id @default(cuid())
+  title         String
+  destination   String
+  startDate     DateTime
+  endDate       DateTime
+  // "upcoming" | "past"
+  status        String   @default("upcoming")
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+
+  deadlines        LogisticsDeadline[]
+  itineraryItems   ItineraryItem[]
+  practiceSessions PracticeSession[]
+}
+
+model LogisticsDeadline {
+  id        String   @id @default(cuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  // "visa" | "tickets" | "payment" | "other"
+  category  String
+  label     String
+  dueDate   DateTime
+  notes     String?
+  sortOrder Int      @default(0)
+}
+
+model ItineraryItem {
+  id        String   @id @default(cuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  date      DateTime
+  time      String?
+  title     String
+  location  String?
+  notes     String?
+  sortOrder Int      @default(0)
+}
+
+model PracticeSession {
+  id        String   @id @default(cuid())
+  tripId    String?
+  trip      Trip?    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  date      DateTime
+  time      String
+  location  String
+  notes     String?
+  sortOrder Int      @default(0)
+}
