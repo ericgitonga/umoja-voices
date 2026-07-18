@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import InviteForm from "./InviteForm";
 import MemberRow from "./MemberRow";
 
+// This page reads live, admin-editable data — never statically cache it.
+export const dynamic = "force-dynamic";
+
 export default async function AdminMembersPage() {
   const members = await prisma.user.findMany({ orderBy: { createdAt: "desc" } });
 

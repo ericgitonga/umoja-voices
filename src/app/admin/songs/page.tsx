@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { SONG_SECTION_LABEL_TEXT, type SongSectionLabel } from "@/lib/constants";
 import DeleteSongButton from "./DeleteSongButton";
 
+// This page reads live, admin-editable data — never statically cache it.
+export const dynamic = "force-dynamic";
+
 export default async function AdminSongsPage() {
   const songs = await prisma.song.findMany({ orderBy: { title: "asc" } });
 

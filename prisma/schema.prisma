@@ -1,11 +1,10 @@
 // Umoja Voices — choir management app
 //
-// Enum-like fields are plain String columns, not Prisma `enum`, because the
-// POC datasource is SQLite (no Docker/Postgres available in this dev
-// environment) and SQLite has no native enum type. Allowed values are
-// documented next to each field and enforced at the application layer
-// (see src/lib/validation.ts). Swapping `datasource.provider` to
-// "postgresql" later needs no schema changes to these fields.
+// Enum-like fields are plain String columns, not Prisma `enum` — the app
+// started on SQLite (no native enum type) and kept the same shape after
+// moving to Postgres (which does support native enums) so the swap needed
+// no schema rewrite. Allowed values are documented next to each field and
+// enforced at the application layer (see src/lib/validation.ts).
 
 generator client {
   provider = "prisma-client"
@@ -13,7 +12,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model User {

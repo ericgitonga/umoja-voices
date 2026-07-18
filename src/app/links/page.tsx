@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { LINK_CATEGORIES, type LinkCategory } from "@/lib/constants";
 
+// This page reads live, admin-editable data — never statically cache it.
+export const dynamic = "force-dynamic";
+
 const CATEGORY_TEXT: Record<LinkCategory, string> = {
   social: "Social Media",
   news: "News",

@@ -10,7 +10,7 @@ section by section before any code was written).
 
 ## Versioning
 
-Current version: **0.6.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.7.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -101,11 +101,14 @@ fixed-delay timing mitigation (#18)).
 
 ### POC-specific stand-ins (tracked, to close before production)
 
-- **Auth provider**: NextAuth Credentials + local SQLite, not Supabase Auth — because this
-  dev environment has no Docker/Postgres and standing up a hosted Supabase project needs the
-  project owner's account. The design plan (`umoja.pdf`) still specifies Supabase Auth/Postgres
-  for production; swapping in is a `datasource.provider` + auth-provider change, not a schema
-  rewrite (see the "no native enum" note in `prisma/schema.prisma`).
+- **Database**: closed at v0.7.0 — Supabase Postgres via `@prisma/adapter-pg`, using the
+  Transaction pooler connection (`DATABASE_URL`) for app queries and the direct connection
+  (`DIRECT_URL`) for migrations. No longer a stand-in.
+- **Auth provider**: NextAuth Credentials, not yet Supabase Auth. This is the remaining half
+  of the original "swap for production" item (#10) — the design plan (`umoja.pdf`) specifies
+  Supabase Auth, but that's a real rewrite (every page's session check, the invite flow,
+  forgot-password, and how rate limiting/`mustChangePassword` hook in all change), scoped as
+  its own deliberate future effort rather than bundled into the database swap.
 - **Invite / password-reset emails**: no transactional email provider (Resend) is wired up yet.
   `inviteMember` and `requestPasswordReset` return the link directly to the admin/user instead
   of emailing it — clearly labelled as a dev-only stand-in in both the UI and the code comments.
@@ -116,8 +119,9 @@ fixed-delay timing mitigation (#18)).
 - Any new Server Action that mutates data must call its own `requireAdmin()` (or equivalent)
   check — never rely solely on the page/route being behind `/admin`.
 - Any new "enum-like" field goes in `prisma/schema.prisma` as a commented `String`, with the
-  allowed values added to `src/lib/constants.ts` — never a native Prisma `enum` (SQLite has no
-  enum type; keeping the same shape now avoids a migration rewrite when the datasource changes).
+  allowed values added to `src/lib/constants.ts` — never a native Prisma `enum`. This predates
+  the Postgres migration (SQLite had no enum type) and is kept for consistency now that
+  everything is one shape; `src/lib/validation.ts` is the actual enforcement either way.
 - Any new pasted-link media type must be handled in `detectMediaKind()` and `MediaEmbed.tsx`
   with a graceful fallback to `direct_url` if detection fails — never throw or silently drop
   the part.
@@ -151,9 +155,8 @@ fixed-delay timing mitigation (#18)).
   gitignored — internal audit findings, not for public view. The audit was performed earlier
   than originally planned (at v0.3.0, not "post-POC") at the project owner's request; the rule
   about what stays private is unchanged by when the audit happens.
-- **Never commit `prisma/dev.db`.** It's the local POC datastore; it will contain seeded
-  password hashes and, once real use starts, real member data. Regenerate it locally with
-  `npx prisma migrate dev` + `npm run db:seed`.
+- **Never commit `.env`.** It holds the Supabase `DATABASE_URL`/`DIRECT_URL` connection
+  strings and `NEXTAUTH_SECRET` — real credentials, not sample data.
 
 ---
 
@@ -187,14 +190,19 @@ work — do not wait to be reminded twice in the same session.
 ## Tech stack
 
 See `umoja.pdf` Section 8 for the full production-target rationale (Next.js + Supabase +
-Vercel). The POC currently runs on:
+Vercel). Currently:
 
 - Next.js 16 (App Router, TypeScript, Tailwind CSS)
-- Prisma 7 (`@prisma/adapter-better-sqlite3`) against a local SQLite file — see the
-  "no native enum" comment at the top of `prisma/schema.prisma` for why enum-like fields are
-  plain `String` columns, kept in sync with `src/lib/constants.ts`
-- NextAuth v4 (Credentials provider, JWT sessions) as a stand-in for Supabase Auth
+- Prisma 7 (`@prisma/adapter-pg`) against Supabase Postgres — `DATABASE_URL` is the pooled
+  (Transaction mode) connection for app queries, `DIRECT_URL` is the direct connection for
+  migrations. Enum-like fields are still plain `String` columns kept in sync with
+  `src/lib/constants.ts` (see `prisma/schema.prisma`'s header), not native Postgres enums —
+  `src/lib/validation.ts` is the real enforcement
+- NextAuth v4 (Credentials provider, JWT sessions) as a stand-in for Supabase Auth — the
+  remaining half of #10
 - `src/proxy.ts` (Next.js 16's renamed `middleware` convention) for role-gated routing
+- Every Prisma-backed page is `export const dynamic = "force-dynamic"` — these show
+  live, admin-editable data, so none of it may be statically cached at build time
 
 ---
 
@@ -202,7 +210,7 @@ Vercel). The POC currently runs on:
 
 ### Security checks (run first)
 - [ ] `Media/` does not appear in `git status`, `git add`, or `git commit` output
-- [ ] `prisma/dev.db` is not tracked (`git ls-files prisma/dev.db` returns nothing)
+- [ ] `.env` is not tracked (`git ls-files .env` returns nothing)
 - [ ] `extras/generate_security_pdf.py` is not tracked (`git ls-files extras/generate_security_pdf.py` returns nothing)
 - [ ] No real choir member's name or phone number is in any committed file or git log entry
 - [ ] Every new Server Action that mutates data checks `role === "admin"` itself where required
@@ -221,7 +229,7 @@ Vercel). The POC currently runs on:
 ## Files to keep
 
 ```
-prisma/schema.prisma      ← data model (see file header for the SQLite/enum note)
+prisma/schema.prisma      ← data model (Postgres/Supabase; see file header for the enum note)
 prisma/seed.ts            ← demo data: admin + Demo Chorister + one placeholder song/trip
 umoja.pdf                 ← the reviewed design plan — authoritative for requirements
 extras/effort.xlsx        ← gitignored; hours log, see "Effort tracking" above

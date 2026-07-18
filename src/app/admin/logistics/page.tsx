@@ -8,6 +8,9 @@ import {
 } from "@/lib/actions/logistics-actions";
 import DeleteButton from "./DeleteButton";
 
+// This page reads live, admin-editable data — never statically cache it.
+export const dynamic = "force-dynamic";
+
 function fmt(d: Date) {
   return d.toISOString().slice(0, 10);
 }

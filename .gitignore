@@ -43,12 +43,6 @@ next-env.d.ts
 
 /src/generated/prisma
 
-# local SQLite dev database (POC datastore; never commit seeded data)
-/dev.db
-/dev.db-journal
-/prisma/dev.db
-/prisma/dev.db-journal
-
 # WhatsApp export (real member names, numbers, private conversations) —
 # never commit, ever. See SKILL.md's data handling rules.
 Media/

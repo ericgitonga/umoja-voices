@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
 
+// This page reads live, admin-editable data — never statically cache it.
+export const dynamic = "force-dynamic";
+
 function fmtDate(d: Date) {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }

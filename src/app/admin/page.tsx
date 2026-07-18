@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+// This page reads live, admin-editable data — never statically cache it.
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboard() {
   const [songCount, memberCount, tripCount, linkCount] = await Promise.all([
     prisma.song.count(),

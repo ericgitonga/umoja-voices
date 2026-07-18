@@ -3,6 +3,9 @@ import { LINK_CATEGORIES } from "@/lib/constants";
 import { createLink } from "@/lib/actions/link-actions";
 import DeleteLinkButton from "./DeleteLinkButton";
 
+// This page reads live, admin-editable data — never statically cache it.
+export const dynamic = "force-dynamic";
+
 export default async function AdminLinksPage() {
   const links = await prisma.externalLink.findMany({ orderBy: { sortOrder: "asc" } });
 

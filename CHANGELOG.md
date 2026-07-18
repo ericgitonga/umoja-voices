@@ -5,6 +5,40 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.7.0] - 2026-07-18
+
+### Changed
+
+- **Database swapped from local SQLite to Supabase Postgres** (`@prisma/adapter-pg`), closing
+  the database half of issue #10. `DATABASE_URL` (pooled, Transaction mode) is used for app
+  queries; `DIRECT_URL` (direct connection) for migrations, since PgBouncer's transaction-mode
+  pooler doesn't support the DDL patterns `prisma migrate` needs.
+- Old SQLite migrations deleted (provider-specific DDL, not valid for Postgres); a fresh
+  initial migration will be generated against the live Supabase project.
+- Auth stays on NextAuth Credentials for now — that's the other, much larger half of #10
+  (every page's session check, invite flow, forgot-password, and how rate limiting/
+  `mustChangePassword` hook in), deliberately not bundled into this change.
+
+### Fixed
+
+- Every Prisma-backed page (`/links`, `/logistics`, `/admin`, `/admin/songs`, `/admin/links`,
+  `/admin/logistics`, `/admin/members`) is now `export const dynamic = "force-dynamic"`.
+  Found while testing this migration: without it, Next.js statically prerenders these pages
+  at build time by default (only `/songs` was already forced dynamic, via its `searchParams`
+  filter) — which wasn't just a build-time inconvenience once there's no DB reachable at
+  build time, but a real correctness bug: it would have served build-time-stale admin-edited
+  data to every visitor in production until the next deploy, however recently an admin
+  changed something.
+- `package.json`: added `postinstall: "prisma generate"` (needed now that Vercel will run
+  the install/build) and an `engines.node` constraint.
+
+### Known limitations (tracked, not silently deferred)
+
+- Not yet run against a live Supabase project from this environment — no Supabase
+  credentials are available here. `npx prisma migrate dev --name init` and `npm run db:seed`
+  need to be run once `DATABASE_URL`/`DIRECT_URL` point at a real project.
+- Auth remains NextAuth Credentials; migrating to Supabase Auth is the remaining scope of #10.
+
 ## [0.6.0] - 2026-07-18
 
 ### Added
