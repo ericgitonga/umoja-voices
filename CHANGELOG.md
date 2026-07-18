@@ -5,9 +5,18 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
-## [0.10.0] - 2026-07-19
+## [0.11.0] - 2026-07-19
+
+### Changed
+
+- **Simplified the public Songs page** (`/songs`, closes #26): dropped the voice-part
+  filter pill row (All/Soprano/Alto/Tenor/Bass/Tutti) — it's now a plain grid of song
+  title cards, matching a reference screenshot's cleaner list layout.
 
 ### Added
+
+- **Admin-only "Add Song" button** on `/songs`, visible only when the logged-in user's
+  role is admin; hidden entirely for choristers.
 
 - **Admin song overview page** (`/admin/songs/[id]`), separate from the edit form (closes
   #25). Shows the title, Edit/Delete buttons, and summary cards for Audio (track count,
