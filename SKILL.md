@@ -10,7 +10,7 @@ section by section before any code was written).
 
 ## Versioning
 
-Current version: **0.4.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.5.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -85,16 +85,19 @@ primary requirement, not an afterthought.
 | Server Actions require `role: "admin"` server-side | Every mutation in `src/lib/actions/*` re-checks the session role itself — the admin-only UI is a convenience, not the enforcement boundary |
 | Admin self-lockout / last-admin protection | `updateMemberRole`/`setMemberStatus` refuse to let an admin change their own role/status, and refuse to leave zero active admins |
 | Server-side enum validation + input length caps | `src/lib/validation.ts` (`clip`/`oneOf`/`subsetOf`), applied to every enum-like and free-text field a Server Action writes — SQLite has no native enum, so this is the only enforcement |
+| Rate limiting on login and forgot-password | `src/lib/rate-limit.ts` — per-IP and per-IP+email fixed windows (5/15min and 30/15min for login, 3/hr and 10/hr for forgot-password). In-memory, correct for today's single process; a distributed store (Upstash Redis) is needed before multi-instance deployment — tracked, see below |
 | HTTP security headers + scoped CSP | `next.config.ts`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and a CSP whose `frame-src` allow-list matches exactly what `src/components/MediaEmbed.tsx` supports |
 | Server Action CSRF protection (framework) | Next.js's built-in same-origin check on Server Actions — verified with a forged cross-origin request, not just assumed (see `extras/security.pdf`) |
 | Secret key enforcement | `src/lib/auth.ts` throws at startup if `NEXTAUTH_SECRET` is absent, rather than letting NextAuth silently derive an insecure one |
 | Pinned dependencies | `package-lock.json` is committed; dependency bumps are deliberate, not automatic |
 
-A full audit was performed at v0.3.0 — see `extras/security.pdf` (gitignored; regenerate with
-`conda run -n ds python extras/generate_security_pdf.py`, itself gitignored per the data
-handling rules below) for the complete findings, what was fixed, what was reviewed and
-confirmed safe, and what's accepted as a tracked POC-stage trade-off (rate limiting, CSP
-`'unsafe-inline'`, and the fixed-delay timing mitigation — see issues opened alongside v0.4.0).
+A full audit was performed at v0.3.0 (with the rate-limiting gap it found closed at v0.5.0) —
+see `extras/security.pdf` (gitignored; regenerate with `conda run -n ds python
+extras/generate_security_pdf.py`, itself gitignored per the data handling rules below) for the
+complete findings, what was fixed, what was reviewed and confirmed safe, and what's still
+accepted as a tracked POC-stage trade-off (invite-creation rate limiting + swapping the
+in-memory limiter for a distributed store before multi-instance deployment (#20), CSP
+`'unsafe-inline'` (#17), and the fixed-delay timing mitigation (#18)).
 
 ### POC-specific stand-ins (tracked, to close before production)
 

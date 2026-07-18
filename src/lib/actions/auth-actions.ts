@@ -2,11 +2,17 @@
 
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const RESET_TOKEN_TTL_MS = 1000 * 60 * 60; // 1 hour
 const INVITE_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 const MIN_PASSWORD_LENGTH = 8;
+
+const RESET_REQUEST_WINDOW_MS = 60 * 60_000; // 1 hour
+const RESET_REQUEST_MAX_PER_EMAIL = 3; // per email+IP combo
+const RESET_REQUEST_MAX_PER_IP = 10; // across all emails from one IP
 
 /** Slows the "account doesn't exist" branch down to roughly match the
  *  "account exists, token created" branch — a bare early-return would let
@@ -22,9 +28,27 @@ function timingSafetyDelay(): Promise<void> {
  * (see SKILL.md, Section 1 / Section 8 of the design plan).
  */
 export async function requestPasswordReset(email: string): Promise<{ resetLink?: string }> {
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  const normalizedEmail = email.toLowerCase();
+  const ip = getClientIp(await headers());
+
+  // Both counters always tick, same reasoning as the login rate limit in
+  // src/lib/auth.ts. A rate-limited request takes the exact same silent,
+  // timing-masked path as a nonexistent account below — never surfacing
+  // "you're rate-limited" would itself confirm the email is real.
+  const ipOk = checkRateLimit(`reset:ip:${ip}`, RESET_REQUEST_MAX_PER_IP, RESET_REQUEST_WINDOW_MS);
+  const emailOk = checkRateLimit(
+    `reset:email:${normalizedEmail}:${ip}`,
+    RESET_REQUEST_MAX_PER_EMAIL,
+    RESET_REQUEST_WINDOW_MS
+  );
+
+  const user = ipOk && emailOk
+    ? await prisma.user.findUnique({ where: { email: normalizedEmail } })
+    : null;
+
   if (!user || user.status !== "active") {
-    // Do not reveal whether the account exists — including via response timing.
+    // Do not reveal whether the account exists, whether it's rate-limited,
+    // or which — including via response timing.
     await timingSafetyDelay();
     return {};
   }

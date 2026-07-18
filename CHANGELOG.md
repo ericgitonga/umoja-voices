@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.5.0] - 2026-07-18
+
+### Added
+
+- `src/lib/rate-limit.ts` — in-memory fixed-window rate limiting, wired into login
+  (`src/lib/auth.ts`: 5 attempts/15min per email+IP, 30/15min per IP) and forgot-password
+  (`src/lib/actions/auth-actions.ts`: 3 requests/hour per email+IP, 10/hour per IP). Closes the
+  login/forgot-password portion of the v0.4.0 security audit's tracked rate-limiting gap
+  (closes #16)
+- The login page now distinguishes a rate-limit message from the generic "incorrect
+  email or password" (NextAuth's `CredentialsSignin` code stays generic; anything else is a
+  message the app threw itself and is safe to show verbatim)
+
+### Verified
+
+- Reproduced concretely with curl: 5 wrong-password attempts do real bcrypt work and fail
+  normally; the 6th onward is rejected instantly with the rate-limit message, and the
+  *correct* password is rejected too once limited — not just wrong ones
+- Reproduced through a full browser flow: 3 forgot-password submissions for a real account
+  show the dev-only reset-link stand-in; the 4th shows nothing, indistinguishable from a
+  nonexistent account (preserves the no-enumeration property from v0.4.0)
+- An unrelated account's login is unaffected, confirming the limiter is scoped per
+  email+IP, not global
+
+### Known limitations (tracked, not silently deferred)
+
+- Invite creation isn't rate-limited yet (admin-only, lower risk); the limiter is in-memory,
+  correct for today's single process but needs a distributed store (e.g. Upstash Redis)
+  before multi-instance/serverless deployment (#20)
+
 ## [0.4.0] - 2026-07-18
 
 ### Security

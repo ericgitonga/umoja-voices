@@ -26,7 +26,12 @@ function LoginForm() {
 
     setSubmitting(false);
     if (result?.error) {
-      setError("Incorrect email or password.");
+      // "CredentialsSignin" is NextAuth's fixed generic code for a plain
+      // authorize() -> null (bad email/password/inactive account) — kept
+      // vague on purpose. Anything else is a message we threw ourselves
+      // (e.g. the rate-limit notice in src/lib/auth.ts) and is safe to
+      // show verbatim.
+      setError(result.error === "CredentialsSignin" ? "Incorrect email or password." : result.error);
       return;
     }
     router.push(searchParams.get("callbackUrl") ?? "/songs");
