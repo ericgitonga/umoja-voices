@@ -40,7 +40,10 @@ export async function resetPassword(token: string, newPassword: string): Promise
 
   const passwordHash = await bcrypt.hash(newPassword, 12);
   await prisma.$transaction([
-    prisma.user.update({ where: { id: reset.userId }, data: { passwordHash } }),
+    prisma.user.update({
+      where: { id: reset.userId },
+      data: { passwordHash, mustChangePassword: false },
+    }),
     prisma.passwordResetToken.update({ where: { token }, data: { usedAt: new Date() } }),
   ]);
 
@@ -60,7 +63,7 @@ export async function acceptInvite(
   await prisma.$transaction([
     prisma.user.update({
       where: { email: invite.email.toLowerCase() },
-      data: { passwordHash, status: "active" },
+      data: { passwordHash, status: "active", mustChangePassword: false },
     }),
     prisma.invite.update({ where: { token }, data: { acceptedAt: new Date() } }),
   ]);

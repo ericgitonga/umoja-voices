@@ -25,6 +25,12 @@ model User {
   // "invited" | "active" | "disabled"
   status        String    @default("invited")
   passwordHash  String?
+  // true whenever passwordHash was set to a known/default value (e.g. by
+  // prisma/seed.ts) rather than chosen by the account holder — forces a
+  // change on next login via src/proxy.ts. Invite-acceptance and
+  // forgot-password both set this back to false, since the account holder
+  // just chose their own password.
+  mustChangePassword Boolean @default(false)
   calendarToken String?   @unique
   invitedById   String?
   invitedBy     User?     @relation("UserInvites", fields: [invitedById], references: [id])

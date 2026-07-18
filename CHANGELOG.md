@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.2.0] - 2026-07-18
+
+### Added
+
+- `users.mustChangePassword`, set `true` for any account created with a known/default
+  password (the seeded admin and Demo Chorister accounts). Enforced in `src/proxy.ts`: every
+  protected route redirects to the new `/change-password` page until the flag is cleared, so a
+  default password can never remain valid indefinitely (closes #14)
+- `setRequiredNewPassword` Server Action (`src/lib/actions/profile-actions.ts`) backs
+  `/change-password`; `resetPassword` and `acceptInvite` both clear the flag defensively when a
+  user sets their own password through those flows too
+
 ## [0.1.1] - 2026-07-18
 
 ### Fixed

@@ -10,7 +10,7 @@ section by section before any code was written).
 
 ## Versioning
 
-Current version: **0.1.1** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.2.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -79,6 +79,7 @@ primary requirement, not an afterthought.
 | Role-gated routing (`src/proxy.ts`) | `/admin/*` requires `role: "admin"` in the session JWT; unauthenticated requests to any protected route redirect to `/login` |
 | Session strategy: signed JWT (NextAuth) | No server-side session store to leak; the JWT is signed with `NEXTAUTH_SECRET`, which the app refuses to start meaningfully without |
 | Expiring, single-use invite/reset tokens | `Invite.token` and `PasswordResetToken.token` are random (`crypto.randomBytes(24)`), time-limited, and marked used/accepted so a link can't be replayed |
+| Forced password change on default-password accounts | `users.mustChangePassword` (set `true` on any account created with a known/default password, e.g. `prisma/seed.ts`) is enforced in `src/proxy.ts` — every route redirects to `/change-password` until it's cleared, so a default password can never remain valid indefinitely |
 | No account-existence leakage | `requestPasswordReset` returns the same response whether or not the email matches an account |
 | `direct_url` fallback, not raw HTML embeds | Unrecognized media links render as a plain outbound `<a>`, never as arbitrary embedded markup |
 | Server Actions require `role: "admin"` server-side | Every mutation in `src/lib/actions/*` re-checks the session role itself — the admin-only UI is a convenience, not the enforcement boundary |

@@ -24,15 +24,28 @@ export const authOptions: NextAuthOptions = {
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!valid) return null;
 
-        return { id: user.id, email: user.email, name: user.name, role: user.role };
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          mustChangePassword: user.mustChangePassword,
+        };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.role = (user as { role: string }).role;
         token.id = (user as { id: string }).id;
+        token.mustChangePassword = (user as { mustChangePassword: boolean }).mustChangePassword;
+      }
+      // Re-read from the DB after the change-password flow clears the flag,
+      // so the JWT doesn't keep forcing the redirect for the rest of the session.
+      if (trigger === "update" && token.id) {
+        const fresh = await prisma.user.findUnique({ where: { id: token.id as string } });
+        if (fresh) token.mustChangePassword = fresh.mustChangePassword;
       }
       return token;
     },
@@ -40,6 +53,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
+        session.user.mustChangePassword = token.mustChangePassword as boolean;
       }
       return session;
     },

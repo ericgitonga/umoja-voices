@@ -23,6 +23,7 @@ async function main() {
       role: "admin",
       status: "active",
       passwordHash: await bcrypt.hash(adminPassword, 12),
+      mustChangePassword: true,
     },
   });
 
@@ -35,6 +36,7 @@ async function main() {
       role: "chorister",
       status: "active",
       passwordHash: await bcrypt.hash(choristerPassword, 12),
+      mustChangePassword: true,
     },
   });
 
@@ -147,7 +149,7 @@ async function main() {
     console.log(`Seeded trip: ${trip.title}`);
   }
 
-  console.log("\nSeed complete. Dev login credentials:");
+  console.log("\nSeed complete. Dev login credentials (both must be changed on first login):");
   console.log(`  Admin:      gitonga@gmail.com / ${adminPassword}`);
   console.log(`  Chorister:  demo.chorister@example.com / ${choristerPassword}`);
 }
