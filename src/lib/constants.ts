@@ -13,15 +13,12 @@ export type VoicePart = (typeof VOICE_PARTS)[number];
 export const SONG_PART_OPTIONS = ["S", "A", "T", "B", "All"] as const;
 export type SongPartOption = (typeof SONG_PART_OPTIONS)[number];
 
-export const SONG_SECTION_LABELS = ["S", "A", "T", "B", "SATB_COMPULSORY"] as const;
-export type SongSectionLabel = (typeof SONG_SECTION_LABELS)[number];
-
-export const SONG_SECTION_LABEL_TEXT: Record<SongSectionLabel, string> = {
+export const SONG_PART_LABEL_TEXT: Record<SongPartOption, string> = {
   S: "Soprano",
   A: "Alto",
   T: "Tenor",
   B: "Bass",
-  SATB_COMPULSORY: "SATB — Compulsory",
+  All: "Tutti (full choir)",
 };
 
 export const MEDIA_KINDS = [

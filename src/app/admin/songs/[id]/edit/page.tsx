@@ -8,7 +8,10 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
   const song = await prisma.song.findUnique({
     where: { id },
     include: {
-      parts: { orderBy: { sortOrder: "asc" } },
+      sections: {
+        orderBy: { sortOrder: "asc" },
+        include: { media: { orderBy: { sortOrder: "asc" } } },
+      },
       lyricSections: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -20,12 +23,13 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
       <h1 className="mb-6 text-2xl font-semibold text-ink">Edit song</h1>
       <SongEditor
         songId={song.id}
-        initialMeta={{
-          title: song.title,
-          sectionLabel: song.sectionLabel,
-          labelDescription: song.labelDescription,
-        }}
-        initialParts={song.parts.map((p) => ({ part: p.part, label: p.label, mediaUrl: p.mediaUrl }))}
+        initialMeta={{ title: song.title }}
+        initialSections={song.sections.map((s) => ({
+          part: s.part,
+          sectionLabel: s.sectionLabel,
+          labelDescription: s.labelDescription,
+          media: s.media.map((m) => ({ label: m.label, mediaUrl: m.mediaUrl })),
+        }))}
         initialLyricSections={song.lyricSections.map((s) => ({
           sectionType: s.sectionType,
           sectionLabel: s.sectionLabel,

@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.9.0] - 2026-07-19
+
+### Changed
+
+- **Restructured "Voice parts" so a labeled section can group multiple media items**
+  (audio, video, ...) instead of one flat row per media link (closes #24). `Song` now
+  only carries `title` at the top level; `sectionLabel`/`labelDescription` moved down
+  onto the new `SongSection` model (part, sectionLabel, labelDescription), which has
+  many `SongMedia` children (label, mediaUrl, mediaKind). The old `SongPart` model is
+  gone.
+- Admin "Edit song" screen: the song-level form is now just a Title field; "Voice
+  parts" is a list of sections, each with its own add/remove list of media rows.
+- Public song browse page (`/songs`)'s voice-part filter now queries
+  `sections.some({ part })` instead of the old `Song.sectionLabel` field.
+
+### Migration
+
+- Data-preserving Postgres migration (`20260719120000_restructure_song_voice_parts`):
+  every existing `SongPart` row becomes one `SongSection` (reusing its `part`/label)
+  plus one `SongMedia` row underneath, before the old table/columns are dropped. No
+  existing recordings were lost; applied directly to production.
+
 ## [0.8.1] - 2026-07-18
 
 ### Security

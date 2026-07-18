@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { SONG_SECTION_LABELS, SONG_SECTION_LABEL_TEXT, type SongSectionLabel } from "@/lib/constants";
+import { SONG_PART_OPTIONS, SONG_PART_LABEL_TEXT, type SongPartOption } from "@/lib/constants";
 
 export default async function SongsPage({
   searchParams,
@@ -8,10 +8,10 @@ export default async function SongsPage({
   searchParams: Promise<{ label?: string }>;
 }) {
   const { label } = await searchParams;
-  const filter = label && (SONG_SECTION_LABELS as readonly string[]).includes(label) ? label : undefined;
+  const filter = label && (SONG_PART_OPTIONS as readonly string[]).includes(label) ? label : undefined;
 
   const songs = await prisma.song.findMany({
-    where: filter ? { sectionLabel: filter } : undefined,
+    where: filter ? { sections: { some: { part: filter } } } : undefined,
     orderBy: { title: "asc" },
   });
 
@@ -26,13 +26,13 @@ export default async function SongsPage({
         >
           All
         </Link>
-        {SONG_SECTION_LABELS.map((l) => (
+        {SONG_PART_OPTIONS.map((l) => (
           <Link
             key={l}
             href={`/songs?label=${l}`}
             className={`rounded-full px-3 py-1.5 ${filter === l ? "bg-ink text-white" : "border border-ink/10 bg-white text-ink/70"}`}
           >
-            {SONG_SECTION_LABEL_TEXT[l as SongSectionLabel]}
+            {SONG_PART_LABEL_TEXT[l as SongPartOption]}
           </Link>
         ))}
       </div>
@@ -45,7 +45,6 @@ export default async function SongsPage({
             className="rounded-lg border-l-4 border-gold bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
           >
             <p className="font-bold text-ink">{song.title}</p>
-            <p className="mt-1 truncate text-sm text-ink/60">{song.labelDescription}</p>
           </Link>
         ))}
         {songs.length === 0 && <p className="text-ink/50">No songs yet.</p>}

@@ -69,16 +69,44 @@ async function main() {
     const song = await prisma.song.create({
       data: {
         title: "Rising Together (demo song)",
-        sectionLabel: "SATB_COMPULSORY",
-        labelDescription: "Placeholder demo song — required for all members, closing set.",
         createdById: admin.id,
-        parts: {
+        sections: {
           create: [
-            { part: "S", label: "Soprano", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 0 },
-            { part: "A", label: "Alto", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 1 },
-            { part: "T", label: "Tenor", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 2 },
-            { part: "B", label: "Bass", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 3 },
-            { part: "All", label: "Tutti (full choir)", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 4 },
+            {
+              part: "S",
+              sectionLabel: "Soprano",
+              labelDescription: "",
+              sortOrder: 0,
+              media: { create: [{ label: "Soprano", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 0 }] },
+            },
+            {
+              part: "A",
+              sectionLabel: "Alto",
+              labelDescription: "",
+              sortOrder: 1,
+              media: { create: [{ label: "Alto", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 0 }] },
+            },
+            {
+              part: "T",
+              sectionLabel: "Tenor",
+              labelDescription: "",
+              sortOrder: 2,
+              media: { create: [{ label: "Tenor", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 0 }] },
+            },
+            {
+              part: "B",
+              sectionLabel: "Bass",
+              labelDescription: "",
+              sortOrder: 3,
+              media: { create: [{ label: "Bass", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 0 }] },
+            },
+            {
+              part: "All",
+              sectionLabel: "Tutti (full choir)",
+              labelDescription: "Required for all members, closing set.",
+              sortOrder: 4,
+              media: { create: [{ label: "Full choir", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 0 }] },
+            },
           ],
         },
         lyricSections: {

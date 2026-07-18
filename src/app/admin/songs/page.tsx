@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { SONG_SECTION_LABEL_TEXT, type SongSectionLabel } from "@/lib/constants";
 import DeleteSongButton from "./DeleteSongButton";
 
 // This page reads live, admin-editable data — never statically cache it.
@@ -24,9 +23,6 @@ export default async function AdminSongsPage() {
             className="rounded-lg border-l-4 border-gold bg-white px-5 py-4 shadow-sm"
           >
             <p className="font-bold text-ink">{song.title}</p>
-            <p className="mt-1 text-xs text-ink/50">
-              {SONG_SECTION_LABEL_TEXT[song.sectionLabel as SongSectionLabel] ?? song.sectionLabel}
-            </p>
             <div className="mt-3 flex items-center gap-3 text-sm">
               <Link href={`/admin/songs/${song.id}/edit`} className="text-ink hover:underline">
                 Edit

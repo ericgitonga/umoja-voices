@@ -8,7 +8,6 @@ import { prisma } from "@/lib/prisma";
 import {
   detectMediaKind,
   serializeVoiceTags,
-  SONG_SECTION_LABELS,
   SONG_PART_OPTIONS,
   LYRIC_SECTION_TYPES,
   VOICE_TAGS,
@@ -24,10 +23,16 @@ async function requireAdmin() {
   return session;
 }
 
-export type PartInput = {
-  part: string;
+export type MediaInput = {
   label: string;
   mediaUrl: string;
+};
+
+export type SectionInput = {
+  part: string;
+  sectionLabel: string;
+  labelDescription: string;
+  media: MediaInput[];
 };
 
 export type LyricSectionInput = {
@@ -41,15 +46,13 @@ export async function createSong(formData: FormData) {
   const session = await requireAdmin();
 
   const title = clip(String(formData.get("title") ?? "").trim(), "title");
-  const sectionLabel = oneOf(String(formData.get("sectionLabel") ?? ""), SONG_SECTION_LABELS, "SATB_COMPULSORY");
-  const labelDescription = clip(String(formData.get("labelDescription") ?? "").trim(), "description");
 
-  if (!title || !labelDescription) {
-    throw new Error("Title and label description are required.");
+  if (!title) {
+    throw new Error("Title is required.");
   }
 
   const song = await prisma.song.create({
-    data: { title, sectionLabel, labelDescription, createdById: session.user.id },
+    data: { title, createdById: session.user.id },
   });
 
   revalidatePath("/admin/songs");
@@ -58,14 +61,14 @@ export async function createSong(formData: FormData) {
 
 export async function updateSongFull(
   songId: string,
-  meta: { title: string; sectionLabel: string; labelDescription: string },
-  parts: PartInput[],
+  meta: { title: string },
+  sections: SectionInput[],
   lyricSections: LyricSectionInput[]
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  if (!meta.title.trim() || !meta.labelDescription.trim()) {
-    return { error: "Title and label description are required." };
+  if (!meta.title.trim()) {
+    return { error: "Title is required." };
   }
 
   await prisma.$transaction([
@@ -73,23 +76,32 @@ export async function updateSongFull(
       where: { id: songId },
       data: {
         title: clip(meta.title.trim(), "title"),
-        sectionLabel: oneOf(meta.sectionLabel, SONG_SECTION_LABELS, "SATB_COMPULSORY"),
-        labelDescription: clip(meta.labelDescription.trim(), "description"),
       },
     }),
-    prisma.songPart.deleteMany({ where: { songId } }),
-    prisma.songPart.createMany({
-      data: parts
-        .filter((p) => p.mediaUrl.trim())
-        .map((p, i) => ({
-          songId,
-          part: oneOf(p.part, SONG_PART_OPTIONS, "All"),
-          label: clip(p.label.trim() || p.part, "label"),
-          mediaUrl: clip(p.mediaUrl.trim(), "url"),
-          mediaKind: detectMediaKind(p.mediaUrl.trim()),
-          sortOrder: i,
-        })),
-    }),
+    prisma.songSection.deleteMany({ where: { songId } }),
+    ...sections
+      .filter((s) => s.media.some((m) => m.mediaUrl.trim()))
+      .map((s, i) =>
+        prisma.songSection.create({
+          data: {
+            songId,
+            part: oneOf(s.part, SONG_PART_OPTIONS, "All"),
+            sectionLabel: clip(s.sectionLabel.trim() || s.part, "label"),
+            labelDescription: clip(s.labelDescription.trim(), "description"),
+            sortOrder: i,
+            media: {
+              create: s.media
+                .filter((m) => m.mediaUrl.trim())
+                .map((m, j) => ({
+                  label: clip(m.label.trim() || s.sectionLabel.trim() || s.part, "label"),
+                  mediaUrl: clip(m.mediaUrl.trim(), "url"),
+                  mediaKind: detectMediaKind(m.mediaUrl.trim()),
+                  sortOrder: j,
+                })),
+            },
+          },
+        })
+      ),
     prisma.lyricSection.deleteMany({ where: { songId } }),
     prisma.lyricSection.createMany({
       data: lyricSections
