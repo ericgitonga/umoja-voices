@@ -5,13 +5,19 @@
 
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { stripSslMode } from "../src/lib/db-url";
 import bcrypt from "bcryptjs";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set — see .env.example.");
+const rawConnectionString = process.env.POSTGRES_PRISMA_URL ?? process.env.DATABASE_URL;
+if (!rawConnectionString) {
+  throw new Error("Neither POSTGRES_PRISMA_URL nor DATABASE_URL is set — see .env.example.");
 }
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+// See src/lib/db-url.ts for why sslmode must be stripped and ssl set explicitly.
+const adapter = new PrismaPg({
+  connectionString: stripSslMode(rawConnectionString),
+  ssl: { rejectUnauthorized: false },
+});
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
