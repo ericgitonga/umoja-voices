@@ -18,16 +18,16 @@ export default async function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Admin</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-ink">Admin</h1>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {cards.map((c) => (
           <Link
             key={c.label}
             href={c.href}
-            className="rounded border border-slate-200 p-4 text-center hover:bg-slate-50"
+            className="rounded-lg border-l-4 border-gold bg-white p-4 text-center shadow-sm hover:shadow-md"
           >
-            <p className="text-2xl font-semibold text-slate-900">{c.count}</p>
-            <p className="text-sm text-slate-600">{c.label}</p>
+            <p className="text-2xl font-semibold text-ink">{c.count}</p>
+            <p className="text-sm text-ink/60">{c.label}</p>
           </Link>
         ))}
       </div>

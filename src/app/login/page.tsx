@@ -34,7 +34,7 @@ function LoginForm() {
 
   return (
     <div className="mx-auto flex max-w-sm flex-1 flex-col justify-center px-4 py-16">
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Sign in</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-ink">Sign in</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
           Email
@@ -43,7 +43,7 @@ function LoginForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded border border-slate-300 px-3 py-2"
+            className="rounded border border-ink/20 px-3 py-2"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -53,19 +53,19 @@ function LoginForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="rounded border border-slate-300 px-3 py-2"
+            className="rounded border border-ink/20 px-3 py-2"
           />
         </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-indigo-700 px-4 py-2 text-white hover:bg-indigo-800 disabled:opacity-60"
+          className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90 disabled:opacity-60"
         >
           {submitting ? "Signing in…" : "Sign in"}
         </button>
       </form>
-      <Link href="/forgot-password" className="mt-4 text-sm text-indigo-700 hover:underline">
+      <Link href="/forgot-password" className="mt-4 text-sm text-ink hover:underline">
         Forgot password?
       </Link>
     </div>

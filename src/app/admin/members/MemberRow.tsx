@@ -19,10 +19,10 @@ export default function MemberRow({
   const router = useRouter();
 
   return (
-    <li className="flex items-center justify-between rounded border border-slate-200 px-4 py-3">
+    <li className="flex items-center justify-between rounded-lg border border-ink/10 bg-white px-4 py-3 shadow-sm">
       <div>
-        <p className="font-medium text-slate-900">{name}</p>
-        <p className="text-xs text-slate-500">
+        <p className="font-medium text-ink">{name}</p>
+        <p className="text-xs text-ink/50">
           {email} &middot; {status}
         </p>
       </div>
@@ -33,7 +33,7 @@ export default function MemberRow({
             await updateMemberRole(id, e.target.value);
             router.refresh();
           }}
-          className="rounded border border-slate-300 px-2 py-1 text-xs"
+          className="rounded border border-ink/20 px-2 py-1 text-xs"
         >
           <option value="chorister">Chorister</option>
           <option value="admin">Admin</option>

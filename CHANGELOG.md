@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.3.0] - 2026-07-18
+
+### Changed
+
+- Applied a branded visual theme across the app, replacing the default slate/indigo Tailwind
+  palette: dark navbar (`bg-ink`) with a pill-style active nav link and brand mark, warm cream
+  page background, white cards with a gold left-accent border for songs/admin lists, black
+  pill-shaped primary buttons. The app commits to this single look rather than switching with
+  the OS light/dark preference (closes #15)
+
 ## [0.2.0] - 2026-07-18
 
 ### Added

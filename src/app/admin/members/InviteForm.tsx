@@ -22,25 +22,25 @@ export default function InviteForm() {
   }
 
   return (
-    <div className="rounded border border-slate-200 p-4">
-      <h2 className="mb-3 font-semibold text-slate-800">Invite a member</h2>
+    <div className="rounded-lg border border-ink/10 bg-white p-4 shadow-sm">
+      <h2 className="mb-3 font-semibold text-ink">Invite a member</h2>
       <form action={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex flex-1 flex-col gap-1 text-sm">
           Name
-          <input name="name" required className="rounded border border-slate-300 px-3 py-2" />
+          <input name="name" required className="rounded border border-ink/20 px-3 py-2" />
         </label>
         <label className="flex flex-1 flex-col gap-1 text-sm">
           Email
-          <input name="email" type="email" required className="rounded border border-slate-300 px-3 py-2" />
+          <input name="email" type="email" required className="rounded border border-ink/20 px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Role
-          <select name="role" defaultValue="chorister" className="rounded border border-slate-300 px-3 py-2">
+          <select name="role" defaultValue="chorister" className="rounded border border-ink/20 px-3 py-2">
             <option value="chorister">Chorister</option>
             <option value="admin">Admin</option>
           </select>
         </label>
-        <button type="submit" className="rounded bg-indigo-700 px-4 py-2 text-sm text-white hover:bg-indigo-800">
+        <button type="submit" className="rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90">
           Send invite
         </button>
       </form>

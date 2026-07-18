@@ -24,7 +24,7 @@ export default function LyricsViewer({ sections }: { sections: Section[] }) {
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <button
           onClick={() => setActiveFilter(null)}
-          className={`rounded-full px-3 py-1 ${!activeFilter ? "bg-indigo-700 text-white" : "bg-slate-100 text-slate-700"}`}
+          className={`rounded-full px-3 py-1 ${!activeFilter ? "bg-ink text-white" : "bg-ink/5 text-ink/80"}`}
         >
           Full lyrics
         </button>
@@ -32,7 +32,7 @@ export default function LyricsViewer({ sections }: { sections: Section[] }) {
           <button
             key={tag}
             onClick={() => setActiveFilter(tag)}
-            className={`rounded-full px-3 py-1 ${activeFilter === tag ? "bg-indigo-700 text-white" : "bg-slate-100 text-slate-700"}`}
+            className={`rounded-full px-3 py-1 ${activeFilter === tag ? "bg-ink text-white" : "bg-ink/5 text-ink/80"}`}
           >
             {tag}
           </button>
@@ -43,23 +43,23 @@ export default function LyricsViewer({ sections }: { sections: Section[] }) {
         {visible.map((section) => (
           <div key={section.id}>
             <div className="mb-1 flex items-center gap-2">
-              <h3 className="font-semibold text-slate-800">{section.sectionLabel}</h3>
+              <h3 className="font-semibold text-ink">{section.sectionLabel}</h3>
               <div className="flex gap-1">
                 {section.voiceTags.map((t) => (
                   <span
                     key={t}
-                    className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600"
+                    className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-medium text-ink/60"
                   >
                     {t}
                   </span>
                 ))}
               </div>
             </div>
-            <p className="whitespace-pre-line text-slate-700">{section.content}</p>
+            <p className="whitespace-pre-line text-ink/80">{section.content}</p>
           </div>
         ))}
         {visible.length === 0 && (
-          <p className="text-slate-500">No lyrics tagged for this voice yet.</p>
+          <p className="text-ink/50">No lyrics tagged for this voice yet.</p>
         )}
       </div>
     </div>

@@ -16,13 +16,13 @@ export default async function SongsPage({
   });
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Songs</h1>
+    <div className="mx-auto max-w-5xl px-4 py-10">
+      <h1 className="mb-6 text-2xl font-semibold text-ink">Songs</h1>
 
       <div className="mb-6 flex flex-wrap gap-2 text-sm">
         <Link
           href="/songs"
-          className={`rounded-full px-3 py-1 ${!filter ? "bg-indigo-700 text-white" : "bg-slate-100 text-slate-700"}`}
+          className={`rounded-full px-3 py-1.5 ${!filter ? "bg-ink text-white" : "border border-ink/10 bg-white text-ink/70"}`}
         >
           All
         </Link>
@@ -30,29 +30,26 @@ export default async function SongsPage({
           <Link
             key={l}
             href={`/songs?label=${l}`}
-            className={`rounded-full px-3 py-1 ${filter === l ? "bg-indigo-700 text-white" : "bg-slate-100 text-slate-700"}`}
+            className={`rounded-full px-3 py-1.5 ${filter === l ? "bg-ink text-white" : "border border-ink/10 bg-white text-ink/70"}`}
           >
             {SONG_SECTION_LABEL_TEXT[l as SongSectionLabel]}
           </Link>
         ))}
       </div>
 
-      <ul className="flex flex-col gap-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {songs.map((song) => (
-          <li key={song.id}>
-            <Link
-              href={`/songs/${song.id}`}
-              className="flex items-center justify-between rounded border border-slate-200 px-4 py-3 hover:bg-slate-50"
-            >
-              <span className="font-medium text-slate-900">{song.title}</span>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                {SONG_SECTION_LABEL_TEXT[song.sectionLabel as SongSectionLabel] ?? song.sectionLabel}
-              </span>
-            </Link>
-          </li>
+          <Link
+            key={song.id}
+            href={`/songs/${song.id}`}
+            className="rounded-lg border-l-4 border-gold bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
+          >
+            <p className="font-bold text-ink">{song.title}</p>
+            <p className="mt-1 truncate text-sm text-ink/60">{song.labelDescription}</p>
+          </Link>
         ))}
-        {songs.length === 0 && <p className="text-slate-500">No songs yet.</p>}
-      </ul>
+        {songs.length === 0 && <p className="text-ink/50">No songs yet.</p>}
+      </div>
     </div>
   );
 }

@@ -84,7 +84,7 @@ export default function SongEditor({
           <input
             value={meta.title}
             onChange={(e) => setMeta({ ...meta, title: e.target.value })}
-            className="rounded border border-slate-300 px-3 py-2"
+            className="rounded border border-ink/20 px-3 py-2"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -92,7 +92,7 @@ export default function SongEditor({
           <select
             value={meta.sectionLabel}
             onChange={(e) => setMeta({ ...meta, sectionLabel: e.target.value })}
-            className="rounded border border-slate-300 px-3 py-2"
+            className="rounded border border-ink/20 px-3 py-2"
           >
             {SONG_SECTION_LABELS.map((l) => (
               <option key={l} value={l}>
@@ -107,26 +107,26 @@ export default function SongEditor({
             value={meta.labelDescription}
             onChange={(e) => setMeta({ ...meta, labelDescription: e.target.value })}
             rows={2}
-            className="rounded border border-slate-300 px-3 py-2"
+            className="rounded border border-ink/20 px-3 py-2"
           />
         </label>
       </section>
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-800">Voice parts</h2>
-          <button onClick={addPart} className="text-sm text-indigo-700 hover:underline">
+          <h2 className="text-lg font-semibold text-ink">Voice parts</h2>
+          <button onClick={addPart} className="text-sm text-ink hover:underline">
             + Add part
           </button>
         </div>
         <div className="flex flex-col gap-4">
           {parts.map((p, i) => (
-            <div key={i} className="flex flex-col gap-2 rounded border border-slate-200 p-3">
+            <div key={i} className="flex flex-col gap-2 rounded border border-ink/10 p-3">
               <div className="flex gap-2">
                 <select
                   value={p.part}
                   onChange={(e) => updatePart(i, { part: e.target.value })}
-                  className="rounded border border-slate-300 px-2 py-1 text-sm"
+                  className="rounded border border-ink/20 px-2 py-1 text-sm"
                 >
                   {SONG_PART_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>
@@ -138,7 +138,7 @@ export default function SongEditor({
                   placeholder="Label, e.g. Soprano — full run"
                   value={p.label}
                   onChange={(e) => updatePart(i, { label: e.target.value })}
-                  className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+                  className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm"
                 />
                 <button onClick={() => removePart(i)} className="text-sm text-red-600">
                   Remove
@@ -148,29 +148,29 @@ export default function SongEditor({
                 placeholder="Media URL (YouTube, Drive, SoundCloud, direct file, or any link)"
                 value={p.mediaUrl}
                 onChange={(e) => updatePart(i, { mediaUrl: e.target.value })}
-                className="rounded border border-slate-300 px-2 py-1 text-sm"
+                className="rounded border border-ink/20 px-2 py-1 text-sm"
               />
             </div>
           ))}
-          {parts.length === 0 && <p className="text-sm text-slate-500">No parts yet.</p>}
+          {parts.length === 0 && <p className="text-sm text-ink/50">No parts yet.</p>}
         </div>
       </section>
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-800">Lyrics</h2>
-          <button onClick={addSection} className="text-sm text-indigo-700 hover:underline">
+          <h2 className="text-lg font-semibold text-ink">Lyrics</h2>
+          <button onClick={addSection} className="text-sm text-ink hover:underline">
             + Add section
           </button>
         </div>
         <div className="flex flex-col gap-4">
           {sections.map((s, i) => (
-            <div key={i} className="flex flex-col gap-2 rounded border border-slate-200 p-3">
+            <div key={i} className="flex flex-col gap-2 rounded border border-ink/10 p-3">
               <div className="flex gap-2">
                 <select
                   value={s.sectionType}
                   onChange={(e) => updateSection(i, { sectionType: e.target.value })}
-                  className="rounded border border-slate-300 px-2 py-1 text-sm"
+                  className="rounded border border-ink/20 px-2 py-1 text-sm"
                 >
                   {LYRIC_SECTION_TYPES.map((t) => (
                     <option key={t} value={t}>
@@ -182,7 +182,7 @@ export default function SongEditor({
                   placeholder="Label, e.g. Verse 2"
                   value={s.sectionLabel}
                   onChange={(e) => updateSection(i, { sectionLabel: e.target.value })}
-                  className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+                  className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm"
                 />
                 <button onClick={() => removeSection(i)} className="text-sm text-red-600">
                   Remove
@@ -193,10 +193,10 @@ export default function SongEditor({
                 value={s.content}
                 onChange={(e) => updateSection(i, { content: e.target.value })}
                 rows={3}
-                className="rounded border border-slate-300 px-2 py-1 text-sm"
+                className="rounded border border-ink/20 px-2 py-1 text-sm"
               />
               <div className="flex items-center gap-3 text-xs">
-                <span className="text-slate-500">Sung by:</span>
+                <span className="text-ink/50">Sung by:</span>
                 {VOICE_TAGS.map((tag) => (
                   <label key={tag} className="flex items-center gap-1">
                     <input
@@ -210,7 +210,7 @@ export default function SongEditor({
               </div>
             </div>
           ))}
-          {sections.length === 0 && <p className="text-sm text-slate-500">No lyric sections yet.</p>}
+          {sections.length === 0 && <p className="text-sm text-ink/50">No lyric sections yet.</p>}
         </div>
       </section>
 
@@ -218,11 +218,11 @@ export default function SongEditor({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded bg-indigo-700 px-4 py-2 text-white hover:bg-indigo-800 disabled:opacity-60"
+          className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90 disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save song"}
         </button>
-        {status && <p className="text-sm text-slate-600">{status}</p>}
+        {status && <p className="text-sm text-ink/60">{status}</p>}
       </div>
     </div>
   );

@@ -56,7 +56,7 @@ export default function MediaEmbed({ url, kind }: { url: string; kind: MediaKind
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-block rounded border border-indigo-300 px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50"
+      className="inline-block rounded border border-ink/20 px-4 py-2 text-sm text-ink hover:bg-ink/5"
     >
       Open link ↗
     </a>
