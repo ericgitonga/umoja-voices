@@ -21,7 +21,7 @@ npm run dev
 ```
 
 Seeded dev logins (printed by `npm run db:seed`):
-- Admin: `gitonga@earthranger.com` / `admin12345`
+- Admin: `gitonga@gmail.com` / `admin12345`
 - Chorister: `demo.chorister@example.com` / `chorister12345`
 
 Open [http://localhost:3000](http://localhost:3000).

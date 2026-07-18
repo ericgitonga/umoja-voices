@@ -15,10 +15,10 @@ async function main() {
   const choristerPassword = "chorister12345";
 
   const admin = await prisma.user.upsert({
-    where: { email: "gitonga@earthranger.com" },
+    where: { email: "gitonga@gmail.com" },
     update: {},
     create: {
-      email: "gitonga@earthranger.com",
+      email: "gitonga@gmail.com",
       name: "Eric Gitonga",
       role: "admin",
       status: "active",
@@ -148,7 +148,7 @@ async function main() {
   }
 
   console.log("\nSeed complete. Dev login credentials:");
-  console.log(`  Admin:      gitonga@earthranger.com / ${adminPassword}`);
+  console.log(`  Admin:      gitonga@gmail.com / ${adminPassword}`);
   console.log(`  Chorister:  demo.chorister@example.com / ${choristerPassword}`);
 }
 
