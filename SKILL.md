@@ -10,7 +10,7 @@ section by section before any code was written).
 
 ## Versioning
 
-Current version: **0.7.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.8.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -101,9 +101,15 @@ fixed-delay timing mitigation (#18)).
 
 ### POC-specific stand-ins (tracked, to close before production)
 
-- **Database**: closed at v0.7.0 — Supabase Postgres via `@prisma/adapter-pg`, using the
-  Transaction pooler connection (`DATABASE_URL`) for app queries and the direct connection
-  (`DIRECT_URL`) for migrations. No longer a stand-in.
+- **Database**: closed at v0.8.0 — Supabase Postgres via `@prisma/adapter-pg`, wired up through
+  Vercel's official Supabase Marketplace integration (`vercel integration add supabase`),
+  which auto-provisions `POSTGRES_PRISMA_URL` (pooled, app queries) and
+  `POSTGRES_URL_NON_POOLING` (direct, migrations) correctly for every environment — avoids the
+  password-percent-encoding pitfall of hand-typing `DATABASE_URL`/`DIRECT_URL` from Supabase's
+  dashboard (both remain supported as fallbacks for projects without the integration). Verified
+  live: deployed to Vercel production, migration applied, seed data confirmed present, and a
+  full login → `mustChangePassword` redirect flow tested against the real deployed URL. No
+  longer a stand-in.
 - **Auth provider**: NextAuth Credentials, not yet Supabase Auth. This is the remaining half
   of the original "swap for production" item (#10) — the design plan (`umoja.pdf`) specifies
   Supabase Auth, but that's a real rewrite (every page's session check, the invite flow,
@@ -203,6 +209,45 @@ Vercel). Currently:
 - `src/proxy.ts` (Next.js 16's renamed `middleware` convention) for role-gated routing
 - Every Prisma-backed page is `export const dynamic = "force-dynamic"` — these show
   live, admin-editable data, so none of it may be statically cached at build time
+
+---
+
+## Deployment
+
+Live at **https://umoja-voices.vercel.app**. Vercel project `egm2/umoja-voices`, GitHub-connected
+(pushes to `main` auto-deploy). Database: Supabase Postgres, connected via Vercel's Supabase
+Marketplace integration (`vercel integration add supabase`) rather than by hand-typing
+connection strings — see the "Database" stand-in note above for why.
+
+### Gotchas hit while setting this up (don't re-debug these)
+
+- **`vercel deploy` uploads the local directory directly, not from git.** A stray local `.env`
+  got bundled into an early deploy and silently overrode Vercel's own env vars. `.vercelignore`
+  now excludes `.env*` (except `.env.example`) — keep it that way; only Vercel's Environment
+  Variables should ever apply to a deployed environment.
+- **Vercel's GitHub auto-connect (`vercel link` / `vercel git connect`) fails silently on
+  private repos** without the Vercel GitHub App explicitly authorized for that repo. Making the
+  repo public was what fixed it here; for a private repo, connect via the dashboard
+  (Settings → Git) instead, which prompts the GitHub App install/authorization flow.
+  Deploying isn't blocked either way — `vercel deploy` works from the CLI regardless of git
+  connection status, just without auto-deploy-on-push.
+- **`vercel integration add supabase` provisions a brand-new Supabase project** — it does not
+  connect an existing one you created directly on supabase.com. If you already have a Supabase
+  project you want to keep using, connect it from Supabase's own dashboard (Project Settings →
+  Integrations → Vercel) instead of running the Vercel-side install.
+- **node-postgres treats `sslmode=require` in a connection string as an alias for
+  `verify-full`** (strict CA-chain verification), which silently overrides any explicit `ssl`
+  option passed to `pg.Pool`/`PrismaPg` — Supabase's pooler certificate chain then gets
+  rejected ("self-signed certificate in certificate chain") regardless of what's configured in
+  code. `src/lib/db-url.ts`'s `stripSslMode()` removes the param so the explicit
+  `ssl: { rejectUnauthorized: false }` in `src/lib/prisma.ts`/`prisma/seed.ts` actually applies.
+  `prisma migrate` itself isn't affected — it uses Prisma's own TLS stack, not `pg`.
+- **A local sandbox may redact detected secrets in file contents it observes** (not just tool
+  output) — a `vercel env pull` result read back through certain tool calls came back as
+  literal `"[SENSITIVE]"` placeholders. Run credential-handling commands (`vercel env pull`,
+  `prisma migrate dev` against production) directly, not through anything that echoes file
+  contents back for inspection, and never try to "work around" the redaction — treat it as a
+  hard boundary, not a bug to route past.
 
 ---
 

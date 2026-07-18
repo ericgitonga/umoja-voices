@@ -5,6 +5,43 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.8.0] - 2026-07-18
+
+### Added
+
+- **Deployed to Vercel** (`egm2/umoja-voices`, live at https://umoja-voices.vercel.app),
+  GitHub-connected so pushes to `main` auto-deploy.
+- **Wired up a real Supabase Postgres project** via Vercel's Supabase Marketplace integration
+  (`vercel integration add supabase`) rather than hand-typing connection strings — closes the
+  database half of #10 for real (v0.7.0 had the code ready but untested against a live
+  database). Initial migration applied; seed data confirmed present.
+- `.vercelignore`, excluding `.env*` (except `.env.example`) so `vercel deploy`'s direct
+  local-directory upload never bundles local secrets into a deployment.
+- `src/lib/db-url.ts` (`stripSslMode`) — node-postgres treats a connection string's
+  `sslmode=require` as an alias for `verify-full`, silently overriding any explicit `ssl`
+  option and rejecting Supabase's pooler certificate chain. Stripping the param lets the
+  explicit `ssl: { rejectUnauthorized: false }` in `src/lib/prisma.ts`/`prisma/seed.ts` apply.
+
+### Fixed
+
+- An early deploy briefly served a raw Prisma connection error because a stale local `.env`
+  got bundled into the deployment and overrode Vercel's own env vars — root cause of the
+  `.vercelignore` addition above.
+
+### Verified
+
+- Full login → session → `mustChangePassword` redirect flow tested against the live
+  production URL, not just locally.
+- Security headers (CSP, HSTS, X-Frame-Options) confirmed present on the live deployment.
+
+### Known limitations (tracked, not silently deferred)
+
+- Auth remains NextAuth Credentials; migrating to Supabase Auth is the remaining scope of #10.
+- See `SKILL.md`'s new Deployment section for the operational gotchas hit getting here
+  (private-repo GitHub auto-connect, `vercel integration add` creating a new Supabase project
+  rather than connecting an existing one, and more) — worth reading before touching this setup
+  again.
+
 ## [0.7.0] - 2026-07-18
 
 ### Changed
