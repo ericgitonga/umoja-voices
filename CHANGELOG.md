@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.6.0] - 2026-07-18
+
+### Added
+
+- Rate limiting on invite creation (`inviteMember`, `src/lib/actions/member-actions.ts`):
+  20 invites/hour per admin, 40/hour per IP — looser than the public-facing login/forgot-password
+  limits since this is an authenticated, lower-risk action, but no longer unbounded
+
+### Verified
+
+- Reproduced through a full browser flow: 20 consecutive invite submissions each created a
+  real user and showed the dev-only invite-link stand-in; the 21st was rejected with a
+  distinct "Too many invites sent recently" message and created nothing
+
+### Known limitations (tracked, not silently deferred)
+
+- The rate limiter is in-memory across all three protected entry points (login,
+  forgot-password, invite creation) — correct for today's single process, but needs a
+  distributed store (e.g. Upstash Redis) before multi-instance/serverless deployment (#20,
+  narrowed now that invite creation itself is covered)
+
 ## [0.5.0] - 2026-07-18
 
 ### Added

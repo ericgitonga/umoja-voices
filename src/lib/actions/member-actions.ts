@@ -3,12 +3,21 @@
 import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
+import { headers } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ROLES, USER_STATUSES } from "@/lib/constants";
 import { clip, oneOf } from "@/lib/validation";
+import { checkRateLimit, rateLimitResetMinutes, getClientIp } from "@/lib/rate-limit";
 
 const INVITE_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+// Admin-only and lower risk than login/forgot-password, so a looser window:
+// generous enough for a legitimate bulk-invite session (a new season's
+// intake), still capping abuse from one compromised admin session.
+const INVITE_WINDOW_MS = 60 * 60_000; // 1 hour
+const INVITE_MAX_PER_ADMIN = 20;
+const INVITE_MAX_PER_IP = 40; // covers a few admins sharing an office network
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -25,6 +34,19 @@ async function requireAdmin() {
  */
 export async function inviteMember(formData: FormData): Promise<{ error?: string; inviteLink?: string }> {
   const session = await requireAdmin();
+
+  const ip = getClientIp(await headers());
+  const adminOk = checkRateLimit(`invite:admin:${session.user.id}`, INVITE_MAX_PER_ADMIN, INVITE_WINDOW_MS);
+  const ipOk = checkRateLimit(`invite:ip:${ip}`, INVITE_MAX_PER_IP, INVITE_WINDOW_MS);
+  if (!adminOk || !ipOk) {
+    const minutes = Math.max(
+      rateLimitResetMinutes(`invite:admin:${session.user.id}`),
+      rateLimitResetMinutes(`invite:ip:${ip}`)
+    );
+    return {
+      error: `Too many invites sent recently. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+    };
+  }
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const name = clip(String(formData.get("name") ?? "").trim(), "name");
