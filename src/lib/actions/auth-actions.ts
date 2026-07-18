@@ -6,6 +6,14 @@ import { prisma } from "@/lib/prisma";
 
 const RESET_TOKEN_TTL_MS = 1000 * 60 * 60; // 1 hour
 const INVITE_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+const MIN_PASSWORD_LENGTH = 8;
+
+/** Slows the "account doesn't exist" branch down to roughly match the
+ *  "account exists, token created" branch — a bare early-return would let
+ *  an attacker enumerate valid emails by timing this action's response. */
+function timingSafetyDelay(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 80));
+}
 
 /**
  * POC stand-in for Supabase Auth's built-in reset-password email.
@@ -16,7 +24,8 @@ const INVITE_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 export async function requestPasswordReset(email: string): Promise<{ resetLink?: string }> {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (!user || user.status !== "active") {
-    // Do not reveal whether the account exists.
+    // Do not reveal whether the account exists — including via response timing.
+    await timingSafetyDelay();
     return {};
   }
 
@@ -33,6 +42,10 @@ export async function requestPasswordReset(email: string): Promise<{ resetLink?:
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<{ error?: string }> {
+  if (newPassword.length < MIN_PASSWORD_LENGTH) {
+    return { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
+  }
+
   const reset = await prisma.passwordResetToken.findUnique({ where: { token } });
   if (!reset || reset.usedAt || reset.expiresAt < new Date()) {
     return { error: "This reset link is invalid or has expired." };
@@ -54,6 +67,10 @@ export async function acceptInvite(
   token: string,
   password: string
 ): Promise<{ error?: string }> {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
+  }
+
   const invite = await prisma.invite.findUnique({ where: { token } });
   if (!invite || invite.acceptedAt || invite.expiresAt < new Date()) {
     return { error: "This invite link is invalid or has expired." };

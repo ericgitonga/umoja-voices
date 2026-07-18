@@ -10,7 +10,7 @@ section by section before any code was written).
 
 ## Versioning
 
-Current version: **0.3.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.4.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -83,7 +83,18 @@ primary requirement, not an afterthought.
 | No account-existence leakage | `requestPasswordReset` returns the same response whether or not the email matches an account |
 | `direct_url` fallback, not raw HTML embeds | Unrecognized media links render as a plain outbound `<a>`, never as arbitrary embedded markup |
 | Server Actions require `role: "admin"` server-side | Every mutation in `src/lib/actions/*` re-checks the session role itself — the admin-only UI is a convenience, not the enforcement boundary |
+| Admin self-lockout / last-admin protection | `updateMemberRole`/`setMemberStatus` refuse to let an admin change their own role/status, and refuse to leave zero active admins |
+| Server-side enum validation + input length caps | `src/lib/validation.ts` (`clip`/`oneOf`/`subsetOf`), applied to every enum-like and free-text field a Server Action writes — SQLite has no native enum, so this is the only enforcement |
+| HTTP security headers + scoped CSP | `next.config.ts`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and a CSP whose `frame-src` allow-list matches exactly what `src/components/MediaEmbed.tsx` supports |
+| Server Action CSRF protection (framework) | Next.js's built-in same-origin check on Server Actions — verified with a forged cross-origin request, not just assumed (see `extras/security.pdf`) |
+| Secret key enforcement | `src/lib/auth.ts` throws at startup if `NEXTAUTH_SECRET` is absent, rather than letting NextAuth silently derive an insecure one |
 | Pinned dependencies | `package-lock.json` is committed; dependency bumps are deliberate, not automatic |
+
+A full audit was performed at v0.3.0 — see `extras/security.pdf` (gitignored; regenerate with
+`conda run -n ds python extras/generate_security_pdf.py`, itself gitignored per the data
+handling rules below) for the complete findings, what was fixed, what was reviewed and
+confirmed safe, and what's accepted as a tracked POC-stage trade-off (rate limiting, CSP
+`'unsafe-inline'`, and the fixed-delay timing mitigation — see issues opened alongside v0.4.0).
 
 ### POC-specific stand-ins (tracked, to close before production)
 
@@ -133,8 +144,10 @@ primary requirement, not an afterthought.
   member data, no secrets, and no real financial figures beyond illustrative market-rate
   estimates — only the script is public; its output `extras/design_process.pdf` still lives in
   the gitignored `extras/` directory as a generated artefact.
-- **`extras/generate_security_pdf.py`** (once written, post-POC) and its output
-  `extras/security.pdf` stay fully gitignored — internal audit findings, not for public view.
+- **`extras/generate_security_pdf.py`** and its output `extras/security.pdf` stay fully
+  gitignored — internal audit findings, not for public view. The audit was performed earlier
+  than originally planned (at v0.3.0, not "post-POC") at the project owner's request; the rule
+  about what stays private is unchanged by when the audit happens.
 - **Never commit `prisma/dev.db`.** It's the local POC datastore; it will contain seeded
   password hashes and, once real use starts, real member data. Regenerate it locally with
   `npx prisma migrate dev` + `npm run db:seed`.
@@ -187,7 +200,7 @@ Vercel). The POC currently runs on:
 ### Security checks (run first)
 - [ ] `Media/` does not appear in `git status`, `git add`, or `git commit` output
 - [ ] `prisma/dev.db` is not tracked (`git ls-files prisma/dev.db` returns nothing)
-- [ ] `extras/generate_security_pdf.py` (once it exists) is not tracked
+- [ ] `extras/generate_security_pdf.py` is not tracked (`git ls-files extras/generate_security_pdf.py` returns nothing)
 - [ ] No real choir member's name or phone number is in any committed file or git log entry
 - [ ] Every new Server Action that mutates data checks `role === "admin"` itself where required
 - [ ] If any new dependency was added, `package-lock.json` was committed alongside it

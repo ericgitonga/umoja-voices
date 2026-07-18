@@ -3,6 +3,17 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
+// Mirrors the Career Transition project's "app refuses to start if
+// SECRET_KEY is absent" control — without this, NextAuth falls back to an
+// insecure derived secret rather than failing loudly.
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error(
+    "NEXTAUTH_SECRET is not set. Generate one with: " +
+      "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\" " +
+      "and add it to .env (see .env.example)."
+  );
+}
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },

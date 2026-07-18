@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateMemberRole, setMemberStatus } from "@/lib/actions/member-actions";
 
@@ -17,20 +18,34 @@ export default function MemberRow({
   status: string;
 }) {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  // Controlled, and reset on every failed mutation — an uncontrolled
+  // <select defaultValue> would keep showing the rejected choice even
+  // after the server blocks it (e.g. the self-lockout guard), which reads
+  // as a silent success that never actually happened.
+  const [currentRole, setCurrentRole] = useState(role);
 
   return (
-    <li className="flex items-center justify-between rounded-lg border border-ink/10 bg-white px-4 py-3 shadow-sm">
+    <li className="flex flex-col gap-2 rounded-lg border border-ink/10 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="font-medium text-ink">{name}</p>
         <p className="text-xs text-ink/50">
           {email} &middot; {status}
         </p>
+        {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
       </div>
       <div className="flex items-center gap-3 text-sm">
         <select
-          defaultValue={role}
+          value={currentRole}
           onChange={async (e) => {
-            await updateMemberRole(id, e.target.value);
+            const next = e.target.value;
+            setError(null);
+            const result = await updateMemberRole(id, next);
+            if (result.error) {
+              setError(result.error);
+            } else {
+              setCurrentRole(next);
+            }
             router.refresh();
           }}
           className="rounded border border-ink/20 px-2 py-1 text-xs"
@@ -40,7 +55,9 @@ export default function MemberRow({
         </select>
         <button
           onClick={async () => {
-            await setMemberStatus(id, status === "disabled" ? "active" : "disabled");
+            setError(null);
+            const result = await setMemberStatus(id, status === "disabled" ? "active" : "disabled");
+            if (result.error) setError(result.error);
             router.refresh();
           }}
           className="text-xs text-red-600 hover:underline"

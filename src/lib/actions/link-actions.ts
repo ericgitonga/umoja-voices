@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { LINK_CATEGORIES } from "@/lib/constants";
+import { clip, oneOf } from "@/lib/validation";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -12,9 +14,9 @@ async function requireAdmin() {
 
 export async function createLink(formData: FormData) {
   await requireAdmin();
-  const title = String(formData.get("title") ?? "").trim();
-  const url = String(formData.get("url") ?? "").trim();
-  const category = String(formData.get("category") ?? "other");
+  const title = clip(String(formData.get("title") ?? "").trim(), "title");
+  const url = clip(String(formData.get("url") ?? "").trim(), "url");
+  const category = oneOf(String(formData.get("category") ?? ""), LINK_CATEGORIES, "other");
   if (!title || !url) return;
 
   const count = await prisma.externalLink.count();

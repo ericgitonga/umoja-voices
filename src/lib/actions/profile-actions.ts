@@ -4,12 +4,13 @@ import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { clip } from "@/lib/validation";
 
 export async function updateProfile(formData: FormData): Promise<{ error?: string; ok?: boolean }> {
   const session = await getServerSession(authOptions);
   if (!session) return { error: "Not signed in." };
 
-  const name = String(formData.get("name") ?? "").trim();
+  const name = clip(String(formData.get("name") ?? "").trim(), "name");
   const newPassword = String(formData.get("newPassword") ?? "");
 
   if (!name) return { error: "Name is required." };

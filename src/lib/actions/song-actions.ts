@@ -5,7 +5,16 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { detectMediaKind, serializeVoiceTags, type VoiceTag } from "@/lib/constants";
+import {
+  detectMediaKind,
+  serializeVoiceTags,
+  SONG_SECTION_LABELS,
+  SONG_PART_OPTIONS,
+  LYRIC_SECTION_TYPES,
+  VOICE_TAGS,
+  type VoiceTag,
+} from "@/lib/constants";
+import { clip, oneOf, subsetOf } from "@/lib/validation";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -31,9 +40,9 @@ export type LyricSectionInput = {
 export async function createSong(formData: FormData) {
   const session = await requireAdmin();
 
-  const title = String(formData.get("title") ?? "").trim();
-  const sectionLabel = String(formData.get("sectionLabel") ?? "SATB_COMPULSORY");
-  const labelDescription = String(formData.get("labelDescription") ?? "").trim();
+  const title = clip(String(formData.get("title") ?? "").trim(), "title");
+  const sectionLabel = oneOf(String(formData.get("sectionLabel") ?? ""), SONG_SECTION_LABELS, "SATB_COMPULSORY");
+  const labelDescription = clip(String(formData.get("labelDescription") ?? "").trim(), "description");
 
   if (!title || !labelDescription) {
     throw new Error("Title and label description are required.");
@@ -63,9 +72,9 @@ export async function updateSongFull(
     prisma.song.update({
       where: { id: songId },
       data: {
-        title: meta.title.trim(),
-        sectionLabel: meta.sectionLabel,
-        labelDescription: meta.labelDescription.trim(),
+        title: clip(meta.title.trim(), "title"),
+        sectionLabel: oneOf(meta.sectionLabel, SONG_SECTION_LABELS, "SATB_COMPULSORY"),
+        labelDescription: clip(meta.labelDescription.trim(), "description"),
       },
     }),
     prisma.songPart.deleteMany({ where: { songId } }),
@@ -74,9 +83,9 @@ export async function updateSongFull(
         .filter((p) => p.mediaUrl.trim())
         .map((p, i) => ({
           songId,
-          part: p.part,
-          label: p.label.trim() || p.part,
-          mediaUrl: p.mediaUrl.trim(),
+          part: oneOf(p.part, SONG_PART_OPTIONS, "All"),
+          label: clip(p.label.trim() || p.part, "label"),
+          mediaUrl: clip(p.mediaUrl.trim(), "url"),
           mediaKind: detectMediaKind(p.mediaUrl.trim()),
           sortOrder: i,
         })),
@@ -87,10 +96,10 @@ export async function updateSongFull(
         .filter((s) => s.content.trim())
         .map((s, i) => ({
           songId,
-          sectionType: s.sectionType,
-          sectionLabel: s.sectionLabel.trim() || s.sectionType,
-          content: s.content.trim(),
-          voiceTags: serializeVoiceTags(s.voiceTags),
+          sectionType: oneOf(s.sectionType, LYRIC_SECTION_TYPES, "custom"),
+          sectionLabel: clip(s.sectionLabel.trim() || s.sectionType, "label"),
+          content: clip(s.content.trim(), "content"),
+          voiceTags: serializeVoiceTags(subsetOf(s.voiceTags, VOICE_TAGS)),
           sortOrder: i,
         })),
     }),
