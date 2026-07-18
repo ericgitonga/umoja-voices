@@ -31,11 +31,10 @@ npm run db:seed
 npm run dev
 ```
 
-Seeded dev logins (printed by `npm run db:seed`):
-- Admin: `gitonga@gmail.com` / `admin12345`
-- Chorister: `demo.chorister@example.com` / `chorister12345`
-
-Both force a password change on first login.
+`npm run db:seed` creates two accounts — an admin (`gitonga@gmail.com`) and a fictitious demo
+chorister (`demo.chorister@example.com`) — and prints their initial passwords to the console
+at seed time (not written here, since this file is public). Both force a password change on
+first login.
 
 Open [http://localhost:3000](http://localhost:3000).
 

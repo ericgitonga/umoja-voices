@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.8.1] - 2026-07-18
+
+### Security
+
+- Removed the seeded admin/chorister passwords from the tracked `README.md` — they were
+  listed in plaintext in a file that's public on GitHub. `npm run db:seed` already prints
+  them to the console at seed time, which is enough for local setup (closes #23).
+
 ## [0.8.0] - 2026-07-18
 
 ### Added
