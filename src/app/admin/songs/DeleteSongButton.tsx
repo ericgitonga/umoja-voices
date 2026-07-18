@@ -3,13 +3,17 @@
 import { useRouter } from "next/navigation";
 import { deleteSong } from "@/lib/actions/song-actions";
 
-export default function DeleteSongButton({ songId }: { songId: string }) {
+export default function DeleteSongButton({ songId, redirectTo }: { songId: string; redirectTo?: string }) {
   const router = useRouter();
 
   async function handleClick() {
     if (!confirm("Delete this song? This cannot be undone.")) return;
     await deleteSong(songId);
-    router.refresh();
+    if (redirectTo) {
+      router.push(redirectTo);
+    } else {
+      router.refresh();
+    }
   }
 
   return (

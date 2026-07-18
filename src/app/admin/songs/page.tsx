@@ -22,10 +22,12 @@ export default async function AdminSongsPage() {
             key={song.id}
             className="rounded-lg border-l-4 border-gold bg-white px-5 py-4 shadow-sm"
           >
-            <p className="font-bold text-ink">{song.title}</p>
+            <Link href={`/admin/songs/${song.id}`} className="font-bold text-ink hover:underline">
+              {song.title}
+            </Link>
             <div className="mt-3 flex items-center gap-3 text-sm">
-              <Link href={`/admin/songs/${song.id}/edit`} className="text-ink hover:underline">
-                Edit
+              <Link href={`/admin/songs/${song.id}`} className="text-ink hover:underline">
+                View
               </Link>
               <DeleteSongButton songId={song.id} />
             </div>

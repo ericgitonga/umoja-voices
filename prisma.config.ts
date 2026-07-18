@@ -1,5 +1,12 @@
-import "dotenv/config";
+import { config } from "dotenv";
 import { defineConfig } from "prisma/config";
+
+// Mirror Next.js's own env precedence: `.env` first, then `.env.local`
+// overriding it — plain `dotenv/config` only reads `.env`, which left this
+// file silently using a stale `.env` while `vercel env pull` (Next.js-aware)
+// kept refreshing `.env.local` instead.
+config({ path: ".env" });
+config({ path: ".env.local", override: true });
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

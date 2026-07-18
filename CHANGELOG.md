@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.10.0] - 2026-07-19
+
+### Added
+
+- **Admin song overview page** (`/admin/songs/[id]`), separate from the edit form (closes
+  #25). Shows the title, Edit/Delete buttons, and summary cards for Audio (track count,
+  voice-part badges) and Lyrics (segment count, voice-tag badges, a short segment-label
+  preview). The admin songs list now links here instead of straight into `/edit`.
+
+### Fixed
+
+- `prisma.config.ts` only loaded `.env` (plain `dotenv/config`), so it kept reading a
+  stale connection string while `vercel env pull` had been refreshing `.env.local`
+  instead — every `prisma migrate deploy` silently used the wrong credentials. Now
+  loads `.env` then `.env.local` (override), matching Next.js's own env precedence.
+
 ## [0.9.0] - 2026-07-19
 
 ### Changed
