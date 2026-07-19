@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.13.3] - 2026-07-19
+
+### Changed
+
+- **Media page now hides voice groups with no media** (closes #32), instead of showing
+  all five (Soprano/Alto/Tenor/Bass/SATB) with a "No media yet." placeholder for
+  admins. Only groups that actually have media render; a single "No media added yet."
+  message shows if the song has none at all.
+
 ## [0.13.2] - 2026-07-19
 
 ### Changed

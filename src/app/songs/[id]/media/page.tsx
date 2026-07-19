@@ -33,7 +33,7 @@ export default async function SongMediaPage({ params }: { params: Promise<{ id: 
     media: song.sections
       .filter((s) => s.part === part)
       .flatMap((s) => s.media.map((m) => ({ ...m, sectionLabel: s.sectionLabel }))),
-  })).filter((g) => g.media.length > 0 || isAdmin);
+  })).filter((g) => g.media.length > 0);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -66,10 +66,10 @@ export default async function SongMediaPage({ params }: { params: Promise<{ id: 
                   )}
                 </div>
               ))}
-              {group.media.length === 0 && <p className="text-sm text-ink/40">No media yet.</p>}
             </div>
           </section>
         ))}
+        {groups.length === 0 && <p className="text-ink/50">No media added yet.</p>}
       </div>
 
       {isAdmin && (
