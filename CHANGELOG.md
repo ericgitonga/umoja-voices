@@ -5,6 +5,38 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.13.0] - 2026-07-19
+
+### Added
+
+- **Composer/lyricist credit fields on `Song`** (`composer`, `lyricist`, both nullable —
+  additive migration, no data loss). Shown as a "Words: ... Music: ..." subtitle on
+  `/songs` cards and the song detail/media/lyrics pages when present; editable on the
+  new-song form and the admin song editor.
+- **`/songs/[id]/media`** — a dedicated Media page (renamed from "Audio"), showing every
+  recording grouped by voice part (Soprano/Alto/Tenor/Bass/full-choir), each with an
+  admin-only Remove button, plus an "Add Audio" form (URL, Label, and Voice all
+  required) that appends directly to the right voice group without re-submitting the
+  whole song.
+- **`/songs/[id]/lyrics`** — lyrics moved off the song detail page onto their own page,
+  with a breadcrumb and an admin-only Edit button. The unfiltered/default voice-filter
+  state is now labeled **SATB** (previously "Full lyrics"), with S/A/T/B as the
+  clickable filter tabs.
+- **`/songs/[id]/lyrics/edit`** (admin-only) — a "Replace lyrics" page: paste raw lyrics
+  (Upload tab present as a disabled placeholder for a future file-import feature),
+  Preview to see parsed segments before committing, then Save (first time) or Replace
+  Lyrics (destructive-styled, confirms before overwriting) — or Cancel.
+- **Lyrics paste-parser** (`src/lib/lyrics-parser.ts`): blank-line-separated segments,
+  first line of each segment is its label (e.g. "Verse 1"), and a `[S]`/`[A]`/`[T]`/
+  `[B]`/`[ALL]` tag on a line carries forward across subsequent segments until a new tag
+  appears — matches today's one-voice-tag-per-section data model, no schema change
+  needed for per-line tags.
+- **`Breadcrumb` component**, used across the song detail/media/lyrics/lyrics-edit pages.
+- Song detail page (`/songs/[id]`) now shows Media and Lyrics as two clickable summary
+  cards linking to their own pages, instead of rendering everything inline.
+
+Closes #29.
+
 ## [0.12.1] - 2026-07-19
 
 ### Changed

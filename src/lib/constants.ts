@@ -21,6 +21,15 @@ export const SONG_PART_LABEL_TEXT: Record<SongPartOption, string> = {
   All: "Tutti (full choir)",
 };
 
+/** Maps a SongSection/SongMedia "part" onto the corresponding lyrics VoiceTag. */
+export const SONG_PART_TO_VOICE_TAG: Record<SongPartOption, VoiceTag> = {
+  S: "S",
+  A: "A",
+  T: "T",
+  B: "B",
+  All: "SATB",
+};
+
 export const MEDIA_KINDS = [
   "audio",
   "video",

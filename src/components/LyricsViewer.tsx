@@ -12,6 +12,8 @@ type Section = {
   sortOrder: number;
 };
 
+const FILTERABLE_TAGS = VOICE_TAGS.filter((t) => t !== "SATB");
+
 export default function LyricsViewer({ sections }: { sections: Section[] }) {
   const [activeFilter, setActiveFilter] = useState<VoiceTag | null>(null);
 
@@ -21,22 +23,21 @@ export default function LyricsViewer({ sections }: { sections: Section[] }) {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <button
-          onClick={() => setActiveFilter(null)}
-          className={`rounded-full px-3 py-1 ${!activeFilter ? "bg-ink text-white" : "bg-ink/5 text-ink/80"}`}
-        >
-          Full lyrics
-        </button>
-        {VOICE_TAGS.map((tag) => (
-          <button
-            key={tag}
-            onClick={() => setActiveFilter(tag)}
-            className={`rounded-full px-3 py-1 ${activeFilter === tag ? "bg-ink text-white" : "bg-ink/5 text-ink/80"}`}
-          >
-            {tag}
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+        <span className="rounded-full bg-ink px-3 py-1 font-medium text-white">
+          {activeFilter ?? "SATB"}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {FILTERABLE_TAGS.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setActiveFilter(activeFilter === tag ? null : tag)}
+              className={`rounded-full px-3 py-1 ${activeFilter === tag ? "bg-ink text-white" : "bg-ink/5 text-ink/80"}`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-col gap-6">

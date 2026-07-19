@@ -10,7 +10,7 @@ import {
   type LyricSectionInput,
 } from "@/lib/actions/song-actions";
 
-type Meta = { title: string };
+type Meta = { title: string; composer: string; lyricist: string };
 
 export default function SongEditor({
   songId,
@@ -98,6 +98,22 @@ export default function SongEditor({
           <input
             value={meta.title}
             onChange={(e) => setMeta({ ...meta, title: e.target.value })}
+            className="rounded border border-ink/20 px-3 py-2"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Words (lyricist)
+          <input
+            value={meta.lyricist}
+            onChange={(e) => setMeta({ ...meta, lyricist: e.target.value })}
+            className="rounded border border-ink/20 px-3 py-2"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Music (composer)
+          <input
+            value={meta.composer}
+            onChange={(e) => setMeta({ ...meta, composer: e.target.value })}
             className="rounded border border-ink/20 px-3 py-2"
           />
         </label>

@@ -3,10 +3,10 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import MediaEmbed from "@/components/MediaEmbed";
-import LyricsViewer from "@/components/LyricsViewer";
 import DeleteSongButton from "@/components/DeleteSongButton";
-import { parseVoiceTags, type MediaKind } from "@/lib/constants";
+import Breadcrumb from "@/components/Breadcrumb";
+
+export const dynamic = "force-dynamic";
 
 export default async function SongDetailPage({
   params,
@@ -30,10 +30,24 @@ export default async function SongDetailPage({
 
   if (!song) notFound();
 
+  const mediaCount = song.sections.reduce((sum, s) => sum + s.media.length, 0);
+  const partsPresent = Array.from(new Set(song.sections.map((s) => s.part)));
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
+      <Breadcrumb items={[{ label: "Songs", href: "/songs" }, { label: song.title }]} />
+
       <div className="mb-6 flex items-start justify-between">
-        <h1 className="text-2xl font-semibold text-ink">{song.title}</h1>
+        <div>
+          <h1 className="text-2xl font-semibold text-ink">{song.title}</h1>
+          {(song.lyricist || song.composer) && (
+            <p className="text-sm text-ink/60">
+              {song.lyricist && `Words: ${song.lyricist}`}
+              {song.lyricist && song.composer && " "}
+              {song.composer && `Music: ${song.composer}`}
+            </p>
+          )}
+        </div>
         {isAdmin && (
           <div className="flex items-center gap-3 text-sm">
             <Link
@@ -47,42 +61,36 @@ export default async function SongDetailPage({
         )}
       </div>
 
-      <section className="mb-10">
-        <h2 className="mb-3 text-lg font-semibold text-ink">Voice parts</h2>
-        <div className="flex flex-col gap-6">
-          {song.sections.map((section) => (
-            <div key={section.id}>
-              <h3 className="font-semibold text-ink">{section.sectionLabel}</h3>
-              {section.labelDescription && (
-                <p className="mb-2 text-sm text-ink/60">{section.labelDescription}</p>
-              )}
-              <div className="flex flex-col gap-4">
-                {section.media.map((m) => (
-                  <div key={m.id}>
-                    <p className="mb-1 text-sm font-medium text-ink/80">{m.label}</p>
-                    <MediaEmbed url={m.mediaUrl} kind={m.mediaKind as MediaKind} />
-                  </div>
-                ))}
-              </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link
+          href={`/songs/${song.id}/media`}
+          className="rounded-lg border-l-4 border-gold bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
+        >
+          <p className="font-semibold text-ink">Media</p>
+          <p className="mb-2 text-sm text-ink/60">
+            {mediaCount} {mediaCount === 1 ? "track" : "tracks"}
+          </p>
+          {partsPresent.length > 0 && (
+            <div className="flex gap-1">
+              {partsPresent.map((p) => (
+                <span key={p} className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-medium text-ink/60">
+                  {p}
+                </span>
+              ))}
             </div>
-          ))}
-          {song.sections.length === 0 && <p className="text-ink/50">No recordings uploaded yet.</p>}
-        </div>
-      </section>
+          )}
+        </Link>
 
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-ink">Lyrics</h2>
-        <LyricsViewer
-          sections={song.lyricSections.map((s) => ({
-            id: s.id,
-            sectionType: s.sectionType,
-            sectionLabel: s.sectionLabel,
-            content: s.content,
-            voiceTags: parseVoiceTags(s.voiceTags),
-            sortOrder: s.sortOrder,
-          }))}
-        />
-      </section>
+        <Link
+          href={`/songs/${song.id}/lyrics`}
+          className="rounded-lg border-l-4 border-ink/20 bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
+        >
+          <p className="font-semibold text-ink">Lyrics</p>
+          <p className="text-sm text-ink/60">
+            {song.lyricSections.length} {song.lyricSections.length === 1 ? "segment" : "segments"}
+          </p>
+        </Link>
+      </div>
     </div>
   );
 }

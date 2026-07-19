@@ -69,6 +69,8 @@ model PasswordResetToken {
 model Song {
   id          String   @id @default(cuid())
   title       String
+  composer    String?
+  lyricist    String?
   createdById String
   createdBy   User     @relation(fields: [createdById], references: [id])
   createdAt   DateTime @default(now())

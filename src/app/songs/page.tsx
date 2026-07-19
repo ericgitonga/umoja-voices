@@ -28,6 +28,13 @@ export default async function SongsPage() {
             className="rounded-lg border-l-4 border-gold bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
           >
             <p className="font-bold text-ink">{song.title}</p>
+            {(song.lyricist || song.composer) && (
+              <p className="text-sm text-ink/60">
+                {song.lyricist && `Words: ${song.lyricist}`}
+                {song.lyricist && song.composer && " "}
+                {song.composer && `Music: ${song.composer}`}
+              </p>
+            )}
           </Link>
         ))}
         {songs.length === 0 && <p className="text-ink/50">No songs yet.</p>}
