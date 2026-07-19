@@ -3,8 +3,10 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { sendPasswordResetEmail, appBaseUrl, isEmailConfigured } from "@/lib/email";
 
 const RESET_TOKEN_TTL_MS = 1000 * 60 * 60; // 1 hour
 const INVITE_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
@@ -22,12 +24,13 @@ function timingSafetyDelay(): Promise<void> {
 }
 
 /**
- * POC stand-in for Supabase Auth's built-in reset-password email.
- * No transactional email provider is wired up yet, so the reset link is
- * returned directly to the caller instead of being emailed via Resend
- * (see SKILL.md, Section 1 / Section 8 of the design plan).
+ * Sends the reset link via Resend when RESEND_API_KEY is configured (see
+ * src/lib/email.ts), calling it directly rather than through Supabase
+ * Auth's built-in reset email — the Supabase Auth migration (#10) hasn't
+ * landed yet. Still returns the link either way, as an on-screen fallback
+ * if RESEND_API_KEY is unset or the send fails.
  */
-export async function requestPasswordReset(email: string): Promise<{ resetLink?: string }> {
+export async function requestPasswordReset(email: string): Promise<{ resetLink?: string; emailSent?: boolean }> {
   const normalizedEmail = email.toLowerCase();
   const ip = getClientIp(await headers());
 
@@ -62,7 +65,23 @@ export async function requestPasswordReset(email: string): Promise<{ resetLink?:
     },
   });
 
-  return { resetLink: `/reset-password/${token}` };
+  const resetLink = `/reset-password/${token}`;
+  const emailSent = isEmailConfigured();
+  if (emailSent) {
+    // Fire-and-forget via after(): awaiting Resend's network latency here
+    // would make this branch measurably slower than the invalid-account
+    // branch above, reopening the account-enumeration timing side-channel
+    // timingSafetyDelay() exists to close. after() keeps the send alive
+    // past the response without the caller waiting on it.
+    const resetUrl = `${appBaseUrl()}${resetLink}`;
+    after(() =>
+      sendPasswordResetEmail({ to: user.email, resetUrl }).catch((err) =>
+        console.error("Resend password-reset email failed:", err)
+      )
+    );
+  }
+
+  return { resetLink, emailSent };
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<{ error?: string }> {

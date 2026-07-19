@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.14.0] - 2026-07-19
+
+### Added
+
+- **Real invite/password-reset email delivery via Resend** (closes #9). New
+  `src/lib/email.ts` sends both emails directly (not via Supabase Auth's SMTP hook, since the
+  Supabase Auth migration in #10 hasn't landed yet); requires `RESEND_API_KEY` (see
+  `.env.example`). Without a key configured, both flows fall back to returning the link
+  on-screen exactly as before, so a fresh clone with no Resend account still works — the UI now
+  distinguishes "Invite email sent." / a generic reset confirmation from an amber "Email not
+  sent" fallback box, instead of always showing the dev-only link.
+- `requestPasswordReset` fires its send via Next.js's `after()` without awaiting it, so Resend's
+  network latency can't reopen the account-enumeration timing side-channel that
+  `timingSafetyDelay()` guards against (#18) — the invalid-account branch has no equivalent
+  delay to match an awaited send. `inviteMember` has no such constraint (admin-initiated, no
+  secret to protect via timing) and awaits its send normally for accurate on-screen feedback.
+
 ## [0.13.4] - 2026-07-19
 
 ### Changed

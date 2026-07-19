@@ -10,7 +10,7 @@ section by section before any code was written).
 
 ## Versioning
 
-Current version: **0.13.4** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.14.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -115,10 +115,15 @@ fixed-delay timing mitigation (#18)).
   Supabase Auth, but that's a real rewrite (every page's session check, the invite flow,
   forgot-password, and how rate limiting/`mustChangePassword` hook in all change), scoped as
   its own deliberate future effort rather than bundled into the database swap.
-- **Invite / password-reset emails**: no transactional email provider (Resend) is wired up yet.
-  `inviteMember` and `requestPasswordReset` return the link directly to the admin/user instead
-  of emailing it — clearly labelled as a dev-only stand-in in both the UI and the code comments.
-  Wiring up Resend is tracked as a follow-up issue, not silently deferred.
+- **Invite / password-reset emails**: closed at v0.14.0 — real delivery via Resend
+  (`src/lib/email.ts`), called directly from `inviteMember`/`requestPasswordReset` rather than
+  through Supabase Auth's SMTP hook, since the Supabase Auth migration (#10) hasn't landed yet.
+  Requires `RESEND_API_KEY` (see `.env.example`); without it, both actions fall back to
+  returning the link on-screen exactly as before, so a fresh clone without Resend configured
+  still works. `requestPasswordReset` fires the send via `after()` without awaiting it, so
+  Resend's network latency can't reopen the account-enumeration timing side-channel that
+  `timingSafetyDelay()` guards against (#18) — `inviteMember` has no such constraint and awaits
+  its send normally, since there's no secret to protect via response timing.
 
 ### When making changes
 

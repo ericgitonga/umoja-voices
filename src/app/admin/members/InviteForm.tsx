@@ -8,6 +8,7 @@ export default function InviteForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -18,6 +19,7 @@ export default function InviteForm() {
       return;
     }
     setInviteLink(result.inviteLink ?? null);
+    setEmailSent(result.emailSent ?? false);
     router.refresh();
   }
 
@@ -45,9 +47,14 @@ export default function InviteForm() {
         </button>
       </form>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      {inviteLink && (
+      {inviteLink && emailSent && (
+        <p className="mt-3 rounded bg-green-50 p-2 text-xs text-green-800">
+          Invite email sent.
+        </p>
+      )}
+      {inviteLink && !emailSent && (
         <p className="mt-3 rounded bg-amber-50 p-2 text-xs text-amber-800">
-          <strong>Dev-only stand-in:</strong> no email provider is wired up in the POC yet, so
+          <strong>Email not sent</strong> (no email provider configured, or the send failed) —
           here&apos;s the invite link to share manually: <code>{inviteLink}</code>
         </p>
       )}

@@ -10,6 +10,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { ROLES, USER_STATUSES } from "@/lib/constants";
 import { clip, oneOf } from "@/lib/validation";
 import { checkRateLimit, rateLimitResetMinutes, getClientIp } from "@/lib/rate-limit";
+import { sendInviteEmail, appBaseUrl } from "@/lib/email";
 
 const INVITE_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
@@ -29,11 +30,17 @@ async function requireAdmin() {
 }
 
 /**
- * POC stand-in for Supabase Auth's inviteUserByEmail + Resend delivery
- * (see design plan Section 1 / SKILL.md). No email provider is wired up
- * yet, so the invite link is returned to the caller to share manually.
+ * Sends the invite via Resend when RESEND_API_KEY is configured (see
+ * src/lib/email.ts). Still returns the link either way — used as an
+ * on-screen fallback if RESEND_API_KEY is unset or the send fails, so the
+ * flow never silently strands an admin without a way to reach the invitee.
+ * This calls Resend directly rather than through Supabase Auth's SMTP hook
+ * (see design plan Section 1), since the Supabase Auth migration (#10)
+ * hasn't landed yet.
  */
-export async function inviteMember(formData: FormData): Promise<{ error?: string; inviteLink?: string }> {
+export async function inviteMember(
+  formData: FormData
+): Promise<{ error?: string; inviteLink?: string; emailSent?: boolean }> {
   const session = await requireAdmin();
 
   const ip = getClientIp(await headers());
@@ -76,7 +83,14 @@ export async function inviteMember(formData: FormData): Promise<{ error?: string
   ]);
 
   revalidatePath("/admin/members");
-  return { inviteLink: `/accept-invite/${token}` };
+
+  const inviteLink = `/accept-invite/${token}`;
+  const emailSent = await sendInviteEmail({
+    to: email,
+    name,
+    inviteUrl: `${appBaseUrl()}${inviteLink}`,
+  });
+  return { inviteLink, emailSent };
 }
 
 /**

@@ -8,11 +8,13 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [devLink, setDevLink] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const { resetLink } = await requestPasswordReset(email);
+    const { resetLink, emailSent: sent } = await requestPasswordReset(email);
     setDevLink(resetLink ?? null);
+    setEmailSent(sent ?? false);
     setSubmitted(true);
   }
 
@@ -26,10 +28,10 @@ export default function ForgotPasswordPage() {
       {submitted ? (
         <div className="rounded border border-ink/10 bg-ink/5 p-4 text-sm text-ink/80">
           <p>If that email matches an account, a reset link is on its way.</p>
-          {devLink && (
+          {devLink && !emailSent && (
             <p className="mt-3 rounded bg-amber-50 p-2 text-xs text-amber-800">
-              <strong>Dev-only stand-in:</strong> no email provider is wired up in the POC yet,
-              so here&apos;s the link that would be emailed:{" "}
+              <strong>Email not sent</strong> (no email provider configured, or the send failed)
+              — here&apos;s the link that would be emailed:{" "}
               <Link href={devLink} className="underline">
                 {devLink}
               </Link>
