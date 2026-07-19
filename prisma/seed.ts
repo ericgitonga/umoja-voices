@@ -102,7 +102,7 @@ async function main() {
             },
             {
               part: "All",
-              sectionLabel: "Tutti (full choir)",
+              sectionLabel: "SATB",
               labelDescription: "Required for all members, closing set.",
               sortOrder: 4,
               media: { create: [{ label: "Full choir", mediaUrl: "https://youtu.be/dQw4w9WgXcQ", mediaKind: "youtube", sortOrder: 0 }] },

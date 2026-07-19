@@ -18,7 +18,7 @@ export const SONG_PART_LABEL_TEXT: Record<SongPartOption, string> = {
   A: "Alto",
   T: "Tenor",
   B: "Bass",
-  All: "Tutti (full choir)",
+  All: "SATB",
 };
 
 /** Maps a SongSection/SongMedia "part" onto the corresponding lyrics VoiceTag. */

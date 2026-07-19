@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.13.2] - 2026-07-19
+
+### Changed
+
+- **Replaced the Media page's "TUTTI (FULL CHOIR)" group label with "SATB"** (closes
+  #31), for consistency with the ALL/SATB terminology used elsewhere. Fixed in
+  `SONG_PART_LABEL_TEXT.All` (`src/lib/constants.ts`, read live — no data migration
+  needed for existing songs) and the matching hardcoded string in `prisma/seed.ts`.
+
 ## [0.13.1] - 2026-07-19
 
 ### Fixed
