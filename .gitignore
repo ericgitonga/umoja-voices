@@ -53,7 +53,8 @@ next-env.d.ts
 # never commit, ever. See SKILL.md's data handling rules.
 Media/
 
-# extras/ data, PDFs, and effort log stay local; only generate_design_pdf.py
-# is tracked (see SKILL.md's data handling rules)
+# extras/ (data, PDFs, effort log, and both generator scripts) stays fully
+# local — generate_design_pdf.py and generate_security_pdf.py are dev-only
+# authoring tools, not part of the public repo (see SKILL.md's data handling
+# rules)
 extras/*
-!extras/generate_design_pdf.py

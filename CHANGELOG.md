@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.13.4] - 2026-07-19
+
+### Changed
+
+- **Updated umoja.pdf and extras/design_process.pdf to cover v0.13.0–v0.13.3** (closes
+  #33): umoja.pdf gains the Media/Lyrics page split, composer/lyricist credits, the
+  paste-and-parse Replace Lyrics flow with tag carry-forward, the updated route map,
+  and documents the SATB (Media page) vs. ALL (Lyrics page) label decisions as
+  intentional. design_process.pdf, previously still scoped to only the v0.1.0 POC, was
+  rewritten to cover the full v0.1.0 → v0.13.3 delivered history with a recomputed
+  man-hour/cost model.
+- **Untracked `extras/generate_design_pdf.py`**, the one exception to `extras/` being
+  gitignored — now treated like `extras/generate_security_pdf.py`, a local authoring
+  tool rather than part of the public repo. Fixed the stale "Current version: 0.8.1"
+  line in SKILL.md while updating its data-handling rules to match.
+- Docs-only change, no app code touched.
+
 ## [0.13.3] - 2026-07-19
 
 ### Changed
