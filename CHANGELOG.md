@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.16.0] - 2026-07-19
+
+### Changed
+
+- **Restored a manual invite-link fallback** (closes #35): `inviteMember` now uses
+  `auth.admin.generateLink({type: "invite"})` instead of `auth.admin.inviteUserByEmail` —
+  `generateLink` only creates the Supabase user and returns a token, it never attempts to send
+  email itself, so inviting a new member no longer depends on Supabase's SMTP/domain setup at
+  all. The admin UI shows the resulting link on-screen for manual sharing. Reverted from
+  v0.15.0's SMTP-routed approach once issue #34 (Resend domain verification) turned out to need
+  a hosting purchase the app owner is deferring — restores the "never strand an admin without a
+  way to reach the invitee" property from the original pre-v0.15.0 design.
+- The link is built from the response's `hashed_token` field
+  (`/auth/confirm?token_hash=...&type=invite&next=/accept-invite`), not `action_link`, which
+  points at Supabase's own hosted redirect — a different, hash-fragment session style than our
+  `/auth/confirm` route expects (see SKILL.md's gotchas).
+- **Password-reset email delivery is unchanged** and still fully blocked pending #34 — see
+  SKILL.md for why the same fix isn't a trivial copy-paste there (timing-safety trade-off).
+
 ## [0.15.1] - 2026-07-19
 
 ### Fixed

@@ -10,7 +10,7 @@ section by section before any code was written).
 
 ## Versioning
 
-Current version: **0.15.1** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.16.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -113,16 +113,25 @@ fixed-delay timing mitigation (#18)).
   a profile table (`role`/`status`/`name`) keyed by `authUserId`; the old `Invite`/
   `PasswordResetToken` tables and `mustChangePassword`/forced `/change-password` are retired —
   see `CHANGELOG.md`'s v0.15.0 entry for the full architecture.
-- **Invite / password-reset email delivery**: still a stand-in, in a different shape than
-  before. v0.14.0's direct-Resend-call approach was superseded at v0.15.0 by routing through
-  Supabase Auth's own `inviteUserByEmail`/`resetPasswordForEmail` (per the app owner's choice to
-  match the original design plan literally), which sends via Supabase's dashboard-configured
-  SMTP — not our own code. That SMTP isn't pointed at Resend yet, and Supabase's redirect
-  allow-list doesn't include the production domain yet (confirmed: a generated link silently
-  fell back to `localhost`). Until both are set (and issue #34's Resend domain verification
-  lands, since Resend's sandbox restriction applies either way), inviting a new member has no
-  working delivery path — the on-screen fallback link that covered this pre-v0.15.0 was
-  intentionally dropped along with the direct-Resend approach it depended on.
+- **Invite email delivery**: closed at v0.16.0 with a manual-link fallback, not real delivery.
+  `inviteMember` uses `auth.admin.generateLink({type: "invite"})` (closes #35) — this only
+  creates the Supabase user and returns a token, it never attempts to send anything itself, so
+  it has zero dependency on Supabase's SMTP/domain setup. The admin UI shows the resulting link
+  on-screen for the admin to share manually (WhatsApp, etc.). Reverted from v0.15.0's
+  `inviteUserByEmail` approach once issue #34 (Resend domain verification) needed a hosting
+  purchase the app owner deferred — this restores exactly the "never strand an admin without a
+  way to reach the invitee" property the app has had since the original custom-token design.
+- **Password-reset email delivery**: still a stand-in. `requestPasswordReset` calls Supabase's
+  `resetPasswordForEmail`, which — unlike `generateLink` — only ever attempts to send via
+  Supabase's dashboard-configured SMTP, with no fallback link returned. That SMTP isn't pointed
+  at Resend yet, and Supabase's redirect allow-list doesn't include the production domain yet
+  (confirmed: a generated link silently fell back to `localhost`). Until both are set (and
+  issue #34 lands), self-service password reset for anyone but the admin (who can be given a
+  link directly via `auth.admin.generateLink({type:"recovery"})`, as done for the v0.15.0
+  account migration) has no working delivery path. Applying the same `generateLink` fallback
+  fix used for invites is a reasonable follow-up, but reintroduces the account-enumeration
+  timing question `after()`'s fire-and-forget was specifically added to avoid (#18) — needs a
+  deliberate decision, not a copy-paste of the invite fix.
 
 ### When making changes
 

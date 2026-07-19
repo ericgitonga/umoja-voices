@@ -27,13 +27,19 @@ async function requireAdmin() {
 }
 
 /**
- * Creates the Supabase Auth user via the admin API — Supabase sends the
- * invite email itself (dashboard-configured SMTP, pointed at Resend), so
- * there's no on-screen fallback link to hand back the way the old
- * custom-token flow had. app_metadata.role is what src/proxy.ts reads for
- * route gating.
+ * Creates the Supabase Auth user via the admin API and returns a
+ * manually-shareable invite link — generateLink() only creates the user and
+ * hands back a token, it never attempts to send email itself, so this
+ * doesn't depend on Supabase's SMTP/domain setup at all (issue #34,
+ * deferred). Built from `hashed_token` rather than the response's
+ * `action_link`, which points at Supabase's own hosted redirect (a
+ * different, hash-fragment session style than src/app/auth/confirm/route.ts
+ * expects — see SKILL.md's gotchas). app_metadata.role is what
+ * src/proxy.ts reads for route gating.
  */
-export async function inviteMember(formData: FormData): Promise<{ error?: string; ok?: boolean }> {
+export async function inviteMember(
+  formData: FormData
+): Promise<{ error?: string; inviteLink?: string }> {
   const session = await requireAdmin();
 
   const ip = getClientIp(await headers());
@@ -59,9 +65,10 @@ export async function inviteMember(formData: FormData): Promise<{ error?: string
   if (existing) return { error: "A member with that email already exists." };
 
   const adminClient = createAdminClient();
-  const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
-    data: { name, role },
-    redirectTo: `${appBaseUrl()}/auth/confirm?type=invite&next=/accept-invite`,
+  const { data, error } = await adminClient.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: { data: { name, role } },
   });
 
   if (error || !data.user) {
@@ -73,7 +80,9 @@ export async function inviteMember(formData: FormData): Promise<{ error?: string
   });
 
   revalidatePath("/admin/members");
-  return { ok: true };
+
+  const inviteLink = `${appBaseUrl()}/auth/confirm?token_hash=${data.properties.hashed_token}&type=invite&next=/accept-invite`;
+  return { inviteLink };
 }
 
 /**

@@ -7,17 +7,17 @@ import { inviteMember } from "@/lib/actions/member-actions";
 export default function InviteForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
-    setSent(false);
+    setInviteLink(null);
     const result = await inviteMember(formData);
     if (result.error) {
       setError(result.error);
       return;
     }
-    setSent(true);
+    setInviteLink(result.inviteLink ?? null);
     router.refresh();
   }
 
@@ -45,9 +45,10 @@ export default function InviteForm() {
         </button>
       </form>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      {sent && (
-        <p className="mt-3 rounded bg-green-50 p-2 text-xs text-green-800">
-          Invite created — Supabase will email the invite link.
+      {inviteLink && (
+        <p className="mt-3 rounded bg-amber-50 p-2 text-xs text-amber-800">
+          Invite created — share this link with them manually (real email delivery isn&apos;t
+          wired up yet): <code className="break-all">{inviteLink}</code>
         </p>
       )}
     </div>
