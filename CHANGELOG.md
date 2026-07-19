@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.12.1] - 2026-07-19
+
+### Changed
+
+- **Rewrote `umoja.pdf`** from the original pre-build design plan into an as-built
+  reference (closes #28): current Prisma schema (`Song` -> `SongSection` ->
+  `SongMedia`), actual auth stack (NextAuth Credentials, Supabase Auth migration still
+  pending), actual route map (no `/admin` dashboard; inline per-section Edit buttons;
+  Members nav tab), corrected tech stack (Resend/shadcn not yet in use), live hosting
+  status, and a delivered-scope-vs-remaining-work section citing the real tracked
+  issues (#9, #10, #11, #17, #18, #20).
+
 ## [0.12.0] - 2026-07-19
 
 ### Changed
