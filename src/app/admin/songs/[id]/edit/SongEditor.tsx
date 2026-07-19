@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SONG_PART_OPTIONS, LYRIC_SECTION_TYPES, VOICE_TAGS, type VoiceTag } from "@/lib/constants";
+import { SONG_PART_OPTIONS, LYRIC_SECTION_TYPES, VOICE_TAGS, VOICE_TAG_LABEL, type VoiceTag } from "@/lib/constants";
 import {
   updateSongFull,
   type SectionInput,
@@ -238,7 +238,7 @@ export default function SongEditor({
                       checked={s.voiceTags.includes(tag)}
                       onChange={() => toggleVoiceTag(i, tag)}
                     />
-                    {tag}
+                    {VOICE_TAG_LABEL[tag]}
                   </label>
                 ))}
               </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { parseLyricsPaste, type ParsedLyricSection } from "@/lib/lyrics-parser";
+import { VOICE_TAG_LABEL } from "@/lib/constants";
 import { replaceLyrics } from "@/lib/actions/song-actions";
 
 const PLACEHOLDER = `Paste lyrics here.
@@ -91,7 +92,7 @@ export default function ReplaceLyricsEditor({
                 <span className="text-xs font-semibold text-ink/50">#{i + 1}</span>
                 <span className="text-sm font-semibold text-ink">{s.sectionLabel}</span>
                 <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-medium text-ink/60">
-                  {s.voiceTags[0]}
+                  {VOICE_TAG_LABEL[s.voiceTags[0]]}
                 </span>
               </div>
               <p className="whitespace-pre-line text-sm text-ink/80">{s.content}</p>

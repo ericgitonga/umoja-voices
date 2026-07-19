@@ -54,6 +54,15 @@ export type LyricSectionType = (typeof LYRIC_SECTION_TYPES)[number];
 export const VOICE_TAGS = ["S", "A", "T", "B", "SATB"] as const;
 export type VoiceTag = (typeof VOICE_TAGS)[number];
 
+/** Display label for a voice tag — "SATB" reads to choristers as "ALL". */
+export const VOICE_TAG_LABEL: Record<VoiceTag, string> = {
+  S: "S",
+  A: "A",
+  T: "T",
+  B: "B",
+  SATB: "ALL",
+};
+
 export const LINK_CATEGORIES = ["social", "news", "media", "other"] as const;
 export type LinkCategory = (typeof LINK_CATEGORIES)[number];
 

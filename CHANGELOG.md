@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.13.1] - 2026-07-19
+
+### Fixed
+
+- **`/songs/[id]/media` 404ing in production** (closes #30): `.vercelignore`'s
+  unanchored `Media/` pattern (meant only for the top-level `Media/` real-data
+  directory) also matched the new `src/app/songs/[id]/media/` route folder, so Vercel
+  silently dropped that route from every deploy. Anchored both `.vercelignore` entries
+  to the repo root (`/Media/`, `/extras/`).
+
+### Changed
+
+- **Reverted the lyrics voice-filter's unfiltered-state label from "SATB" back to
+  "ALL"** (closes #30), per the app owner's call after seeing "SATB" live — supersedes
+  v0.13.0's rename. Applied via a new `VOICE_TAG_LABEL` display map everywhere a voice
+  tag is shown to a user (filter label, per-section pills, the admin editor's
+  checkboxes, the Replace Lyrics preview); the underlying stored tag values are
+  unchanged.
+
 ## [0.13.0] - 2026-07-19
 
 ### Added

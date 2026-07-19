@@ -5,5 +5,5 @@
 .env.*
 !.env.example
 
-Media/
-extras/
+/Media/
+/extras/
