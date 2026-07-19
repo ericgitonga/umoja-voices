@@ -10,7 +10,7 @@ section by section before any code was written).
 
 ## Versioning
 
-Current version: **0.15.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.15.1** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -227,6 +227,21 @@ connection strings — see the "Database" stand-in note above for why.
 
 ### Gotchas hit while setting this up (don't re-debug these)
 
+- **`supabase.auth.admin.generateLink()`'s `action_link` uses Supabase's own hosted
+  `/auth/v1/verify` redirect, which is a different (hash-fragment session) style than the
+  `token_hash` query-param style `src/app/auth/confirm/route.ts` expects** — clicking
+  `action_link` directly just bounces to `redirect_to` with nothing our route can consume,
+  landing on `/login` with no session. Build the link yourself instead, using the
+  `hashed_token` field from the same response (`data.properties.hashed_token`):
+  `${appBaseUrl()}/auth/confirm?token_hash=${hashed_token}&type=recovery&next=/reset-password`.
+  This is what Supabase's own dashboard email templates do under the hood
+  (`{{ .TokenHash }}`) — `generateLink`'s convenience `action_link` just doesn't follow the
+  same pattern.
+- **Supabase silently ignores a `redirectTo`/`options.redirectTo` value that isn't on the
+  dashboard's redirect URL allow-list** — it falls back to the project's configured Site URL
+  instead (still `http://localhost:3000` here as of v0.15.0, a pending manual step) rather than
+  erroring, so a wrong-looking redirect can look like a code bug when it's actually a dashboard
+  config gap.
 - **`vercel deploy` uploads the local directory directly, not from git.** A stray local `.env`
   got bundled into an early deploy and silently overrode Vercel's own env vars. `.vercelignore`
   now excludes `.env*` (except `.env.example`) — keep it that way; only Vercel's Environment

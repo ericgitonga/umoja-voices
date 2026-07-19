@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.15.1] - 2026-07-19
+
+### Fixed
+
+- **Documented a real link-format gotcha found while verifying the v0.15.0 migration**:
+  `auth.admin.generateLink()`'s `action_link` uses Supabase's hosted `/auth/v1/verify` redirect
+  (hash-fragment session style), not the `token_hash` query-param style
+  `src/app/auth/confirm/route.ts` expects — clicking it directly lands on `/login` with no
+  session. The correct link is built from the same response's `hashed_token` field instead. See
+  SKILL.md's "Gotchas hit while setting this up." Docs-only; no app code changed (the admin
+  account backfill from v0.15.0 already confirmed working end-to-end with the corrected link
+  format).
+
 ## [0.15.0] - 2026-07-19
 
 ### Changed
