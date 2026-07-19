@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { headers } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { ROLES, USER_STATUSES } from "@/lib/constants";
 import { clip, oneOf } from "@/lib/validation";
 import { checkRateLimit, rateLimitResetMinutes, getClientIp } from "@/lib/rate-limit";
@@ -122,6 +123,26 @@ export async function setMemberStatus(userId: string, status: string): Promise<{
     where: { id: userId },
     data: { status: oneOf(status, USER_STATUSES, "active") },
   });
+  revalidatePath("/admin/members");
+  return {};
+}
+
+export async function deleteMember(userId: string): Promise<{ error?: string }> {
+  const session = await requireAdmin();
+  const blocked = await orphanAdminsError(session, userId);
+  if (blocked) return { error: blocked };
+
+  try {
+    await prisma.user.delete({ where: { id: userId } });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+      return {
+        error: "Can't delete: this member has songs, trips, or invites tied to their account. Deactivate instead.",
+      };
+    }
+    throw err;
+  }
+
   revalidatePath("/admin/members");
   return {};
 }

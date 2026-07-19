@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateMemberRole, setMemberStatus } from "@/lib/actions/member-actions";
+import { updateMemberRole, setMemberStatus, deleteMember } from "@/lib/actions/member-actions";
 
 export default function MemberRow({
   id,
@@ -63,6 +63,18 @@ export default function MemberRow({
           className="text-xs text-red-600 hover:underline"
         >
           {status === "disabled" ? "Reactivate" : "Deactivate"}
+        </button>
+        <button
+          onClick={async () => {
+            if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+            setError(null);
+            const result = await deleteMember(id);
+            if (result.error) setError(result.error);
+            router.refresh();
+          }}
+          className="text-xs text-red-600 hover:underline"
+        >
+          Delete
         </button>
       </div>
     </li>

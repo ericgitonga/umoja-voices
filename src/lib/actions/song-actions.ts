@@ -55,7 +55,7 @@ export async function createSong(formData: FormData) {
     data: { title, createdById: session.user.id },
   });
 
-  revalidatePath("/admin/songs");
+  revalidatePath("/songs");
   redirect(`/admin/songs/${song.id}/edit`);
 }
 
@@ -117,7 +117,7 @@ export async function updateSongFull(
     }),
   ]);
 
-  revalidatePath("/admin/songs");
+  revalidatePath("/songs");
   revalidatePath(`/songs/${songId}`);
   return {};
 }
@@ -125,5 +125,5 @@ export async function updateSongFull(
 export async function deleteSong(songId: string) {
   await requireAdmin();
   await prisma.song.delete({ where: { id: songId } });
-  revalidatePath("/admin/songs");
+  revalidatePath("/songs");
 }

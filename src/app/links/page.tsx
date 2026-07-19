@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LINK_CATEGORIES, type LinkCategory } from "@/lib/constants";
 
@@ -12,11 +15,24 @@ const CATEGORY_TEXT: Record<LinkCategory, string> = {
 };
 
 export default async function LinksPage() {
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user.role === "admin";
+
   const links = await prisma.externalLink.findMany({ orderBy: { sortOrder: "asc" } });
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-semibold text-ink">Links</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-ink">Links</h1>
+        {isAdmin && (
+          <Link
+            href="/admin/links"
+            className="rounded border border-ink/20 px-3 py-1.5 text-sm text-ink hover:bg-ink/5"
+          >
+            Edit
+          </Link>
+        )}
+      </div>
       {LINK_CATEGORIES.map((category) => {
         const items = links.filter((l) => l.category === category);
         if (items.length === 0) return null;

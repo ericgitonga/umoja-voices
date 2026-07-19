@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.12.0] - 2026-07-19
+
+### Changed
+
+- **Removed the generic "Admin" nav tab and its landing dashboard** (closes #27). Admin
+  editing is now surfaced inline, per section, instead of through a separate admin area:
+  - `/songs/[id]` gained admin-only Edit + Delete buttons (Edit opens the existing
+    `/admin/songs/[id]/edit` form). The now-redundant `/admin/songs` list and
+    `/admin/songs/[id]` overview pages were removed — `/songs` + `/songs/[id]` are the
+    single browsing surface for everyone, admin or not.
+  - `/links` and `/logistics` gained an admin-only "Edit" button linking to their
+    existing `/admin/links` / `/admin/logistics` CRUD pages (unchanged).
+- Nav gains a **"Members" tab**, visible only to admins, linking to `/admin/members` —
+  previously only reachable via the now-removed Admin dashboard.
+
+### Added
+
+- **Real member deletion** (`deleteMember`), not just deactivate. Guarded the same way
+  as role/status changes (can't delete yourself, can't remove the last active admin);
+  returns a friendly error instead of a hard failure if the member has songs, trips, or
+  invites tied to their account (a foreign-key constraint), suggesting deactivation
+  instead.
+
 ## [0.11.0] - 2026-07-19
 
 ### Changed

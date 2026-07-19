@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // This page reads live, admin-editable data — never statically cache it.
@@ -8,6 +11,9 @@ function fmtDate(d: Date) {
 }
 
 export default async function LogisticsPage() {
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user.role === "admin";
+
   const trip = await prisma.trip.findFirst({
     where: { status: "upcoming" },
     orderBy: { startDate: "asc" },
@@ -21,7 +27,17 @@ export default async function LogisticsPage() {
   if (!trip) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="text-2xl font-semibold text-ink">Logistics</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-ink">Logistics</h1>
+          {isAdmin && (
+            <Link
+              href="/admin/logistics"
+              className="rounded border border-ink/20 px-3 py-1.5 text-sm text-ink hover:bg-ink/5"
+            >
+              Edit
+            </Link>
+          )}
+        </div>
         <p className="mt-4 text-ink/50">No upcoming trip has been set up yet.</p>
       </div>
     );
@@ -29,10 +45,22 @@ export default async function LogisticsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-semibold text-ink">{trip.title}</h1>
-      <p className="mt-1 text-sm text-ink/60">
-        {trip.destination} &middot; {fmtDate(trip.startDate)} – {fmtDate(trip.endDate)}
-      </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink">{trip.title}</h1>
+          <p className="mt-1 text-sm text-ink/60">
+            {trip.destination} &middot; {fmtDate(trip.startDate)} – {fmtDate(trip.endDate)}
+          </p>
+        </div>
+        {isAdmin && (
+          <Link
+            href="/admin/logistics"
+            className="rounded border border-ink/20 px-3 py-1.5 text-sm text-ink hover:bg-ink/5"
+          >
+            Edit
+          </Link>
+        )}
+      </div>
 
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold text-ink">Key dates &amp; deadlines</h2>

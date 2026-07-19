@@ -1,7 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MediaEmbed from "@/components/MediaEmbed";
 import LyricsViewer from "@/components/LyricsViewer";
+import DeleteSongButton from "@/components/DeleteSongButton";
 import { parseVoiceTags, type MediaKind } from "@/lib/constants";
 
 export default async function SongDetailPage({
@@ -10,6 +14,8 @@ export default async function SongDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user.role === "admin";
 
   const song = await prisma.song.findUnique({
     where: { id },
@@ -26,8 +32,19 @@ export default async function SongDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-6">
+      <div className="mb-6 flex items-start justify-between">
         <h1 className="text-2xl font-semibold text-ink">{song.title}</h1>
+        {isAdmin && (
+          <div className="flex items-center gap-3 text-sm">
+            <Link
+              href={`/admin/songs/${song.id}/edit`}
+              className="rounded border border-ink/20 px-3 py-1.5 text-ink hover:bg-ink/5"
+            >
+              Edit
+            </Link>
+            <DeleteSongButton songId={song.id} redirectTo="/songs" />
+          </div>
+        )}
       </div>
 
       <section className="mb-10">

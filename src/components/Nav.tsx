@@ -40,14 +40,14 @@ export default function Nav() {
       })}
       {isAdmin && (
         <Link
-          href="/admin"
+          href="/admin/members"
           className={
-            pathname?.startsWith("/admin")
+            pathname?.startsWith("/admin/members")
               ? "rounded-full bg-white/15 px-3 py-1.5 text-white"
               : "px-3 py-1.5 text-gray-300 hover:text-white"
           }
         >
-          Admin
+          Members
         </Link>
       )}
       <div className="ml-auto flex items-center gap-4">
