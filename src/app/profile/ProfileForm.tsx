@@ -2,13 +2,35 @@
 
 import { useState } from "react";
 import { updateProfile } from "@/lib/actions/profile-actions";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ProfileForm({ name, email }: { name: string; email: string }) {
   const [status, setStatus] = useState<string | null>(null);
 
   async function handleSubmit(formData: FormData) {
+    setStatus(null);
+
     const result = await updateProfile(formData);
-    setStatus(result.error ?? "Saved.");
+    if (result.error) {
+      setStatus(result.error);
+      return;
+    }
+
+    const newPassword = String(formData.get("newPassword") ?? "");
+    if (newPassword) {
+      if (newPassword.length < 8) {
+        setStatus("Name saved. Password must be at least 8 characters — password not changed.");
+        return;
+      }
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        setStatus(`Name saved. Password change failed: ${error.message}`);
+        return;
+      }
+    }
+
+    setStatus("Saved.");
   }
 
   return (

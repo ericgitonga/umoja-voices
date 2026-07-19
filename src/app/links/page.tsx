@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { LINK_CATEGORIES, type LinkCategory } from "@/lib/constants";
 
@@ -15,7 +14,7 @@ const CATEGORY_TEXT: Record<LinkCategory, string> = {
 };
 
 export default async function LinksPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const isAdmin = session?.user.role === "admin";
 
   const links = await prisma.externalLink.findMany({ orderBy: { sortOrder: "asc" } });

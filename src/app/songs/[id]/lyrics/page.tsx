@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import LyricsViewer from "@/components/LyricsViewer";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -11,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SongLyricsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const isAdmin = session?.user.role === "admin";
 
   const song = await prisma.song.findUnique({

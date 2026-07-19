@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { login } from "@/lib/actions/auth-actions";
 
 function LoginForm() {
   const router = useRouter();
@@ -18,20 +18,11 @@ function LoginForm() {
     setSubmitting(true);
     setError(null);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    const result = await login(email, password);
 
     setSubmitting(false);
-    if (result?.error) {
-      // "CredentialsSignin" is NextAuth's fixed generic code for a plain
-      // authorize() -> null (bad email/password/inactive account) — kept
-      // vague on purpose. Anything else is a message we threw ourselves
-      // (e.g. the rate-limit notice in src/lib/auth.ts) and is safe to
-      // show verbatim.
-      setError(result.error === "CredentialsSignin" ? "Incorrect email or password." : result.error);
+    if (result.error) {
+      setError(result.error);
       return;
     }
     router.push(searchParams.get("callbackUrl") ?? "/songs");

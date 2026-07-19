@@ -5,6 +5,48 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.15.0] - 2026-07-19
+
+### Changed
+
+- **Migrated auth from NextAuth Credentials to Supabase Auth** (closes #10) — the remaining
+  half of the original Supabase migration, deferred since v0.8.0. Supabase Auth now owns
+  identity, password hashing, and sessions entirely; `public.User` (Prisma) becomes a profile
+  table (`role`, `status`, `name`) keyed by a new `authUserId` column, with `Song.createdById`/
+  `Trip.createdById` FKs untouched. Role lives in the Supabase JWT's `app_metadata` so
+  `src/proxy.ts` can gate `/admin` by reading claims locally (`getClaims()`) with zero Prisma
+  calls in the proxy.
+- **Retired the custom `Invite`/`PasswordResetToken` tables** in favor of Supabase Auth's own
+  `inviteUserByEmail`/`resetPasswordForEmail`/`generateLink`, per the app owner's choice to
+  route invite/reset email through Supabase's dashboard-configured SMTP (pointed at Resend)
+  rather than keep calling Resend directly from our code for these two flows. `src/lib/email.ts`
+  keeps its generic Resend client/HTML helpers for any future non-auth transactional email (see
+  issue #11); the two auth-specific senders are gone.
+- **`mustChangePassword`/forced `/change-password` retired.** Supabase's invite/recovery flows
+  always require setting a real password via a real one-time emailed link before any session
+  exists, so there's no more "seeded with a known default password" state to force a redirect
+  for. Optional in-session password change lives on `/profile` now.
+- **New `/auth/confirm` route** exchanges Supabase's emailed invite/recovery links server-side
+  (`token_hash`/`type` based, not the older client-URL auto-detected session — corporate email
+  scanners can otherwise burn a single-use token before the real user clicks). `/accept-invite`
+  and `/reset-password` are now flat routes (no more per-token dynamic segment) since the
+  session is already established by the time the browser lands there.
+- **Existing production accounts migrated**: the admin account and two real chorister accounts
+  (one active, one with a stale never-completed invite) were backfilled into Supabase Auth via
+  a one-off script (not committed — see `authUserId` now set on their `User` rows) and each
+  given a working password-reset link to re-set their credentials, since the old bcrypt hashes
+  couldn't carry over.
+
+### Known gaps (tracked, not silently deferred)
+
+- **Real invite/reset email delivery isn't live yet.** It needs, in order: issue #34 (Resend
+  domain verification), Supabase dashboard SMTP pointed at Resend, and the dashboard's redirect
+  URL allow-list configured for the production domain (confirmed missing — a test link
+  defaulted to `localhost` because Supabase silently ignores `redirectTo` values not on that
+  list). Until all three are done, inviting a new member has no working delivery path — the
+  on-screen fallback link that used to cover this was intentionally dropped when the app owner
+  chose to route through Supabase's SMTP instead of Resend directly.
+
 ## [0.14.0] - 2026-07-19
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "umoja-voices",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -16,9 +16,9 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "bcryptjs": "^3.0.3",
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.7",
     "next": "16.2.10",
-    "next-auth": "^4.24.14",
     "pg": "^8.22.0",
     "prisma": "^7.8.0",
     "react": "19.2.4",

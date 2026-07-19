@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { Session } from "@/lib/get-session";
 
 const LINKS = [
   { href: "/songs", label: "Songs" },
@@ -10,12 +11,19 @@ const LINKS = [
   { href: "/links", label: "Links" },
 ];
 
-export default function Nav() {
-  const { data: session } = useSession();
+export default function Nav({ session }: { session: Session | null }) {
   const pathname = usePathname();
+  const router = useRouter();
   if (!session) return null;
 
   const isAdmin = session.user.role === "admin";
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <nav className="flex items-center gap-2 bg-ink px-6 py-3 text-sm">
@@ -54,7 +62,7 @@ export default function Nav() {
         <Link href="/profile" className="text-gray-300 hover:text-white">
           {session.user.name}
         </Link>
-        <button onClick={() => signOut({ callbackUrl: "/login" })} className="text-gray-300 hover:text-white">
+        <button onClick={handleSignOut} className="text-gray-300 hover:text-white">
           Sign out
         </button>
       </div>

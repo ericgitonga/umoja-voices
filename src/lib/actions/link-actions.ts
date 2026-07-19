@@ -1,14 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { LINK_CATEGORIES } from "@/lib/constants";
 import { clip, oneOf } from "@/lib/validation";
 
 async function requireAdmin() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   if (!session || session.user.role !== "admin") throw new Error("Admin access required.");
 }
 

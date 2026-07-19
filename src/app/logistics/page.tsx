@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 
 // This page reads live, admin-editable data — never statically cache it.
@@ -11,7 +10,7 @@ function fmtDate(d: Date) {
 }
 
 export default async function LogisticsPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const isAdmin = session?.user.role === "admin";
 
   const trip = await prisma.trip.findFirst({

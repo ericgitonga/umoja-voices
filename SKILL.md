@@ -10,7 +10,7 @@ section by section before any code was written).
 
 ## Versioning
 
-Current version: **0.14.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.15.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -75,11 +75,10 @@ primary requirement, not an afterthought.
 
 | Control | What it does |
 |---|---|
-| Password hashing (bcryptjs, 12 rounds) | Passwords are never stored or compared in plaintext |
-| Role-gated routing (`src/proxy.ts`) | `/admin/*` requires `role: "admin"` in the session JWT; unauthenticated requests to any protected route redirect to `/login` |
-| Session strategy: signed JWT (NextAuth) | No server-side session store to leak; the JWT is signed with `NEXTAUTH_SECRET`, which the app refuses to start meaningfully without |
-| Expiring, single-use invite/reset tokens | `Invite.token` and `PasswordResetToken.token` are random (`crypto.randomBytes(24)`), time-limited, and marked used/accepted so a link can't be replayed |
-| Forced password change on default-password accounts | `users.mustChangePassword` (set `true` on any account created with a known/default password, e.g. `prisma/seed.ts`) is enforced in `src/proxy.ts` — every route redirects to `/change-password` until it's cleared, so a default password can never remain valid indefinitely |
+| Password hashing (Supabase Auth) | Passwords are never stored or compared by our own code — Supabase Auth owns hashing/verification entirely (see #10) |
+| Role-gated routing (`src/proxy.ts`) | `/admin/*` requires `role: "admin"` in the Supabase JWT's `app_metadata`, read via `getClaims()`; unauthenticated requests to any protected route redirect to `/login` |
+| Session strategy: Supabase Auth (JWT + refresh cookie) | No server-side session store to leak; `src/lib/supabase/server.ts`/`src/proxy.ts` refresh the session cookie via `@supabase/ssr` |
+| Single-use invite/reset links (Supabase Auth) | `auth.admin.inviteUserByEmail`/`resetPasswordForEmail`/`generateLink` generate Supabase's own time-limited, single-use tokens, exchanged server-side via `verifyOtp` in `src/app/auth/confirm/route.ts` |
 | No account-existence leakage | `requestPasswordReset` returns the same response whether or not the email matches an account |
 | `direct_url` fallback, not raw HTML embeds | Unrecognized media links render as a plain outbound `<a>`, never as arbitrary embedded markup |
 | Server Actions require `role: "admin"` server-side | Every mutation in `src/lib/actions/*` re-checks the session role itself — the admin-only UI is a convenience, not the enforcement boundary |
@@ -88,7 +87,6 @@ primary requirement, not an afterthought.
 | Rate limiting on login, forgot-password, and invite creation | `src/lib/rate-limit.ts` — per-IP and per-identifier (email or admin id) fixed windows: 5/15min + 30/15min per IP for login, 3/hr + 10/hr per IP for forgot-password, 20/hr + 40/hr per IP for invites. In-memory, correct for today's single process; a distributed store (Upstash Redis) is needed before multi-instance deployment — tracked, see below |
 | HTTP security headers + scoped CSP | `next.config.ts`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and a CSP whose `frame-src` allow-list matches exactly what `src/components/MediaEmbed.tsx` supports |
 | Server Action CSRF protection (framework) | Next.js's built-in same-origin check on Server Actions — verified with a forged cross-origin request, not just assumed (see `extras/security.pdf`) |
-| Secret key enforcement | `src/lib/auth.ts` throws at startup if `NEXTAUTH_SECRET` is absent, rather than letting NextAuth silently derive an insecure one |
 | Pinned dependencies | `package-lock.json` is committed; dependency bumps are deliberate, not automatic |
 
 A full audit was performed at v0.3.0 (with the rate-limiting gap it found closed at v0.5.0 and
@@ -110,20 +108,21 @@ fixed-delay timing mitigation (#18)).
   live: deployed to Vercel production, migration applied, seed data confirmed present, and a
   full login → `mustChangePassword` redirect flow tested against the real deployed URL. No
   longer a stand-in.
-- **Auth provider**: NextAuth Credentials, not yet Supabase Auth. This is the remaining half
-  of the original "swap for production" item (#10) — the design plan (`umoja.pdf`) specifies
-  Supabase Auth, but that's a real rewrite (every page's session check, the invite flow,
-  forgot-password, and how rate limiting/`mustChangePassword` hook in all change), scoped as
-  its own deliberate future effort rather than bundled into the database swap.
-- **Invite / password-reset emails**: closed at v0.14.0 — real delivery via Resend
-  (`src/lib/email.ts`), called directly from `inviteMember`/`requestPasswordReset` rather than
-  through Supabase Auth's SMTP hook, since the Supabase Auth migration (#10) hasn't landed yet.
-  Requires `RESEND_API_KEY` (see `.env.example`); without it, both actions fall back to
-  returning the link on-screen exactly as before, so a fresh clone without Resend configured
-  still works. `requestPasswordReset` fires the send via `after()` without awaiting it, so
-  Resend's network latency can't reopen the account-enumeration timing side-channel that
-  `timingSafetyDelay()` guards against (#18) — `inviteMember` has no such constraint and awaits
-  its send normally, since there's no secret to protect via response timing.
+- **Auth provider**: closed at v0.15.0 — Supabase Auth replaces NextAuth Credentials entirely
+  (`src/lib/supabase/`, `src/lib/get-session.ts`, `src/proxy.ts`). `public.User` (Prisma) is now
+  a profile table (`role`/`status`/`name`) keyed by `authUserId`; the old `Invite`/
+  `PasswordResetToken` tables and `mustChangePassword`/forced `/change-password` are retired —
+  see `CHANGELOG.md`'s v0.15.0 entry for the full architecture.
+- **Invite / password-reset email delivery**: still a stand-in, in a different shape than
+  before. v0.14.0's direct-Resend-call approach was superseded at v0.15.0 by routing through
+  Supabase Auth's own `inviteUserByEmail`/`resetPasswordForEmail` (per the app owner's choice to
+  match the original design plan literally), which sends via Supabase's dashboard-configured
+  SMTP — not our own code. That SMTP isn't pointed at Resend yet, and Supabase's redirect
+  allow-list doesn't include the production domain yet (confirmed: a generated link silently
+  fell back to `localhost`). Until both are set (and issue #34's Resend domain verification
+  lands, since Resend's sandbox restriction applies either way), inviting a new member has no
+  working delivery path — the on-screen fallback link that covered this pre-v0.15.0 was
+  intentionally dropped along with the direct-Resend approach it depended on.
 
 ### When making changes
 
@@ -169,7 +168,7 @@ fixed-delay timing mitigation (#18)).
   than originally planned (at v0.3.0, not "post-POC") at the project owner's request; the rule
   about what stays private is unchanged by when the audit happens.
 - **Never commit `.env`.** It holds the Supabase `DATABASE_URL`/`DIRECT_URL` connection
-  strings and `NEXTAUTH_SECRET` — real credentials, not sample data.
+  strings and `SUPABASE_SECRET_KEY` — real credentials, not sample data.
 
 ---
 
@@ -211,8 +210,8 @@ Vercel). Currently:
   migrations. Enum-like fields are still plain `String` columns kept in sync with
   `src/lib/constants.ts` (see `prisma/schema.prisma`'s header), not native Postgres enums —
   `src/lib/validation.ts` is the real enforcement
-- NextAuth v4 (Credentials provider, JWT sessions) as a stand-in for Supabase Auth — the
-  remaining half of #10
+- Supabase Auth (`@supabase/ssr`, `@supabase/supabase-js`) for identity, password, and
+  sessions — closed at v0.15.0 (#10)
 - `src/proxy.ts` (Next.js 16's renamed `middleware` convention) for role-gated routing
 - Every Prisma-backed page is `export const dynamic = "force-dynamic"` — these show
   live, admin-editable data, so none of it may be statically cached at build time

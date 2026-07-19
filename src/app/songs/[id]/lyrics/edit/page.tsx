@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import Breadcrumb from "@/components/Breadcrumb";
 import ReplaceLyricsEditor from "@/components/ReplaceLyricsEditor";
@@ -11,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EditLyricsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   if (session?.user.role !== "admin") redirect(`/songs/${id}/lyrics`);
 
   const song = await prisma.song.findUnique({

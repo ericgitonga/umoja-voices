@@ -26,7 +26,10 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  // Supabase Auth's browser client (updateUser/signOut/session refresh) needs
+  // to reach the project's own API — without this, every call is silently
+  // blocked by the browser with only a devtools CSP violation to go on.
+  "connect-src 'self' https://tpsvwjeyncgbmuxflizi.supabase.co",
   `frame-src ${FRAME_SRC}`,
   "object-src 'none'",
   "base-uri 'self'",

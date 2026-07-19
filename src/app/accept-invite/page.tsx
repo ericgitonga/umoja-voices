@@ -1,15 +1,11 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { acceptInvite } from "@/lib/actions/auth-actions";
+import { createClient } from "@/lib/supabase/client";
+import { activateInvitedProfile } from "@/lib/actions/auth-actions";
 
-export default function AcceptInvitePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = use(params);
+export default function AcceptInvitePage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,11 +13,23 @@ export default function AcceptInvitePage({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const result = await acceptInvite(token, password);
+    setError(null);
+
+    // A session already exists here — established by /auth/confirm's
+    // verifyOtp exchange before redirecting to this page.
+    const supabase = createClient();
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    const result = await activateInvitedProfile();
     if (result.error) {
       setError(result.error);
       return;
     }
+
     setDone(true);
     setTimeout(() => router.push("/login"), 1500);
   }
@@ -51,10 +59,7 @@ export default function AcceptInvitePage({
           />
         </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90"
-        >
+        <button type="submit" className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90">
           Activate account
         </button>
       </form>

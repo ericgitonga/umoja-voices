@@ -1,10 +1,9 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import ProfileForm from "./ProfileForm";
 
 export default async function ProfilePage() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session!.user.id } });
 
   return (

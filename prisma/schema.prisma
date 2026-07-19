@@ -15,55 +15,26 @@ datasource db {
   provider = "postgresql"
 }
 
+// Profile table for a Supabase Auth user (auth.users) — Supabase owns
+// identity/password/session entirely; this table only carries app-level
+// data (role, status, display name) keyed by authUserId. Prisma remains the
+// only way the app talks to Postgres for business data; we don't use
+// Supabase's PostgREST/RLS layer.
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
+  id          String  @id @default(cuid())
+  authUserId  String? @unique
+  email       String  @unique
+  name        String
   // "admin" | "chorister"
-  role          String    @default("chorister")
+  role        String  @default("chorister")
   // "invited" | "active" | "disabled"
-  status        String    @default("invited")
-  passwordHash  String?
-  // true whenever passwordHash was set to a known/default value (e.g. by
-  // prisma/seed.ts) rather than chosen by the account holder — forces a
-  // change on next login via src/proxy.ts. Invite-acceptance and
-  // forgot-password both set this back to false, since the account holder
-  // just chose their own password.
-  mustChangePassword Boolean @default(false)
+  status      String  @default("invited")
   calendarToken String?   @unique
-  invitedById   String?
-  invitedBy     User?     @relation("UserInvites", fields: [invitedById], references: [id])
-  invitedUsers  User[]    @relation("UserInvites")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   songsCreated  Song[]
   tripsCreated  Trip[]
-  invitesSent   Invite[]  @relation("InviteSender")
-  passwordResets PasswordResetToken[]
-}
-
-model Invite {
-  id          String    @id @default(cuid())
-  email       String
-  token       String    @unique
-  // "admin" | "chorister"
-  role        String    @default("chorister")
-  expiresAt   DateTime
-  acceptedAt  DateTime?
-  invitedById String
-  invitedBy   User      @relation("InviteSender", fields: [invitedById], references: [id])
-  createdAt   DateTime  @default(now())
-}
-
-model PasswordResetToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime @default(now())
 }
 
 model Song {

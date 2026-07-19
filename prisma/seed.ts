@@ -6,7 +6,7 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { stripSslMode } from "../src/lib/db-url";
-import bcrypt from "bcryptjs";
+import { createClient } from "@supabase/supabase-js";
 
 const rawConnectionString = process.env.POSTGRES_PRISMA_URL ?? process.env.DATABASE_URL;
 if (!rawConnectionString) {
@@ -20,34 +20,59 @@ const adapter = new PrismaPg({
 });
 const prisma = new PrismaClient({ adapter });
 
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+/** Idempotent: creates the Supabase Auth user (with a known password —
+ *  intentional for these two seed accounts, see SKILL.md's data-handling
+ *  rules) only if our Prisma profile doesn't already have an authUserId,
+ *  then upserts the profile row. */
+async function seedAccount(opts: { email: string; name: string; role: string; password: string }) {
+  const existing = await prisma.user.findUnique({ where: { email: opts.email } });
+  if (existing?.authUserId) {
+    return prisma.user.update({ where: { email: opts.email }, data: { name: opts.name, role: opts.role } });
+  }
+
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    email: opts.email,
+    password: opts.password,
+    email_confirm: true,
+    app_metadata: { role: opts.role },
+  });
+  if (error || !data.user) {
+    throw new Error(`Could not create Supabase Auth user for ${opts.email}: ${error?.message}`);
+  }
+
+  return prisma.user.upsert({
+    where: { email: opts.email },
+    update: { authUserId: data.user.id, name: opts.name, role: opts.role },
+    create: {
+      authUserId: data.user.id,
+      email: opts.email,
+      name: opts.name,
+      role: opts.role,
+      status: "active",
+    },
+  });
+}
+
 async function main() {
   const adminPassword = "admin12345";
   const choristerPassword = "chorister12345";
 
-  const admin = await prisma.user.upsert({
-    where: { email: "gitonga@gmail.com" },
-    update: {},
-    create: {
-      email: "gitonga@gmail.com",
-      name: "Eric Gitonga",
-      role: "admin",
-      status: "active",
-      passwordHash: await bcrypt.hash(adminPassword, 12),
-      mustChangePassword: true,
-    },
+  const admin = await seedAccount({
+    email: "gitonga@gmail.com",
+    name: "Eric Gitonga",
+    role: "admin",
+    password: adminPassword,
   });
 
-  await prisma.user.upsert({
-    where: { email: "demo.chorister@example.com" },
-    update: {},
-    create: {
-      email: "demo.chorister@example.com",
-      name: "Demo Chorister",
-      role: "chorister",
-      status: "active",
-      passwordHash: await bcrypt.hash(choristerPassword, 12),
-      mustChangePassword: true,
-    },
+  await seedAccount({
+    email: "demo.chorister@example.com",
+    name: "Demo Chorister",
+    role: "chorister",
+    password: choristerPassword,
   });
 
   const linkCount = await prisma.externalLink.count();
@@ -187,7 +212,7 @@ async function main() {
     console.log(`Seeded trip: ${trip.title}`);
   }
 
-  console.log("\nSeed complete. Dev login credentials (both must be changed on first login):");
+  console.log("\nSeed complete. Dev login credentials:");
   console.log(`  Admin:      gitonga@gmail.com / ${adminPassword}`);
   console.log(`  Chorister:  demo.chorister@example.com / ${choristerPassword}`);
 }

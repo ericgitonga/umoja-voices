@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 
 export default async function SongsPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const isAdmin = session?.user.role === "admin";
 
   const songs = await prisma.song.findMany({ orderBy: { title: "asc" } });

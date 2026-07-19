@@ -5,28 +5,26 @@ const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL || "Umoja Voices <onboarding@
 
 let client: Resend | null | undefined;
 
-/** Lazily constructed so a missing RESEND_API_KEY never breaks app startup —
- *  invite/reset flows fall back to returning the link on-screen instead. */
-function getClient(): Resend | null {
+/** Lazily constructed so a missing RESEND_API_KEY never breaks app startup. */
+export function getResendClient(): Resend | null {
   if (client !== undefined) return client;
   const apiKey = process.env.RESEND_API_KEY;
   client = apiKey ? new Resend(apiKey) : null;
   return client;
 }
 
-/** Base URL for links inside emails — same env var NextAuth itself reads. */
+/** Base URL for links inside emails/redirects. APP_URL is the canonical
+ *  name; NEXTAUTH_URL is read as a fallback for environments that haven't
+ *  been updated since the NextAuth-era env var of the same purpose. */
 export function appBaseUrl(): string {
-  return process.env.NEXTAUTH_URL || "http://localhost:3000";
+  return process.env.APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
 }
 
-/** Sync check for whether Resend is configured — lets a caller decide to
- *  fire off a send without awaiting it (see requestPasswordReset, which
- *  can't afford the network-latency variance in its timing-safe path). */
-export function isEmailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY);
-}
-
-function layout(title: string, bodyHtml: string): string {
+/** Branded HTML email shell — invite/password-reset now go through
+ *  Supabase's own SMTP-configured send, but this stays for any future
+ *  direct transactional email (e.g. issue #11's practice-session
+ *  notifications), sharing the same "Umoja Voices" from-address/branding. */
+export function emailLayout(title: string, bodyHtml: string): string {
   return `<!doctype html>
 <html>
   <body style="margin:0;padding:0;background-color:#f4efe4;font-family:Helvetica,Arial,sans-serif;">
@@ -53,73 +51,13 @@ function layout(title: string, bodyHtml: string): string {
 </html>`;
 }
 
-function button(url: string, label: string): string {
+export function emailButton(url: string, label: string): string {
   return `<p style="text-align:center;margin:24px 0;">
     <a href="${url}" style="background-color:#1c1c1c;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:999px;display:inline-block;font-size:14px;">${label}</a>
   </p>
   <p style="font-size:12px;color:#666;word-break:break-all;">${url}</p>`;
 }
 
-/** Sends the invite email; returns whether it was actually sent (false if
- *  RESEND_API_KEY isn't configured, or the send failed). */
-export async function sendInviteEmail(opts: { to: string; name: string; inviteUrl: string }): Promise<boolean> {
-  const resend = getClient();
-  if (!resend) {
-    console.warn("RESEND_API_KEY not set — skipping invite email, falling back to on-screen link.");
-    return false;
-  }
-
-  try {
-    const { error } = await resend.emails.send({
-      from: FROM_ADDRESS,
-      to: opts.to,
-      subject: `You're invited to join ${APP_NAME}`,
-      html: layout(
-        `You're invited to join ${APP_NAME}`,
-        `<p>Hi ${opts.name},</p>
-         <p>An admin has invited you to join ${APP_NAME}. Click below to set your password and get started.</p>
-         ${button(opts.inviteUrl, "Accept invite")}
-         <p style="color:#888;">This link expires in 7 days. If you weren't expecting this, you can ignore this email.</p>`
-      ),
-    });
-    if (error) {
-      console.error("Resend invite email failed:", error);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error("Resend invite email failed:", err);
-    return false;
-  }
-}
-
-/** Sends the password-reset email; returns whether it was actually sent. */
-export async function sendPasswordResetEmail(opts: { to: string; resetUrl: string }): Promise<boolean> {
-  const resend = getClient();
-  if (!resend) {
-    console.warn("RESEND_API_KEY not set — skipping reset email, falling back to on-screen link.");
-    return false;
-  }
-
-  try {
-    const { error } = await resend.emails.send({
-      from: FROM_ADDRESS,
-      to: opts.to,
-      subject: `Reset your ${APP_NAME} password`,
-      html: layout(
-        "Reset your password",
-        `<p>We received a request to reset your ${APP_NAME} password. Click below to choose a new one.</p>
-         ${button(opts.resetUrl, "Reset password")}
-         <p style="color:#888;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email — your password won't change.</p>`
-      ),
-    });
-    if (error) {
-      console.error("Resend password-reset email failed:", error);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error("Resend password-reset email failed:", err);
-    return false;
-  }
+export function resendFromAddress(): string {
+  return FROM_ADDRESS;
 }

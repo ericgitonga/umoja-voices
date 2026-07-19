@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import MediaEmbed from "@/components/MediaEmbed";
 import RemoveMediaButton from "@/components/RemoveMediaButton";
@@ -12,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SongMediaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const isAdmin = session?.user.role === "admin";
 
   const song = await prisma.song.findUnique({

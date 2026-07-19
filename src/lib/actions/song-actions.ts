@@ -2,8 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import {
   detectMediaKind,
@@ -18,7 +17,7 @@ import { clip, oneOf, subsetOf } from "@/lib/validation";
 import type { ParsedLyricSection } from "@/lib/lyrics-parser";
 
 async function requireAdmin() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   if (!session || session.user.role !== "admin") {
     throw new Error("Admin access required.");
   }

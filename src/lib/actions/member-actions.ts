@@ -1,18 +1,15 @@
 "use server";
 
-import crypto from "crypto";
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
 import { headers } from "next/headers";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { ROLES, USER_STATUSES } from "@/lib/constants";
 import { clip, oneOf } from "@/lib/validation";
 import { checkRateLimit, rateLimitResetMinutes, getClientIp } from "@/lib/rate-limit";
-import { sendInviteEmail, appBaseUrl } from "@/lib/email";
-
-const INVITE_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+import { appBaseUrl } from "@/lib/email";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Admin-only and lower risk than login/forgot-password, so a looser window:
 // generous enough for a legitimate bulk-invite session (a new season's
@@ -22,7 +19,7 @@ const INVITE_MAX_PER_ADMIN = 20;
 const INVITE_MAX_PER_IP = 40; // covers a few admins sharing an office network
 
 async function requireAdmin() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   if (!session || session.user.role !== "admin") {
     throw new Error("Admin access required.");
   }
@@ -30,17 +27,13 @@ async function requireAdmin() {
 }
 
 /**
- * Sends the invite via Resend when RESEND_API_KEY is configured (see
- * src/lib/email.ts). Still returns the link either way — used as an
- * on-screen fallback if RESEND_API_KEY is unset or the send fails, so the
- * flow never silently strands an admin without a way to reach the invitee.
- * This calls Resend directly rather than through Supabase Auth's SMTP hook
- * (see design plan Section 1), since the Supabase Auth migration (#10)
- * hasn't landed yet.
+ * Creates the Supabase Auth user via the admin API — Supabase sends the
+ * invite email itself (dashboard-configured SMTP, pointed at Resend), so
+ * there's no on-screen fallback link to hand back the way the old
+ * custom-token flow had. app_metadata.role is what src/proxy.ts reads for
+ * route gating.
  */
-export async function inviteMember(
-  formData: FormData
-): Promise<{ error?: string; inviteLink?: string; emailSent?: boolean }> {
+export async function inviteMember(formData: FormData): Promise<{ error?: string; ok?: boolean }> {
   const session = await requireAdmin();
 
   const ip = getClientIp(await headers());
@@ -65,32 +58,22 @@ export async function inviteMember(
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return { error: "A member with that email already exists." };
 
-  const token = crypto.randomBytes(24).toString("hex");
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+    data: { name, role },
+    redirectTo: `${appBaseUrl()}/auth/confirm?type=invite&next=/accept-invite`,
+  });
 
-  await prisma.$transaction([
-    prisma.user.create({
-      data: { email, name, role, status: "invited" },
-    }),
-    prisma.invite.create({
-      data: {
-        email,
-        token,
-        role,
-        expiresAt: new Date(Date.now() + INVITE_TOKEN_TTL_MS),
-        invitedById: session.user.id,
-      },
-    }),
-  ]);
+  if (error || !data.user) {
+    return { error: error?.message ?? "Could not create the invite." };
+  }
+
+  await prisma.user.create({
+    data: { authUserId: data.user.id, email, name, role, status: "invited" },
+  });
 
   revalidatePath("/admin/members");
-
-  const inviteLink = `/accept-invite/${token}`;
-  const emailSent = await sendInviteEmail({
-    to: email,
-    name,
-    inviteUrl: `${appBaseUrl()}${inviteLink}`,
-  });
-  return { inviteLink, emailSent };
+  return { ok: true };
 }
 
 /**
@@ -123,7 +106,18 @@ export async function updateMemberRole(userId: string, role: string): Promise<{ 
   const blocked = await orphanAdminsError(session, userId);
   if (blocked) return { error: blocked };
 
-  await prisma.user.update({ where: { id: userId }, data: { role: oneOf(role, ROLES, "chorister") } });
+  const resolvedRole = oneOf(role, ROLES, "chorister");
+  const target = await prisma.user.update({ where: { id: userId }, data: { role: resolvedRole } });
+
+  // Keep the JWT's app_metadata.role in sync — that's what src/proxy.ts
+  // gates /admin on. Note: an already-issued access token keeps its old
+  // role claim until it naturally refreshes (~1hr) — accepted trade-off
+  // at this app's scale.
+  if (target.authUserId) {
+    const adminClient = createAdminClient();
+    await adminClient.auth.admin.updateUserById(target.authUserId, { app_metadata: { role: resolvedRole } });
+  }
+
   revalidatePath("/admin/members");
   return {};
 }
@@ -133,10 +127,16 @@ export async function setMemberStatus(userId: string, status: string): Promise<{
   const blocked = await orphanAdminsError(session, userId);
   if (blocked) return { error: blocked };
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { status: oneOf(status, USER_STATUSES, "active") },
-  });
+  const resolvedStatus = oneOf(status, USER_STATUSES, "active");
+  const target = await prisma.user.update({ where: { id: userId }, data: { status: resolvedStatus } });
+
+  // Disabling should take effect promptly, not wait out the access-token
+  // refresh lag — force their existing session(s) to end now.
+  if (resolvedStatus === "disabled" && target.authUserId) {
+    const adminClient = createAdminClient();
+    await adminClient.auth.admin.signOut(target.authUserId, "global");
+  }
+
   revalidatePath("/admin/members");
   return {};
 }
@@ -146,15 +146,22 @@ export async function deleteMember(userId: string): Promise<{ error?: string }> 
   const blocked = await orphanAdminsError(session, userId);
   if (blocked) return { error: blocked };
 
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+
   try {
     await prisma.user.delete({ where: { id: userId } });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
       return {
-        error: "Can't delete: this member has songs, trips, or invites tied to their account. Deactivate instead.",
+        error: "Can't delete: this member has songs or trips tied to their account. Deactivate instead.",
       };
     }
     throw err;
+  }
+
+  if (target?.authUserId) {
+    const adminClient = createAdminClient();
+    await adminClient.auth.admin.deleteUser(target.authUserId);
   }
 
   revalidatePath("/admin/members");

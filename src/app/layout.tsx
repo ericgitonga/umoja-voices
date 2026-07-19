@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getSession } from "@/lib/get-session";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,22 +20,22 @@ export const metadata: Metadata = {
   description: "Choir management app for Umoja Voices",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getSession();
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <SessionProviderWrapper>
-          <Nav />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </SessionProviderWrapper>
+        <Nav session={session} />
+        <main className="flex-1">{children}</main>
+        <Footer />
       </body>
     </html>
   );
