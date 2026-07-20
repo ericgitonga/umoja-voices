@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.24.1] - 2026-07-21
+
+### Changed
+
+- **Adopted a branch-per-issue workflow**, now that #44's E2E gate and #52's environment
+  isolation make it safe and fast to do for every issue, not just large ones. Documented in
+  `SKILL.md`'s new "Branch-per-issue workflow" section: branch off `main` per issue, open a PR
+  with `closes #N`, wait for the `E2E (Preview)` check to go green, merge only then. No more
+  pushing straight to `main`.
+
 ## [0.24.0] - 2026-07-20
 
 ### Added

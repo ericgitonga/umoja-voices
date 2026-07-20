@@ -13,7 +13,7 @@ v0.17.0.
 
 ## Versioning
 
-Current version: **0.24.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.24.1** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -60,6 +60,25 @@ Every non-trivial unit of work gets a GitHub issue opened first (`gh issue creat
 ericgitonga/umoja-voices`), closed via `closes #N` in the commit or PR that finishes it. This
 applies to POC scope items as much as later feature work — the issue tracker is the backlog,
 not an afterthought bolted on once something ships.
+
+### Branch-per-issue workflow (as of 2026-07-21, after #44/#52 landed)
+
+Work no longer lands by pushing straight to `main`. For each issue:
+
+1. Branch off `main`: `git checkout -b <short-description>` (e.g. `fix/song-credits-display`).
+2. Do the work, commit(s) as normal (still following the version-bump-before-commit rule below).
+3. Push the branch and open a PR (`gh pr create`) with `closes #N` in the body.
+4. The `E2E (Preview)` GitHub Actions check (`.github/workflows/e2e.yml`, #44) runs automatically
+   against the Preview/Development Supabase project (#52) — never production. Wait for it (and
+   the Vercel Preview deployment check) to go green.
+5. Only merge to `main` once the E2E check passes. Prefer `gh pr merge --squash` (or whatever
+   keeps history clean) over merging a red PR "to fix forward" — a failing gate that gets merged
+   anyway defeats the entire point of #44/#52.
+6. Delete the branch after merging (`gh pr merge --delete-branch`, or `git branch -d` /
+   `git push origin --delete` if closed without merging, e.g. a throwaway verification PR).
+
+This applies to every issue going forward, not just large/risky ones — the whole reason #52 and
+#44 exist is so this is now safe and fast to do for anything, not just big changes.
 
 ### Displaying the version in the app
 
