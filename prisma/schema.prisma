@@ -150,3 +150,15 @@ model PracticeSession {
   notes     String?
   sortOrder Int      @default(0)
 }
+
+// Distributed rate-limit state (#20) — replaces the old per-process in-memory
+// Map so counters are shared across serverless instances. Rows are written
+// via a raw atomic INSERT ... ON CONFLICT in src/lib/rate-limit.ts, not
+// through Prisma's high-level query API, since the increment-or-reset logic
+// needs to happen in a single round-trip to avoid a race between concurrent
+// requests for the same key.
+model RateLimitBucket {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}

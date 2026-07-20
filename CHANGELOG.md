@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.19.0] - 2026-07-20
+
+### Changed
+
+- **Distributed rate limiter** (closes #20): replaced the in-memory `Map` in `src/lib/rate-limit.ts`
+  with a `RateLimitBucket` table in Supabase Postgres (new migration
+  `20260720115152_add_rate_limit_bucket`), reviewed and chosen over Upstash Redis (the issue's
+  own suggested example) — reuses infrastructure already provisioned rather than adding a new
+  vendor, appropriate at this app's traffic scale. The increment-or-reset logic runs as a single
+  atomic `INSERT ... ON CONFLICT DO UPDATE ... RETURNING` so concurrent requests for the same
+  key — from different serverless instances, the exact gap this issue existed to close — can't
+  race each other into an inflated count. `checkRateLimit`/`rateLimitResetMinutes` are now async;
+  all 4 call sites (login, forgot-password, invite, and the v0.18.0 admin reset-link tool) were
+  updated to `Promise.all` both counter checks concurrently rather than serializing them, and
+  — critically — without short-circuiting: `await a() || await b()` would skip evaluating `b()`
+  entirely if `a()` failed, silently breaking the "always tick both counters" property the old
+  code relied on comments alone to preserve.
+- Verified the distributed property directly: four separate `tsx` process invocations (no
+  shared memory between them, simulating separate serverless instances) hitting the same
+  rate-limit key correctly accumulated a shared count of 1→4 against the live Supabase project,
+  with the 4th correctly blocked — the old in-memory version would have given each process its
+  own independent counter starting at 1. Also verified end-to-end through the real login flow
+  (5 attempts allowed, 6th and 7th blocked) with zero console errors.
+
 ## [0.18.1] - 2026-07-20
 
 ### Changed

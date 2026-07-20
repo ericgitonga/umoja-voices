@@ -1,28 +1,29 @@
+import { prisma } from "@/lib/prisma";
+
 /**
- * In-memory fixed-window rate limiter — a POC stand-in for a distributed
- * store (e.g. Upstash Redis). This is correct for a single Node process
- * (how the app runs today: local dev, or a single long-lived server), but
- * each serverless instance would keep its own independent counters once
- * deployed to Vercel/multi-instance hosting, silently weakening the limit.
- * Swapping in a real distributed store is tracked separately (see SKILL.md's
- * Security First section) — do not treat this as production-grade as-is.
+ * Distributed fixed-window rate limiter, backed by Supabase Postgres (#20).
+ * Replaces the earlier per-process in-memory Map, which kept independent
+ * counters per serverless instance — silently weakening the effective limit
+ * under Vercel's multi-instance scaling. The increment-or-reset logic runs
+ * as a single atomic `INSERT ... ON CONFLICT` so concurrent requests for the
+ * same key (from different instances) can't race each other into an
+ * inflated count.
  */
 
-type Bucket = { count: number; resetAt: number };
-
-const buckets = new Map<string, Bucket>();
-
-// Cheap unbounded-growth guard: sweep expired buckets occasionally rather
-// than on every call.
+// Opportunistic cleanup, same idea as the old in-memory sweep — just against
+// the shared table now. Per-process throttle only; if several instances
+// each decide to sweep around the same time that's harmless (a plain
+// DELETE ... WHERE is safe under concurrency), just occasionally redundant.
 let lastSweep = 0;
 const SWEEP_INTERVAL_MS = 60_000;
 
-function sweep(now: number) {
-  if (now - lastSweep < SWEEP_INTERVAL_MS) return;
-  lastSweep = now;
-  for (const [key, bucket] of buckets) {
-    if (bucket.resetAt <= now) buckets.delete(key);
-  }
+function sweep(now: Date) {
+  if (now.getTime() - lastSweep < SWEEP_INTERVAL_MS) return;
+  lastSweep = now.getTime();
+  // Fire-and-forget — cleanup never blocks the actual rate-limit check.
+  prisma.rateLimitBucket.deleteMany({ where: { resetAt: { lte: now } } }).catch((err) => {
+    console.error("rate-limit sweep failed:", err);
+  });
 }
 
 /**
@@ -31,25 +32,28 @@ function sweep(now: number) {
  * window's limit is exceeded (the counter is still incremented so a
  * caller who keeps retrying doesn't get a longer effective window).
  */
-export function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
+export async function checkRateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+  const now = new Date();
   sweep(now);
 
-  const bucket = buckets.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
+  const resetAt = new Date(now.getTime() + windowMs);
+  const rows = await prisma.$queryRaw<{ count: number; resetAt: Date }[]>`
+    INSERT INTO "RateLimitBucket" (key, count, "resetAt")
+    VALUES (${key}, 1, ${resetAt})
+    ON CONFLICT (key) DO UPDATE SET
+      count = CASE WHEN "RateLimitBucket"."resetAt" <= ${now} THEN 1 ELSE "RateLimitBucket".count + 1 END,
+      "resetAt" = CASE WHEN "RateLimitBucket"."resetAt" <= ${now} THEN ${resetAt} ELSE "RateLimitBucket"."resetAt" END
+    RETURNING count, "resetAt"
+  `;
 
-  bucket.count += 1;
-  return bucket.count <= limit;
+  return rows[0].count <= limit;
 }
 
 /** Minutes remaining until `key`'s window resets (0 if it already has, or doesn't exist). */
-export function rateLimitResetMinutes(key: string): number {
-  const bucket = buckets.get(key);
+export async function rateLimitResetMinutes(key: string): Promise<number> {
+  const bucket = await prisma.rateLimitBucket.findUnique({ where: { key } });
   if (!bucket) return 0;
-  return Math.max(0, Math.ceil((bucket.resetAt - Date.now()) / 60_000));
+  return Math.max(0, Math.ceil((bucket.resetAt.getTime() - Date.now()) / 60_000));
 }
 
 type HeaderSource =

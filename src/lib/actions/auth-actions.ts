@@ -28,11 +28,14 @@ export async function login(email: string, password: string): Promise<{ error?: 
   const ipKey = `login:ip:${ip}`;
   const emailKey = `login:email:${normalizedEmail}:${ip}`;
 
-  // Order matters: always tick both counters (don't short-circuit on the
-  // first failure) so a caller can't keep one window artificially fresh by
-  // tripping the other first.
-  const ipOk = checkRateLimit(ipKey, LOGIN_MAX_PER_IP, LOGIN_WINDOW_MS);
-  const emailOk = checkRateLimit(emailKey, LOGIN_MAX_PER_EMAIL, LOGIN_WINDOW_MS);
+  // Always tick both counters (don't short-circuit on the first failure) so
+  // a caller can't keep one window artificially fresh by tripping the other
+  // first — Promise.all runs both, never conditionally skipping the second
+  // the way `await a() || await b()` would.
+  const [ipOk, emailOk] = await Promise.all([
+    checkRateLimit(ipKey, LOGIN_MAX_PER_IP, LOGIN_WINDOW_MS),
+    checkRateLimit(emailKey, LOGIN_MAX_PER_EMAIL, LOGIN_WINDOW_MS),
+  ]);
   if (!ipOk || !emailOk) {
     return { error: "Too many sign-in attempts. Try again in a few minutes." };
   }
@@ -72,17 +75,15 @@ export async function requestPasswordReset(email: string): Promise<Record<string
   const normalizedEmail = email.toLowerCase();
   const ip = getClientIp(await headers());
 
-  // Both counters always tick, same reasoning as the login rate limit.
+  // Both counters always tick, same reasoning as the login rate limit —
+  // Promise.all runs both rather than short-circuiting.
+  const [ipOk, emailOk] = await Promise.all([
+    checkRateLimit(`reset:ip:${ip}`, RESET_REQUEST_MAX_PER_IP, RESET_REQUEST_WINDOW_MS),
+    checkRateLimit(`reset:email:${normalizedEmail}:${ip}`, RESET_REQUEST_MAX_PER_EMAIL, RESET_REQUEST_WINDOW_MS),
+  ]);
   // A rate-limited request takes the exact same silent, timing-masked path
   // as a nonexistent account below — never surfacing "you're rate-limited"
   // would itself confirm the email is real.
-  const ipOk = checkRateLimit(`reset:ip:${ip}`, RESET_REQUEST_MAX_PER_IP, RESET_REQUEST_WINDOW_MS);
-  const emailOk = checkRateLimit(
-    `reset:email:${normalizedEmail}:${ip}`,
-    RESET_REQUEST_MAX_PER_EMAIL,
-    RESET_REQUEST_WINDOW_MS
-  );
-
   const user = ipOk && emailOk ? await prisma.user.findUnique({ where: { email: normalizedEmail } }) : null;
 
   if (user && user.status === "active") {

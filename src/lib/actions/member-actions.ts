@@ -49,13 +49,16 @@ export async function inviteMember(
   const session = await requireAdmin();
 
   const ip = getClientIp(await headers());
-  const adminOk = checkRateLimit(`invite:admin:${session.user.id}`, INVITE_MAX_PER_ADMIN, INVITE_WINDOW_MS);
-  const ipOk = checkRateLimit(`invite:ip:${ip}`, INVITE_MAX_PER_IP, INVITE_WINDOW_MS);
+  const [adminOk, ipOk] = await Promise.all([
+    checkRateLimit(`invite:admin:${session.user.id}`, INVITE_MAX_PER_ADMIN, INVITE_WINDOW_MS),
+    checkRateLimit(`invite:ip:${ip}`, INVITE_MAX_PER_IP, INVITE_WINDOW_MS),
+  ]);
   if (!adminOk || !ipOk) {
-    const minutes = Math.max(
+    const [adminMinutes, ipMinutes] = await Promise.all([
       rateLimitResetMinutes(`invite:admin:${session.user.id}`),
-      rateLimitResetMinutes(`invite:ip:${ip}`)
-    );
+      rateLimitResetMinutes(`invite:ip:${ip}`),
+    ]);
+    const minutes = Math.max(adminMinutes, ipMinutes);
     return {
       error: `Too many invites sent recently. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
     };
@@ -104,13 +107,16 @@ export async function generateMemberResetLink(userId: string): Promise<{ error?:
   const session = await requireAdmin();
 
   const ip = getClientIp(await headers());
-  const adminOk = checkRateLimit(`reset-link:admin:${session.user.id}`, RESET_LINK_MAX_PER_ADMIN, RESET_LINK_WINDOW_MS);
-  const ipOk = checkRateLimit(`reset-link:ip:${ip}`, RESET_LINK_MAX_PER_IP, RESET_LINK_WINDOW_MS);
+  const [adminOk, ipOk] = await Promise.all([
+    checkRateLimit(`reset-link:admin:${session.user.id}`, RESET_LINK_MAX_PER_ADMIN, RESET_LINK_WINDOW_MS),
+    checkRateLimit(`reset-link:ip:${ip}`, RESET_LINK_MAX_PER_IP, RESET_LINK_WINDOW_MS),
+  ]);
   if (!adminOk || !ipOk) {
-    const minutes = Math.max(
+    const [adminMinutes, ipMinutes] = await Promise.all([
       rateLimitResetMinutes(`reset-link:admin:${session.user.id}`),
-      rateLimitResetMinutes(`reset-link:ip:${ip}`)
-    );
+      rateLimitResetMinutes(`reset-link:ip:${ip}`),
+    ]);
+    const minutes = Math.max(adminMinutes, ipMinutes);
     return {
       error: `Too many reset links generated recently. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
     };
