@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.22.1] - 2026-07-20
+
+### Added
+
+- **Colored left-border bar per voice-part section on the Media page** (closes #40, follow-up):
+  reopened after the initial pass — each section on `/songs/[id]/media` now has a `border-l-4`
+  bar spanning its full height (badge, heading, and every media card underneath), colored to
+  match that section's voice color from `VOICE_TAG_COLOR`'s new `border` variant, matching the
+  `border-l-4 border-*` card style already used elsewhere in the app (e.g. the song detail
+  page's Media/Sheet Music/Lyrics cards).
+
 ## [0.22.0] - 2026-07-20
 
 ### Added

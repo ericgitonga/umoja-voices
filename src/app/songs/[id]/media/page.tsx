@@ -54,7 +54,10 @@ export default async function SongMediaPage({ params }: { params: Promise<{ id: 
 
       <div className="flex flex-col gap-8">
         {groups.map((group) => (
-          <section key={group.part}>
+          <section
+            key={group.part}
+            className={`border-l-4 pl-4 ${VOICE_TAG_COLOR[SONG_PART_TO_VOICE_TAG[group.part]].border}`}
+          >
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink/60">
               <span className={`rounded px-1.5 py-0.5 ${VOICE_TAG_COLOR[SONG_PART_TO_VOICE_TAG[group.part]].pill}`}>
                 {group.part}

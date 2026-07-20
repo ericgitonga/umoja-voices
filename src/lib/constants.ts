@@ -66,15 +66,17 @@ export const VOICE_TAG_LABEL: Record<VoiceTag, string> = {
 /**
  * Pastel voice-part color tokens (#40): S-red, A-green, T-yellow, B-blue,
  * SATB/All-orange. `pill` is the low-emphasis default; `solid` is for a
- * badge's active/selected state. Reused by every voice-part badge/tag render
- * site instead of each rolling its own gray `bg-ink/*` pill.
+ * badge's active/selected state; `border` is for a section's left-border bar
+ * (`border-l-4 border-*`, matching the card style already used elsewhere in
+ * the app). Reused by every voice-part badge/tag/section render site instead
+ * of each rolling its own gray `bg-ink/*` pill.
  */
-export const VOICE_TAG_COLOR: Record<VoiceTag, { pill: string; solid: string }> = {
-  S: { pill: "bg-red-100 text-red-700", solid: "bg-red-500 text-white" },
-  A: { pill: "bg-green-100 text-green-700", solid: "bg-green-500 text-white" },
-  T: { pill: "bg-yellow-100 text-yellow-800", solid: "bg-yellow-500 text-white" },
-  B: { pill: "bg-blue-100 text-blue-700", solid: "bg-blue-500 text-white" },
-  SATB: { pill: "bg-orange-100 text-orange-700", solid: "bg-orange-500 text-white" },
+export const VOICE_TAG_COLOR: Record<VoiceTag, { pill: string; solid: string; border: string }> = {
+  S: { pill: "bg-red-100 text-red-700", solid: "bg-red-500 text-white", border: "border-red-400" },
+  A: { pill: "bg-green-100 text-green-700", solid: "bg-green-500 text-white", border: "border-green-400" },
+  T: { pill: "bg-yellow-100 text-yellow-800", solid: "bg-yellow-500 text-white", border: "border-yellow-400" },
+  B: { pill: "bg-blue-100 text-blue-700", solid: "bg-blue-500 text-white", border: "border-blue-400" },
+  SATB: { pill: "bg-orange-100 text-orange-700", solid: "bg-orange-500 text-white", border: "border-orange-400" },
 };
 
 export const LINK_CATEGORIES = ["social", "news", "media", "other"] as const;
