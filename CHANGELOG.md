@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.24.0] - 2026-07-20
+
+### Added
+
+- **Golden-path E2E smoke suite, gated in CI before merge to `main`** (closes #44): explicitly a
+  spike/exploration issue whose scope was decided on pickup, now unblocked by #52's environment
+  isolation. Added `e2e/` — login/role-gating and song library/detail/media coverage, written in
+  Python against the `playwright` package (already present in the `ds` conda env with browsers
+  pre-cached) rather than `@playwright/test`, matching this project's existing convention of
+  using `ds` for Python tooling instead of a parallel npm toolchain. No `pytest`/`pytest-playwright`
+  available either, so specs are plain `assert`-based scripts discovered and run by `e2e/run.py`.
+  `.github/workflows/e2e.yml` runs the suite on every PR against `main`, against a server built
+  and started in the CI runner using the Preview/Development Supabase project from #52 (never
+  production) — requires a `VERCEL_TOKEN` repository secret, generated manually by the app owner
+  since minting one via `vercel tokens add` from this session was blocked (403 — a deliberate
+  scope restriction on the Vercel Claude plugin's OAuth grant, not something to route around).
+  Verified the whole suite passing locally against the real Preview database before considering
+  this done, and verified the CI token itself by pulling real Preview env vars with it.
+  Deliberately out of scope for this pass (see `SKILL.md`'s new E2E section): automatic
+  Preview-to-Production promotion, and golden-path coverage beyond what's listed above.
+
 ## [0.23.0] - 2026-07-20
 
 ### Added

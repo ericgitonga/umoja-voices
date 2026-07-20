@@ -13,7 +13,7 @@ v0.17.0.
 
 ## Versioning
 
-Current version: **0.23.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.24.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -230,6 +230,43 @@ Vercel). Currently:
 - `src/proxy.ts` (Next.js 16's renamed `middleware` convention) for role-gated routing
 - Every Prisma-backed page is `export const dynamic = "force-dynamic"` — these show
   live, admin-editable data, so none of it may be statically cached at build time
+
+## E2E testing (closed #44, v0.24.0)
+
+Golden-path smoke suite in `e2e/` (login/role gating, song library/detail/media), gated in CI
+on every PR before it can merge to `main` (`.github/workflows/e2e.yml`). Runs against the
+Preview/Development Supabase project from #52 — never production.
+
+**Written in Python (`playwright`), not `@playwright/test`** — deliberate: the `ds` conda env
+already has `playwright` installed with browsers pre-cached, and this project's convention for
+Python tooling (`extras/log_effort.py`, the `topdf` skill, `generate_security_pdf.py`) is to use
+that env rather than add a parallel npm toolchain. No `pytest`/`pytest-playwright` in `ds`
+either, so specs are plain scripts (`TESTS = [...]` list of functions, `assert`-based), run via:
+
+```bash
+npm run dev                        # in one terminal — or a production build
+conda run -n ds python e2e/run.py  # in another; discovers and runs every e2e/test_*.py
+```
+
+`BASE_URL` env var overrides the default `http://localhost:3000` (CI points it at a locally
+built-and-started server using Preview env vars, not a live Vercel Preview deployment URL —
+avoids depending on Vercel's own deployment-webhook timing). Seed-data constants in
+`e2e/_common.py` (`SEED_ADMIN_EMAIL`, `SEED_SONG_TITLE`, etc.) must be kept in sync with
+`prisma/seed.ts` by hand if that file's demo data ever changes.
+
+**CI requires a `VERCEL_TOKEN` repository secret** (Vercel dashboard → Account Settings →
+Tokens) — `vercel tokens add` couldn't mint one from this session (403: the Claude Vercel
+plugin's own OAuth grant isn't permitted to create new tokens, a deliberate scope restriction,
+not a bug to route around). The app owner generated one manually and it was set via `gh secret
+set VERCEL_TOKEN` — verified working end-to-end (pulled real Preview env vars) before relying
+on it. `VERCEL_ORG_ID`/`VERCEL_PROJECT_ID` in the workflow file are plain identifiers, not
+secrets — same values as the gitignored `.vercel/project.json`.
+
+**Explicitly out of scope for this pass** (per #44's own framing as a spike — scope/tooling
+decided when picked up, not fully built out): promotion gating beyond "PR can't merge without
+green CI" (no automatic Vercel-Preview-to-Production promotion step), broader golden-path
+coverage (member invite/role changes, sheet-music upload, logistics/travel pages), and visual
+regression testing. Extend `e2e/` incrementally as more golden paths need covering.
 
 ---
 

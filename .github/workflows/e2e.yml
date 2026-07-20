@@ -1,0 +1,58 @@
+name: E2E (Preview)
+
+# Gates a PR on the golden-path E2E suite (#44) running against the Preview/
+# Development Supabase project (#52) — never production. Requires a
+# VERCEL_TOKEN repository secret (Vercel dashboard -> Account Settings ->
+# Tokens) with access to the egm2/umoja-voices project; org/project IDs
+# below are plain identifiers (same ones in the gitignored .vercel/
+# project.json), not secrets.
+
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  VERCEL_ORG_ID: team_zqkuLyNQ340W09pXdT0og99l
+  VERCEL_PROJECT_ID: prj_X8TUYCwWk2pLCVGVks5nwRVWJYt1
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Pull Preview/Development env vars (never Production)
+        run: npx vercel env pull .env.local --environment=preview --token=${{ secrets.VERCEL_TOKEN }} --yes
+
+      - name: Apply pending migrations to the Preview/dev database
+        run: npx prisma migrate deploy
+
+      - run: npm run build
+
+      - name: Start server
+        run: |
+          npm run start &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/login > /dev/null && exit 0
+            sleep 1
+          done
+          echo "Server did not become ready in time" >&2
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright (Python)
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Run E2E suite
+        run: python e2e/run.py
