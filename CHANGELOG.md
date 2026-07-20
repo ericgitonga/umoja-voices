@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.19.1] - 2026-07-20
+
+### Fixed
+
+- **Breadcrumb on admin song edit page** (closes #37): after creating a song, `createSong`
+  redirects straight to `/admin/songs/{id}/edit` with no way back to the song library except
+  the top-nav "Songs" link (which drops you at the library root) or the browser back button.
+  Added the shared `Breadcrumb` component (already used on the song detail and media pages) to
+  `src/app/admin/songs/[id]/edit/page.tsx`, showing "Songs / {title}" with "Songs" linking to
+  `/songs`.
+- Verified live against the real Supabase-backed dev environment: logged in as the seeded admin
+  via a non-destructive `magiclink` (not `recovery`, so it doesn't touch the real password),
+  confirmed the breadcrumb renders correctly on `/admin/songs/{id}/edit`, and clicked it through
+  to `/songs` successfully, with zero console errors.
+
 ## [0.19.0] - 2026-07-20
 
 ### Changed

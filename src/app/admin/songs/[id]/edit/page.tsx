@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { parseVoiceTags } from "@/lib/constants";
+import Breadcrumb from "@/components/Breadcrumb";
 import SongEditor from "./SongEditor";
 
 export default async function EditSongPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +21,7 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
+      <Breadcrumb items={[{ label: "Songs", href: "/songs" }, { label: song.title }]} />
       <h1 className="mb-6 text-2xl font-semibold text-ink">Edit song</h1>
       <SongEditor
         songId={song.id}
