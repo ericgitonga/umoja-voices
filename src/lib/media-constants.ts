@@ -20,3 +20,10 @@ export const AUDIO_ALLOWED_MIME_TYPES = [
 ] as const;
 
 export const AUDIO_ACCEPT = [...AUDIO_ALLOWED_EXTENSIONS.map((e) => `.${e}`), "audio/*"].join(",");
+
+// Client-safe constants for direct PDF sheet-music uploads (#38). Server-side
+// upload/delete logic lives in src/lib/sheet-music-storage.ts.
+export const SHEET_MUSIC_MAX_BYTES = 20 * 1024 * 1024;
+export const SHEET_MUSIC_ALLOWED_EXTENSIONS = ["pdf"] as const;
+export const SHEET_MUSIC_ALLOWED_MIME_TYPES = ["application/pdf"] as const;
+export const SHEET_MUSIC_ACCEPT = [...SHEET_MUSIC_ALLOWED_EXTENSIONS.map((e) => `.${e}`), "application/pdf"].join(",");

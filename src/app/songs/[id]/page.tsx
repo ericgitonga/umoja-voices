@@ -24,6 +24,7 @@ export default async function SongDetailPage({
         include: { media: { orderBy: { sortOrder: "asc" } } },
       },
       lyricSections: { orderBy: { sortOrder: "asc" } },
+      sheetMusic: true,
     },
   });
 
@@ -60,7 +61,7 @@ export default async function SongDetailPage({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
           href={`/songs/${song.id}/media`}
           className="rounded-lg border-l-4 border-gold bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
@@ -78,6 +79,18 @@ export default async function SongDetailPage({
               ))}
             </div>
           )}
+        </Link>
+
+        <Link
+          href={`/songs/${song.id}/sheet-music`}
+          className="rounded-lg border-l-4 border-ink/20 bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
+        >
+          <p className="font-semibold text-ink">Sheet Music</p>
+          <p className="text-sm text-ink/60">
+            {song.sheetMusic.length === 0
+              ? "None"
+              : `${song.sheetMusic.length} ${song.sheetMusic.length === 1 ? "file" : "files"}`}
+          </p>
         </Link>
 
         <Link

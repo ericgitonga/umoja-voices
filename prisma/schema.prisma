@@ -49,6 +49,7 @@ model Song {
 
   sections      SongSection[]
   lyricSections LyricSection[]
+  sheetMusic    SongSheetMusic[]
 }
 
 // A named voice-part grouping (e.g. "Tenor") that can hold multiple media
@@ -75,6 +76,21 @@ model SongMedia {
   // "audio" | "video" | "youtube" | "drive" | "soundcloud" | "direct_url"
   mediaKind String
   sortOrder Int         @default(0)
+}
+
+// PDF music scores (#38) — a flat per-song list, not grouped by voice part
+// like SongMedia/SongSection: sheet music is typically a full score or a
+// handful of parts, not per-voice recordings. Uploaded to the "song-sheet-music"
+// Storage bucket (src/lib/sheet-music-storage.ts), counted toward the same
+// project-wide storage budget shown on the admin Storage page.
+model SongSheetMusic {
+  id        String   @id @default(cuid())
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  label     String
+  fileUrl   String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 model LyricSection {

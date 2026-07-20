@@ -5,7 +5,24 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
-## [0.19.1] - 2026-07-20
+## [0.20.0] - 2026-07-20
+
+### Added
+
+- **Sheet Music (PDF) upload for songs** (closes #38): a new `SongSheetMusic` model (flat
+  per-song list, not grouped by voice part like `SongMedia`/`SongSection` — sheet music is
+  typically a full score or a handful of parts, not per-voice recordings) plus a third
+  "Sheet Music" card on the song detail page alongside Media and Lyrics. PDFs upload to a new
+  `song-sheet-music` Supabase Storage bucket (`src/lib/sheet-music-storage.ts`, mirroring the
+  #36 audio-upload pattern: admin-client-only, server-side MIME/extension/size validation,
+  20MB per-file cap, storage cleanup on delete) via a new `/songs/[id]/sheet-music` page with
+  admin-only add/remove.
+- **Sortable, combined admin Storage page**: extended to show both audio and sheet-music usage
+  under one shared quota bar (Supabase's 1GB free tier is project-wide, not per-bucket), with
+  each file tagged by kind. Added a new `StorageFileList` client component with sort controls
+  (File name / Type / Size, click to toggle ascending/descending) — requested directly by the
+  app owner while this issue was in progress, since it touched the same page. #42's pagination
+  and page-size-selector work for this same page is unrelated and still unstarted.
 
 ### Fixed
 
