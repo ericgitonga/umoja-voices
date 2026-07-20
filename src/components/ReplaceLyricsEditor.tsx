@@ -38,13 +38,18 @@ export default function ReplaceLyricsEditor({
     }
     setSaving(true);
     setError(null);
-    const result = await replaceLyrics(songId, preview);
-    setSaving(false);
-    if (result.error) {
-      setError(result.error);
-      return;
+    try {
+      const result = await replaceLyrics(songId, preview);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      router.push(`/songs/${songId}/lyrics`);
+    } catch {
+      setError("Something went wrong — please try again.");
+    } finally {
+      setSaving(false);
     }
-    router.push(`/songs/${songId}/lyrics`);
   }
 
   function handleCancel() {

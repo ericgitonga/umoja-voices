@@ -24,6 +24,41 @@ function storagePathFromUrl(url: string): string | null {
   return url.startsWith(prefix) ? url.slice(prefix.length) : null;
 }
 
+type SniffedAudioFormat = "mp3" | "wav" | "mp4" | "ogg" | "unknown";
+
+// What container/frame format each allowed extension is expected to actually
+// contain. "m4a" is itself an MP4/ISO-BMFF container, so it maps to "mp4" —
+// this is what lets a genuine .m4a through while still catching a renamed
+// AAC/MP4 stream masquerading as .mp3 (the exact shape of a YouTube-style
+// DASH audio download saved with the wrong extension, see #38 follow-up).
+const EXTENSION_EXPECTED_FORMAT: Record<string, SniffedAudioFormat> = {
+  mp3: "mp3",
+  wav: "wav",
+  m4a: "mp4",
+  ogg: "ogg",
+};
+
+/**
+ * Identifies the actual container/frame format from the file's own leading
+ * bytes — a browser's reported `File.type` for a local file is derived from
+ * its extension, not its content, so it can't be trusted to catch a
+ * mislabeled file (see the .mp3-that's-really-AAC/MP4 case this guards
+ * against). 12 bytes is enough to identify every format below.
+ */
+async function sniffAudioFormat(file: File): Promise<SniffedAudioFormat> {
+  const head = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const ascii = (start: number, len: number) =>
+    String.fromCharCode(...head.slice(start, start + len));
+
+  if (ascii(0, 3) === "ID3") return "mp3";
+  // MPEG frame sync: 11 set bits (0xFF followed by the top 3 bits of the next byte).
+  if (head[0] === 0xff && (head[1] & 0xe0) === 0xe0) return "mp3";
+  if (ascii(0, 4) === "RIFF" && ascii(8, 4) === "WAVE") return "wav";
+  if (ascii(4, 4) === "ftyp") return "mp4";
+  if (ascii(0, 4) === "OggS") return "ogg";
+  return "unknown";
+}
+
 /**
  * Validates and uploads an audio file via the admin/service-role client —
  * consistent with this app's pattern of never talking to Storage from the
@@ -44,6 +79,17 @@ export async function uploadAudioFile(file: File): Promise<{ url?: string; error
 
   if (file.size > AUDIO_MAX_BYTES) {
     return { error: `File is too large — max ${AUDIO_MAX_BYTES / (1024 * 1024)}MB.` };
+  }
+
+  const sniffed = await sniffAudioFormat(file);
+  const expected = EXTENSION_EXPECTED_FORMAT[ext];
+  if (sniffed !== expected) {
+    return {
+      error:
+        ext === "mp3" && sniffed === "mp4"
+          ? "This file's actual content is AAC/MP4 audio, not MP3 — common with files downloaded from YouTube without converting them. Re-export it as a real MP3 (e.g. via Audacity) and upload that instead."
+          : `This file's content doesn't look like a real .${ext} file — it may be mislabeled or corrupted.`,
+    };
   }
 
   const supabase = createAdminClient();

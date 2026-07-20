@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addSheetMusic } from "@/lib/actions/sheet-music-actions";
 import { SHEET_MUSIC_MAX_BYTES, SHEET_MUSIC_ACCEPT } from "@/lib/media-constants";
@@ -11,6 +11,7 @@ export default function AddSheetMusicForm({ songId }: { songId: string }) {
   const [label, setLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,15 +25,21 @@ export default function AddSheetMusicForm({ songId }: { songId: string }) {
     }
     setSaving(true);
     setError(null);
-    const result = await addSheetMusic(songId, label, file);
-    setSaving(false);
-    if (result.error) {
-      setError(result.error);
-      return;
+    try {
+      const result = await addSheetMusic(songId, label, file);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setFile(null);
+      setLabel("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      router.refresh();
+    } catch {
+      setError("Something went wrong — please try again.");
+    } finally {
+      setSaving(false);
     }
-    setFile(null);
-    setLabel("");
-    router.refresh();
   }
 
   return (
@@ -42,6 +49,7 @@ export default function AddSheetMusicForm({ songId }: { songId: string }) {
       <label className="flex flex-col gap-1 text-sm">
         PDF file <span className="text-red-600">*</span>
         <input
+          ref={fileInputRef}
           required
           type="file"
           accept={SHEET_MUSIC_ACCEPT}

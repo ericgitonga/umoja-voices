@@ -8,8 +8,12 @@ export default function RemoveSheetMusicButton({ songId, sheetMusicId }: { songI
 
   async function handleClick() {
     if (!confirm("Remove this sheet music file?")) return;
-    await removeSheetMusic(songId, sheetMusicId);
-    router.refresh();
+    try {
+      await removeSheetMusic(songId, sheetMusicId);
+      router.refresh();
+    } catch {
+      alert("Something went wrong removing this file — please try again.");
+    }
   }
 
   return (

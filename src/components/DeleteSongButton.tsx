@@ -8,11 +8,15 @@ export default function DeleteSongButton({ songId, redirectTo }: { songId: strin
 
   async function handleClick() {
     if (!confirm("Delete this song? This cannot be undone.")) return;
-    await deleteSong(songId);
-    if (redirectTo) {
-      router.push(redirectTo);
-    } else {
-      router.refresh();
+    try {
+      await deleteSong(songId);
+      if (redirectTo) {
+        router.push(redirectTo);
+      } else {
+        router.refresh();
+      }
+    } catch {
+      alert("Something went wrong deleting this song — please try again.");
     }
   }
 

@@ -8,8 +8,12 @@ export default function RemoveMediaButton({ songId, mediaId }: { songId: string;
 
   async function handleClick() {
     if (!confirm("Remove this media item?")) return;
-    await removeSongMedia(songId, mediaId);
-    router.refresh();
+    try {
+      await removeSongMedia(songId, mediaId);
+      router.refresh();
+    } catch {
+      alert("Something went wrong removing this item — please try again.");
+    }
   }
 
   return (

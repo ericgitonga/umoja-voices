@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addSongMedia } from "@/lib/actions/song-actions";
 import { SONG_PART_OPTIONS, SONG_PART_LABEL_TEXT, type SongPartOption } from "@/lib/constants";
@@ -17,12 +17,14 @@ export default function AddAudioForm({ songId }: { songId: string }) {
   const [part, setPart] = useState<SongPartOption>("S");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function switchMode(next: Mode) {
     setMode(next);
     setUrl("");
     setFile(null);
     setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -37,17 +39,25 @@ export default function AddAudioForm({ songId }: { songId: string }) {
     }
     setSaving(true);
     setError(null);
-    const result = await addSongMedia(songId, part, label, mode === "paste" ? url : "", mode === "upload" ? file : null);
-    setSaving(false);
-    if (result.error) {
-      setError(result.error);
-      return;
+    try {
+      const result = await addSongMedia(songId, part, label, mode === "paste" ? url : "", mode === "upload" ? file : null);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setUrl("");
+      setFile(null);
+      setLabel("");
+      setPart("S");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      router.refresh();
+    } catch {
+      // A thrown network/server error (e.g. a dropped connection) must never
+      // leave the button stuck at "Adding…" forever with no way to retry.
+      setError("Something went wrong — please try again.");
+    } finally {
+      setSaving(false);
     }
-    setUrl("");
-    setFile(null);
-    setLabel("");
-    setPart("S");
-    router.refresh();
   }
 
   return (
@@ -94,6 +104,7 @@ export default function AddAudioForm({ songId }: { songId: string }) {
         <label className="flex flex-col gap-1 text-sm">
           Audio file <span className="text-red-600">*</span>
           <input
+            ref={fileInputRef}
             required
             type="file"
             accept={AUDIO_ACCEPT}

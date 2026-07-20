@@ -5,6 +5,32 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.20.1] - 2026-07-20
+
+### Fixed
+
+- **Audio upload stuck at "Adding…" / uploads unplayable files** (closes #51): two independent
+  bugs found investigating a real report. (1) Files downloaded from YouTube-style adaptive
+  streaming (DASH) sources are often AAC audio in an MP4 container despite a `.mp3` extension —
+  `uploadAudioFile` only checked the browser-reported `File.type` and filename extension, both
+  extension-derived and easily fooled (confirmed: Chromium reports `audio/mpeg` identically for
+  a real MP3 and for a mislabeled AAC/MP4 file), so a mismatched file uploaded "successfully"
+  and only failed at actual playback. Added `sniffAudioFormat()` to `src/lib/storage.ts`,
+  reading the file's first 12 bytes to identify its real container/frame format and reject a
+  mismatch with a specific, actionable error (`m4a` legitimately is an MP4 container, so this
+  only catches a genuine mismatch, not legitimate `.m4a` uploads). (2) `AddAudioForm.handleSubmit`
+  had no `try/catch` around its Server Action call — any thrown error (a network drop, or a
+  transient Supabase/Postgres connectivity hiccup, observed happening live against this project
+  multiple times) left the button stuck on "Adding…" forever with no error shown and no way to
+  retry short of reloading. Reproduced directly with a forced-network-failure test matching the
+  reported screenshot exactly. The same missing-try/catch pattern existed in 6 other places
+  (`AddSheetMusicForm`, `SongEditor.handleSave`, `ReplaceLyricsEditor.handleSave`,
+  `RemoveMediaButton`, `RemoveSheetMusicButton`, `DeleteSongButton`) — all now wrapped
+  consistently, always resetting the loading state and surfacing a clear error. Also fixed a
+  related cosmetic bug in both upload forms: the native file input never visually cleared after
+  a successful submit (can't be reset via React state alone), fixed via a ref-based
+  `.value = ""` reset.
+
 ## [0.20.0] - 2026-07-20
 
 ### Added

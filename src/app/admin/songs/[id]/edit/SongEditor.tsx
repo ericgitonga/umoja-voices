@@ -101,14 +101,19 @@ export default function SongEditor({
     }
     setSaving(true);
     setStatus(null);
-    const result = await updateSongFull(songId, meta, voiceSections, sections);
-    setSaving(false);
-    if (result.error) {
-      setStatus(result.error);
-      return;
+    try {
+      const result = await updateSongFull(songId, meta, voiceSections, sections);
+      if (result.error) {
+        setStatus(result.error);
+        return;
+      }
+      setStatus("Saved.");
+      router.refresh();
+    } catch {
+      setStatus("Something went wrong — please try again.");
+    } finally {
+      setSaving(false);
     }
-    setStatus("Saved.");
-    router.refresh();
   }
 
   return (
