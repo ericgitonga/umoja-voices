@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.25.0] - 2026-07-21
+
+### Added
+
+- **Public About page + genuinely public Links page** (closes #43): the issue's own premise
+  ("no middleware, auth enforced ad hoc per page") turned out stale — `src/proxy.ts` (this
+  project's actual middleware) already gated `/links` via `PROTECTED_PREFIXES`, redirecting
+  anonymous visitors to `/login` before the page's own code ever ran. Removed `/links` from that
+  list (and never added the new `/about`) so both are truly reachable without signing in — each
+  page's own `getSession()` call still conditionally hides admin-only controls, it just no longer
+  gates the page itself. Added `src/app/about/page.tsx`: starter copy about the choir's 2026
+  Portugal & Germany tour, joint concerts with host-nation choirs, and ticket sales supporting
+  White Ribbon Alliance Kenya (mission/focus areas sourced from whiteribbonalliancekenya.org) —
+  their Instagram reel is linked out to rather than embedded (Instagram's official embed needs an
+  external `embed.js` script this app's strict nonce-based CSP doesn't allow; a bare-iframe
+  embed may be possible without that — left for a follow-up issue). `MediaEmbed`'s existing
+  YouTube-embed pattern is wired in and ready for a real video link once one exists.
+
+### Changed
+
+- **`Nav` shows a minimal public nav (About, Links, Sign in) instead of nothing at all when
+  logged out** — previously returned `null` entirely for anonymous visitors, so #43's public
+  pages had no way to be discovered without knowing the URL.
+
+### Testing
+
+- Added `e2e/test_public_pages.py` (3 new specs): `/about` and `/links` load without redirecting
+  to `/login`, and the public nav shows the expected links. Full 8-spec suite verified passing
+  locally against the Preview database before opening the PR.
+
 ## [0.24.1] - 2026-07-21
 
 ### Changed
