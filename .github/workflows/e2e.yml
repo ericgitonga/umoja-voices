@@ -6,6 +6,8 @@ name: E2E (Preview)
 # Tokens) with access to the egm2/umoja-voices project; org/project IDs
 # below are plain identifiers (same ones in the gitignored .vercel/
 # project.json), not secrets.
+#
+# (This comment line added by a test PR verifying the gate actually runs.)
 
 on:
   pull_request:
