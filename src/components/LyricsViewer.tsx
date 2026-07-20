@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { VOICE_TAGS, VOICE_TAG_LABEL, type VoiceTag } from "@/lib/constants";
+import { VOICE_TAGS, VOICE_TAG_LABEL, VOICE_TAG_COLOR, type VoiceTag } from "@/lib/constants";
 
 type Section = {
   id: string;
@@ -24,7 +24,7 @@ export default function LyricsViewer({ sections }: { sections: Section[] }) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className="rounded-full bg-ink px-3 py-1 font-medium text-white">
+        <span className={`rounded-full px-3 py-1 font-medium ${VOICE_TAG_COLOR[activeFilter ?? "SATB"].solid}`}>
           {activeFilter ? VOICE_TAG_LABEL[activeFilter] : "ALL"}
         </span>
         <div className="flex flex-wrap gap-2">
@@ -32,7 +32,7 @@ export default function LyricsViewer({ sections }: { sections: Section[] }) {
             <button
               key={tag}
               onClick={() => setActiveFilter(activeFilter === tag ? null : tag)}
-              className={`rounded-full px-3 py-1 ${activeFilter === tag ? "bg-ink text-white" : "bg-ink/5 text-ink/80"}`}
+              className={`rounded-full px-3 py-1 ${activeFilter === tag ? VOICE_TAG_COLOR[tag].solid : VOICE_TAG_COLOR[tag].pill}`}
             >
               {tag}
             </button>
@@ -49,7 +49,7 @@ export default function LyricsViewer({ sections }: { sections: Section[] }) {
                 {section.voiceTags.map((t) => (
                   <span
                     key={t}
-                    className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-medium text-ink/60"
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${VOICE_TAG_COLOR[t].pill}`}
                   >
                     {VOICE_TAG_LABEL[t]}
                   </span>

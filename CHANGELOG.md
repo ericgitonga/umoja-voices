@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.22.0] - 2026-07-20
+
+### Added
+
+- **Pastel color-coded voice-part badges/tags, consistent app-wide** (closes #40): added
+  `VOICE_TAG_COLOR` to `src/lib/constants.ts` — a shared `{ pill, solid }` Tailwind class map
+  keyed by `VoiceTag` (S-red, A-green, T-yellow, B-blue, SATB/All-orange). Replaces the flat gray
+  `bg-ink/*` pills at all three render sites: the media page's per-`SongSection` group badge
+  (`songs/[id]/media/page.tsx`, mapped through `SONG_PART_TO_VOICE_TAG` since that page keys off
+  `SONG_PART_OPTIONS` not `VOICE_TAGS`), the song detail page's `partsPresent` badges
+  (`songs/[id]/page.tsx`), and `LyricsViewer`'s per-section voice tags plus its filter tabs and
+  "ALL"/active-filter indicator (using `solid` for the selected state, `pill` otherwise). Media
+  grouping per voice section already existed via `SongSection`/`part` — confirmed and left as-is
+  per the issue's scope, only the badge coloring changed.
+
 ## [0.21.0] - 2026-07-20
 
 ### Added

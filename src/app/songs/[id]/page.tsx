@@ -4,6 +4,7 @@ import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import DeleteSongButton from "@/components/DeleteSongButton";
 import Breadcrumb from "@/components/Breadcrumb";
+import { SONG_PART_TO_VOICE_TAG, VOICE_TAG_COLOR, type SongPartOption } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,9 @@ export default async function SongDetailPage({
   if (!song) notFound();
 
   const mediaCount = song.sections.reduce((sum, s) => sum + s.media.length, 0);
-  const partsPresent = Array.from(new Set(song.sections.map((s) => s.part)));
+  // s.part is validated against SONG_PART_OPTIONS at write time (see song-actions.ts) —
+  // the Prisma column itself is a plain String, per this project's enum-like-field convention.
+  const partsPresent = Array.from(new Set(song.sections.map((s) => s.part as SongPartOption)));
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -69,7 +72,10 @@ export default async function SongDetailPage({
           {partsPresent.length > 0 && (
             <div className="flex gap-1">
               {partsPresent.map((p) => (
-                <span key={p} className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-medium text-ink/60">
+                <span
+                  key={p}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${VOICE_TAG_COLOR[SONG_PART_TO_VOICE_TAG[p]].pill}`}
+                >
                   {p}
                 </span>
               ))}

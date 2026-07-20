@@ -5,7 +5,13 @@ import MediaEmbed from "@/components/MediaEmbed";
 import RemoveMediaButton from "@/components/RemoveMediaButton";
 import AddAudioForm from "@/components/AddAudioForm";
 import Breadcrumb from "@/components/Breadcrumb";
-import { SONG_PART_OPTIONS, SONG_PART_LABEL_TEXT, type MediaKind } from "@/lib/constants";
+import {
+  SONG_PART_OPTIONS,
+  SONG_PART_LABEL_TEXT,
+  SONG_PART_TO_VOICE_TAG,
+  VOICE_TAG_COLOR,
+  type MediaKind,
+} from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +56,9 @@ export default async function SongMediaPage({ params }: { params: Promise<{ id: 
         {groups.map((group) => (
           <section key={group.part}>
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink/60">
-              <span className="rounded bg-ink/10 px-1.5 py-0.5 text-ink">{group.part}</span>
+              <span className={`rounded px-1.5 py-0.5 ${VOICE_TAG_COLOR[SONG_PART_TO_VOICE_TAG[group.part]].pill}`}>
+                {group.part}
+              </span>
               {group.label}
             </h2>
             <div className="flex flex-col gap-4">
