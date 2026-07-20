@@ -44,12 +44,21 @@ export async function login(email: string, password: string): Promise<{ error?: 
   return {};
 }
 
-/** Slows the "account doesn't exist" branch down to roughly match the
- *  "account exists, reset requested" branch — a bare early-return would let
- *  an attacker enumerate valid emails by timing this action's response. */
-function timingSafetyDelay(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 80));
-}
+// Total response time this action always pads up to, regardless of which
+// branch ran — closes the timing gap between "account doesn't exist"/
+// rate-limited (a Prisma lookup only, ~250-350ms steady-state against the
+// live Supabase project) and "account exists" (a Prisma lookup plus a real
+// Supabase Auth API call, ~520-1250ms observed). #18: the previous fixed
+// 80ms delay only padded the fast branch, so it never actually closed this
+// gap — a bare 80ms addition still left the fast branch 150-1000ms faster
+// than the real one. 1400ms sits comfortably above every steady-state and
+// most tail-latency samples measured directly against production Supabase
+// (see the issue for the measurement); occasional network-jitter outliers
+// on either branch can still exceed it, which is an accepted residual risk
+// given real network calls have unbounded tail latency — combined with the
+// per-email/per-IP rate limits above, exploiting the residual gap would
+// need sustained statistical sampling over many hours, not a single probe.
+const RESET_TIMING_TARGET_MS = 1400;
 
 /**
  * Supabase Auth sends the reset email itself (via its dashboard-configured
@@ -59,6 +68,7 @@ function timingSafetyDelay(): Promise<void> {
  * shows the same "if that email matches an account..." message either way.
  */
 export async function requestPasswordReset(email: string): Promise<Record<string, never>> {
+  const start = Date.now();
   const normalizedEmail = email.toLowerCase();
   const ip = getClientIp(await headers());
 
@@ -75,17 +85,22 @@ export async function requestPasswordReset(email: string): Promise<Record<string
 
   const user = ipOk && emailOk ? await prisma.user.findUnique({ where: { email: normalizedEmail } }) : null;
 
-  if (!user || user.status !== "active") {
-    // Do not reveal whether the account exists, whether it's rate-limited,
-    // or which — including via response timing.
-    await timingSafetyDelay();
-    return {};
+  if (user && user.status === "active") {
+    const supabase = await createClient();
+    await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${appBaseUrl()}/auth/confirm?type=recovery&next=/reset-password`,
+    });
   }
 
-  const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-    redirectTo: `${appBaseUrl()}/auth/confirm?type=recovery&next=/reset-password`,
-  });
+  // Do not reveal whether the account exists, whether it's rate-limited, or
+  // which — including via response timing. Pad total elapsed time up to a
+  // fixed target rather than sleeping a fixed amount only on one branch, so
+  // this stays correct regardless of which branch ran or how long its real
+  // work actually took.
+  const elapsed = Date.now() - start;
+  if (elapsed < RESET_TIMING_TARGET_MS) {
+    await new Promise((resolve) => setTimeout(resolve, RESET_TIMING_TARGET_MS - elapsed));
+  }
 
   return {};
 }

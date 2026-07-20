@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateMemberRole, setMemberStatus, deleteMember } from "@/lib/actions/member-actions";
+import { updateMemberRole, setMemberStatus, deleteMember, generateMemberResetLink } from "@/lib/actions/member-actions";
 
 export default function MemberRow({
   id,
@@ -24,6 +24,8 @@ export default function MemberRow({
   // after the server blocks it (e.g. the self-lockout guard), which reads
   // as a silent success that never actually happened.
   const [currentRole, setCurrentRole] = useState(role);
+  const [resetLink, setResetLink] = useState<string | null>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
 
   return (
     <li className="flex flex-col gap-2 rounded-lg border border-ink/10 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
@@ -33,8 +35,33 @@ export default function MemberRow({
           {email} &middot; {status}
         </p>
         {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+        {resetLink && (
+          <p className="mt-2 rounded bg-amber-50 p-2 text-xs text-amber-800">
+            Reset link — share manually (real email delivery isn&apos;t wired up yet):{" "}
+            <code className="break-all">{resetLink}</code>
+          </p>
+        )}
       </div>
       <div className="flex items-center gap-3 text-sm">
+        {status === "active" && (
+          <button
+            onClick={async () => {
+              setError(null);
+              setGeneratingLink(true);
+              const result = await generateMemberResetLink(id);
+              setGeneratingLink(false);
+              if (result.error) {
+                setError(result.error);
+                return;
+              }
+              setResetLink(result.resetLink ?? null);
+            }}
+            disabled={generatingLink}
+            className="text-xs text-ink hover:underline disabled:opacity-60"
+          >
+            {generatingLink ? "Generating…" : "Reset link"}
+          </button>
+        )}
         <select
           value={currentRole}
           onChange={async (e) => {

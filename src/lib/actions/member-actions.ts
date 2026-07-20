@@ -18,6 +18,12 @@ const INVITE_WINDOW_MS = 60 * 60_000; // 1 hour
 const INVITE_MAX_PER_ADMIN = 20;
 const INVITE_MAX_PER_IP = 40; // covers a few admins sharing an office network
 
+// Same reasoning as invite above, same window/caps — a member rarely needs
+// more than one fresh reset link at a time.
+const RESET_LINK_WINDOW_MS = 60 * 60_000; // 1 hour
+const RESET_LINK_MAX_PER_ADMIN = 20;
+const RESET_LINK_MAX_PER_IP = 40;
+
 async function requireAdmin() {
   const session = await getSession();
   if (!session || session.user.role !== "admin") {
@@ -83,6 +89,49 @@ export async function inviteMember(
 
   const inviteLink = `${appBaseUrl()}/auth/confirm?token_hash=${data.properties.hashed_token}&type=invite&next=/accept-invite`;
   return { inviteLink };
+}
+
+/**
+ * The admin-mediated escape hatch for password reset (#18): the anonymous
+ * /forgot-password page can never safely show a conditional link (doing so
+ * would leak account existence outright — worse than the timing side-channel
+ * it's designed to avoid), but an admin who already knows this member exists
+ * (they're looking at the member list) can safely generate and share one
+ * manually — same `hashed_token`-not-`action_link` construction as
+ * inviteMember above, same reasoning (see SKILL.md's gotchas).
+ */
+export async function generateMemberResetLink(userId: string): Promise<{ error?: string; resetLink?: string }> {
+  const session = await requireAdmin();
+
+  const ip = getClientIp(await headers());
+  const adminOk = checkRateLimit(`reset-link:admin:${session.user.id}`, RESET_LINK_MAX_PER_ADMIN, RESET_LINK_WINDOW_MS);
+  const ipOk = checkRateLimit(`reset-link:ip:${ip}`, RESET_LINK_MAX_PER_IP, RESET_LINK_WINDOW_MS);
+  if (!adminOk || !ipOk) {
+    const minutes = Math.max(
+      rateLimitResetMinutes(`reset-link:admin:${session.user.id}`),
+      rateLimitResetMinutes(`reset-link:ip:${ip}`)
+    );
+    return {
+      error: `Too many reset links generated recently. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+    };
+  }
+
+  const member = await prisma.user.findUnique({ where: { id: userId } });
+  if (!member) return { error: "Member not found." };
+  if (member.status !== "active") return { error: "Only active members can be sent a reset link." };
+
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient.auth.admin.generateLink({
+    type: "recovery",
+    email: member.email,
+  });
+
+  if (error || !data.properties?.hashed_token) {
+    return { error: error?.message ?? "Could not generate a reset link." };
+  }
+
+  const resetLink = `${appBaseUrl()}/auth/confirm?token_hash=${data.properties.hashed_token}&type=recovery&next=/reset-password`;
+  return { resetLink };
 }
 
 /**

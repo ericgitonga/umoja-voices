@@ -7,14 +7,16 @@ import { requestPasswordReset } from "@/lib/actions/auth-actions";
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [devLink, setDevLink] = useState<string | null>(null);
-  const [emailSent, setEmailSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const { resetLink, emailSent: sent } = await requestPasswordReset(email);
-    setDevLink(resetLink ?? null);
-    setEmailSent(sent ?? false);
+    // Deliberately ignores the (empty) return value and shows the exact
+    // same UI regardless of outcome — this response must never reveal
+    // whether the email matched an account. If real email delivery isn't
+    // configured yet (#34), an admin can generate a reset link manually
+    // from the Members page instead (an authenticated, admin-only escape
+    // hatch — this anonymous page can't safely offer one, see #18).
+    await requestPasswordReset(email);
     setSubmitted(true);
   }
 
@@ -28,15 +30,6 @@ export default function ForgotPasswordPage() {
       {submitted ? (
         <div className="rounded border border-ink/10 bg-ink/5 p-4 text-sm text-ink/80">
           <p>If that email matches an account, a reset link is on its way.</p>
-          {devLink && !emailSent && (
-            <p className="mt-3 rounded bg-amber-50 p-2 text-xs text-amber-800">
-              <strong>Email not sent</strong> (no email provider configured, or the send failed)
-              — here&apos;s the link that would be emailed:{" "}
-              <Link href={devLink} className="underline">
-                {devLink}
-              </Link>
-            </p>
-          )}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

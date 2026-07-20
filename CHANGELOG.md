@@ -5,6 +5,45 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.18.0] - 2026-07-20
+
+### Fixed
+
+- **Retuned the `requestPasswordReset` timing-safety mitigation** (closes #18): the fixed 80ms
+  delay only padded the "account doesn't exist" branch, and never actually tracked real
+  Postgres/Supabase latency — measured directly against the live Supabase project, the real gap
+  was 250ms–1000ms (account-exists path: ~520–1250ms via `resetPasswordForEmail`;
+  account-doesn't-exist path: ~250–350ms steady-state via a Prisma lookup alone), not 80ms. Now
+  pads *total elapsed time* up to a fixed 1400ms target regardless of which branch ran, rather
+  than sleeping a fixed amount only on one side — closes the gap to ~10ms in browser-verified
+  testing, down from 250–1000ms.
+- **Fixed dead code in `forgot-password/page.tsx`**: it destructured `resetLink`/`emailSent`
+  from `requestPasswordReset`, which has returned only `{}` since the v0.15.0 Supabase Auth
+  migration — both were always `undefined`/`false`. Combined with password-reset email being
+  fully blocked on #34, this meant the forgot-password flow was a silent dead end in production
+  with no way to actually reset a password. Removed the dead destructuring; the page now
+  correctly shows the same generic message regardless of outcome, as designed.
+
+### Added
+
+- **Admin-mediated password-reset link tool** (Members page): a "Reset link" button per active
+  member generates a Supabase recovery link (`admin.generateLink({type: "recovery"})` +
+  `hashed_token`, mirroring the invite flow's link construction) and shows it on-screen for
+  manual sharing — `generateMemberResetLink` in `member-actions.ts`, admin-gated and rate-limited
+  the same way `inviteMember` is. This is deliberately **not** on the anonymous
+  `/forgot-password` page: showing a link there only when an account exists would leak account
+  existence outright on the first request — a worse, immediate content-based side-channel than
+  the timing one #18 exists to close. The admin-gated version is safe because the admin already
+  knows which members exist (they're looking at the member list) — same reasoning as invite's
+  existing "a member with that email already exists" check.
+- `.env.local`: added the missing `APP_URL` (documented in `.env.example` but never actually set
+  locally) — without it, `appBaseUrl()`'s fallback chain picked up `.env`'s `NEXTAUTH_URL`, which
+  is permanently the literal string `"[SENSITIVE]"` (a `vercel env pull` redaction artifact, not
+  a real value — see `SKILL.md`'s gotchas), silently producing broken invite/reset links in local
+  dev only. Confirmed working end-to-end (generated link → followed anonymously → password
+  actually updated) only after this fix; not a production issue since Vercel's own stored env
+  vars aren't affected by this local-file redaction bug.
+
 ## [0.17.1] - 2026-07-20
 
 ### Changed
