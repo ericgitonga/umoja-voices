@@ -54,6 +54,7 @@ export async function createSong(formData: FormData) {
   const title = clip(String(formData.get("title") ?? "").trim(), "title");
   const composer = clip(String(formData.get("composer") ?? "").trim(), "name");
   const lyricist = clip(String(formData.get("lyricist") ?? "").trim(), "name");
+  const arranger = clip(String(formData.get("arranger") ?? "").trim(), "name");
 
   if (!title) {
     throw new Error("Title is required.");
@@ -64,6 +65,7 @@ export async function createSong(formData: FormData) {
       title,
       composer: composer || null,
       lyricist: lyricist || null,
+      arranger: arranger || null,
       createdById: session.user.id,
     },
   });
@@ -74,7 +76,7 @@ export async function createSong(formData: FormData) {
 
 export async function updateSongFull(
   songId: string,
-  meta: { title: string; composer: string; lyricist: string },
+  meta: { title: string; composer: string; lyricist: string; arranger: string },
   sections: SectionInput[],
   lyricSections: LyricSectionInput[]
 ): Promise<{ error?: string }> {
@@ -122,6 +124,7 @@ export async function updateSongFull(
         title: clip(meta.title.trim(), "title"),
         composer: clip(meta.composer.trim(), "name") || null,
         lyricist: clip(meta.lyricist.trim(), "name") || null,
+        arranger: clip(meta.arranger.trim(), "name") || null,
       },
     }),
     prisma.songSection.deleteMany({ where: { songId } }),

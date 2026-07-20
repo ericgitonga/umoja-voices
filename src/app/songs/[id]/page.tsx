@@ -40,13 +40,9 @@ export default async function SongDetailPage({
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-ink">{song.title}</h1>
-          {(song.lyricist || song.composer) && (
-            <p className="text-sm text-ink/60">
-              {song.lyricist && `Words: ${song.lyricist}`}
-              {song.lyricist && song.composer && " "}
-              {song.composer && `Music: ${song.composer}`}
-            </p>
-          )}
+          {song.lyricist && <p className="text-sm text-ink/60">Writer: {song.lyricist}</p>}
+          {song.composer && <p className="text-sm text-ink/60">Composer: {song.composer}</p>}
+          {song.arranger && <p className="text-sm text-ink/60">Arranger: {song.arranger}</p>}
         </div>
         {isAdmin && (
           <div className="flex items-center gap-3 text-sm">

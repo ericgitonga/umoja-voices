@@ -11,7 +11,7 @@ import {
 } from "@/lib/actions/song-actions";
 import { AUDIO_MAX_BYTES, AUDIO_ACCEPT } from "@/lib/media-constants";
 
-type Meta = { title: string; composer: string; lyricist: string };
+type Meta = { title: string; composer: string; lyricist: string; arranger: string };
 type MediaMode = "paste" | "upload";
 
 export default function SongEditor({
@@ -128,7 +128,7 @@ export default function SongEditor({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Words (lyricist)
+          Writer
           <input
             value={meta.lyricist}
             onChange={(e) => setMeta({ ...meta, lyricist: e.target.value })}
@@ -136,10 +136,18 @@ export default function SongEditor({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Music (composer)
+          Composer
           <input
             value={meta.composer}
             onChange={(e) => setMeta({ ...meta, composer: e.target.value })}
+            className="rounded border border-ink/20 px-3 py-2"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Arranger
+          <input
+            value={meta.arranger}
+            onChange={(e) => setMeta({ ...meta, arranger: e.target.value })}
             className="rounded border border-ink/20 px-3 py-2"
           />
         </label>

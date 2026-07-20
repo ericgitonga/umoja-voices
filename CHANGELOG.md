@@ -5,6 +5,26 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.21.0] - 2026-07-20
+
+### Added
+
+- **`arranger` as its own Song field, distinct from `composer`** (closes #39): the song
+  create/edit forms previously had two credit boxes (Words/lyricist, Music/composer), with
+  "Music" implicitly doubling as "who arranged this" whenever the two differed. Added a new
+  `arranger` column (`prisma/schema.prisma`, migration `20260720150645_add_song_arranger`,
+  applied directly to the live Supabase DB per this project's single-database workflow) and a
+  fourth form box, so all three credit roles are captured separately.
+
+### Changed
+
+- **Song credit boxes relabeled and read-only views split onto separate lines** (closes #39):
+  `admin/songs/new/page.tsx` and `SongEditor.tsx` now show four boxes — Title, Writer, Composer,
+  Arranger — replacing the old "Words (lyricist)"/"Music (composer)" labels. The three read-only
+  display locations (`songs/page.tsx`, `songs/[id]/page.tsx`, `songs/[id]/lyrics/page.tsx`), which
+  all concatenated Words/Music onto one space-joined line, now render Writer/Composer/Arranger as
+  separate lines, each shown only when present.
+
 ## [0.20.1] - 2026-07-20
 
 ### Fixed

@@ -25,7 +25,12 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
       <h1 className="mb-6 text-2xl font-semibold text-ink">Edit song</h1>
       <SongEditor
         songId={song.id}
-        initialMeta={{ title: song.title, composer: song.composer ?? "", lyricist: song.lyricist ?? "" }}
+        initialMeta={{
+          title: song.title,
+          composer: song.composer ?? "",
+          lyricist: song.lyricist ?? "",
+          arranger: song.arranger ?? "",
+        }}
         initialSections={song.sections.map((s) => ({
           part: s.part,
           sectionLabel: s.sectionLabel,

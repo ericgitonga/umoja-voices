@@ -10,12 +10,16 @@ export default function NewSongPage() {
           <input name="title" required className="rounded border border-ink/20 px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Words (lyricist)
+          Writer
           <input name="lyricist" className="rounded border border-ink/20 px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Music (composer)
+          Composer
           <input name="composer" className="rounded border border-ink/20 px-3 py-2" />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Arranger
+          <input name="arranger" className="rounded border border-ink/20 px-3 py-2" />
         </label>
         <button type="submit" className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90">
           Create and continue
