@@ -5,6 +5,43 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.17.0] - 2026-07-20
+
+### Added
+
+- **Direct audio-file upload to Supabase Storage** (closes #36): `AddAudioForm` (Media page's
+  quick-add) and `SongEditor`'s per-section media rows both get a Paste-URL / Upload-file
+  toggle. Uploads go through a new public `song-audio` Storage bucket (created via
+  `npm run storage:setup` / `scripts/create-storage-bucket.ts`, scriptable rather than a manual
+  dashboard step), validated server-side (MIME type, extension against the existing
+  `detectMediaKind` audio allowlist, 20MB app-level cap below Supabase's 50MB hard limit) and
+  uploaded via the admin/service-role client (`src/lib/storage.ts`) — never from the client,
+  consistent with this app's existing Supabase access pattern. No schema change: an uploaded
+  file's public Storage URL slots into `SongMedia.mediaUrl`/`mediaKind` exactly like a pasted
+  link. Video stays link-only, per the app owner's explicit choice.
+- **Storage cleanup on delete**: `removeSongMedia` and `updateSongFull`'s wholesale
+  section/media replace both now delete the underlying Storage object when a removed
+  `mediaUrl` matches our own bucket's public URL prefix, so edits/deletes don't silently leak
+  quota on the 1GB free-tier budget.
+- **New `/admin/storage` page**: live usage vs. the 1GB budget (progress bar, amber/red at
+  70%/90%), plus a per-file breakdown (label, owning song/voice part, size) — added to the admin
+  nav alongside Members. Not in the original issue scope; added after the app owner asked for
+  quota visibility once #36 was underway.
+- `next.config.ts`: added a `media-src` CSP directive for the Supabase Storage domain (uploaded
+  audio would otherwise be silently blocked by `default-src 'self'`), and raised
+  `experimental.serverActions.bodySizeLimit` from Next's 1MB default to `22mb` — required for
+  the 20MB upload cap plus multipart overhead; caught while reading this Next.js version's own
+  docs under `node_modules/next/dist/docs/` per `AGENTS.md`, not something the original issue
+  scoping had flagged.
+
+### Verified
+
+- End-to-end in a real browser against the live Supabase project (temporary throwaway test
+  admin account and test song, both cleaned up afterward — not the production admin or real
+  song data): upload → playback (no CSP violation) → remove → Storage object actually deleted,
+  confirmed via `/admin/storage` showing 0 files. Exercised through both `AddAudioForm` and
+  `SongEditor`'s upload path.
+
 ## [0.16.0] - 2026-07-19
 
 ### Changed

@@ -1,6 +1,6 @@
 {
   "name": "umoja-voices",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
+    "storage:setup": "tsx scripts/create-storage-bucket.ts",
     "postinstall": "prisma generate"
   },
   "engines": {

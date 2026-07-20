@@ -30,6 +30,10 @@ const CSP = [
   // to reach the project's own API — without this, every call is silently
   // blocked by the browser with only a devtools CSP violation to go on.
   "connect-src 'self' https://tpsvwjeyncgbmuxflizi.supabase.co",
+  // Uploaded audio (#36) plays from Supabase Storage's public URL — same
+  // domain as connect-src above. Without this, default-src 'self' silently
+  // blocks the <audio> tag with only a devtools CSP violation to go on.
+  "media-src 'self' https://tpsvwjeyncgbmuxflizi.supabase.co",
   `frame-src ${FRAME_SRC}`,
   "object-src 'none'",
   "base-uri 'self'",
@@ -48,6 +52,14 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+  },
+  experimental: {
+    serverActions: {
+      // Default is 1MB. Audio uploads (#36) are capped at 20MB app-side
+      // (src/lib/storage.ts) — this must cover that plus multipart overhead
+      // (boundaries/part headers), hence the headroom above 20MB.
+      bodySizeLimit: "22mb",
+    },
   },
 };
 

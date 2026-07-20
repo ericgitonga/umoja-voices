@@ -9,8 +9,10 @@ import {
   type MediaInput,
   type LyricSectionInput,
 } from "@/lib/actions/song-actions";
+import { AUDIO_MAX_BYTES, AUDIO_ACCEPT } from "@/lib/media-constants";
 
 type Meta = { title: string; composer: string; lyricist: string };
+type MediaMode = "paste" | "upload";
 
 export default function SongEditor({
   songId,
@@ -26,23 +28,30 @@ export default function SongEditor({
   const router = useRouter();
   const [meta, setMeta] = useState(initialMeta);
   const [voiceSections, setVoiceSections] = useState<SectionInput[]>(initialSections);
+  // Mirrors voiceSections[i].media[j] 1:1 — kept in sync by every mutator
+  // below. Not part of SectionInput/MediaInput since it's pure UI state,
+  // never sent to updateSongFull.
+  const [mediaModes, setMediaModes] = useState<MediaMode[][]>(initialSections.map((s) => s.media.map(() => "paste")));
   const [sections, setSections] = useState<LyricSectionInput[]>(initialLyricSections);
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   function addVoiceSection() {
     setVoiceSections([...voiceSections, { part: "S", sectionLabel: "", labelDescription: "", media: [] }]);
+    setMediaModes([...mediaModes, []]);
   }
   function updateVoiceSection(i: number, patch: Partial<SectionInput>) {
     setVoiceSections(voiceSections.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
   }
   function removeVoiceSection(i: number) {
     setVoiceSections(voiceSections.filter((_, idx) => idx !== i));
+    setMediaModes(mediaModes.filter((_, idx) => idx !== i));
   }
   function addMedia(i: number) {
     setVoiceSections(
       voiceSections.map((s, idx) => (idx === i ? { ...s, media: [...s.media, { label: "", mediaUrl: "" }] } : s))
     );
+    setMediaModes(mediaModes.map((row, idx) => (idx === i ? [...row, "paste"] : row)));
   }
   function updateMedia(i: number, j: number, patch: Partial<MediaInput>) {
     setVoiceSections(
@@ -55,6 +64,13 @@ export default function SongEditor({
     setVoiceSections(
       voiceSections.map((s, idx) => (idx === i ? { ...s, media: s.media.filter((_, mj) => mj !== j) } : s))
     );
+    setMediaModes(mediaModes.map((row, idx) => (idx === i ? row.filter((_, mj) => mj !== j) : row)));
+  }
+  function setMediaMode(i: number, j: number, mode: MediaMode) {
+    setMediaModes(mediaModes.map((row, idx) => (idx === i ? row.map((m, mj) => (mj === j ? mode : m)) : row)));
+    // Switching modes discards whatever was in the other mode's field —
+    // a row is either a pasted URL or an uploaded file, never both.
+    updateMedia(i, j, mode === "paste" ? { file: null } : { mediaUrl: "" });
   }
 
   function addSection() {
@@ -78,6 +94,11 @@ export default function SongEditor({
   }
 
   async function handleSave() {
+    const oversized = voiceSections.some((s) => s.media.some((m) => m.file && m.file.size > AUDIO_MAX_BYTES));
+    if (oversized) {
+      setStatus(`One or more uploaded files are too large — max ${AUDIO_MAX_BYTES / (1024 * 1024)}MB.`);
+      return;
+    }
     setSaving(true);
     setStatus(null);
     const result = await updateSongFull(songId, meta, voiceSections, sections);
@@ -160,25 +181,60 @@ export default function SongEditor({
               />
 
               <div className="flex flex-col gap-2 border-l-2 border-ink/10 pl-3">
-                {s.media.map((m, j) => (
-                  <div key={j} className="flex gap-2">
-                    <input
-                      placeholder="Media label, e.g. Tenor video"
-                      value={m.label}
-                      onChange={(e) => updateMedia(i, j, { label: e.target.value })}
-                      className="rounded border border-ink/20 px-2 py-1 text-sm"
-                    />
-                    <input
-                      placeholder="Media URL (YouTube, Drive, SoundCloud, direct file, or any link)"
-                      value={m.mediaUrl}
-                      onChange={(e) => updateMedia(i, j, { mediaUrl: e.target.value })}
-                      className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm"
-                    />
-                    <button onClick={() => removeMedia(i, j)} className="text-sm text-red-600">
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                {s.media.map((m, j) => {
+                  const mode = mediaModes[i]?.[j] ?? "paste";
+                  return (
+                    <div key={j} className="flex flex-col gap-1">
+                      <div className="flex gap-2">
+                        <input
+                          placeholder="Media label, e.g. Tenor video"
+                          value={m.label}
+                          onChange={(e) => updateMedia(i, j, { label: e.target.value })}
+                          className="rounded border border-ink/20 px-2 py-1 text-sm"
+                        />
+                        <div className="flex gap-2 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => setMediaMode(i, j, "paste")}
+                            className={mode === "paste" ? "font-medium text-ink underline" : "text-ink/40 hover:text-ink"}
+                          >
+                            Paste
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setMediaMode(i, j, "upload")}
+                            className={mode === "upload" ? "font-medium text-ink underline" : "text-ink/40 hover:text-ink"}
+                          >
+                            Upload
+                          </button>
+                        </div>
+                        <button onClick={() => removeMedia(i, j)} className="text-sm text-red-600">
+                          Remove
+                        </button>
+                      </div>
+                      {mode === "paste" ? (
+                        <input
+                          placeholder="Media URL (YouTube, Drive, SoundCloud, direct file, or any link)"
+                          value={m.mediaUrl}
+                          onChange={(e) => updateMedia(i, j, { mediaUrl: e.target.value })}
+                          className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm"
+                        />
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <input
+                            type="file"
+                            accept={AUDIO_ACCEPT}
+                            onChange={(e) => updateMedia(i, j, { file: e.target.files?.[0] ?? null })}
+                            className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm"
+                          />
+                          <span className="text-xs text-ink/40">
+                            MP3, WAV, M4A, or OGG — max {AUDIO_MAX_BYTES / (1024 * 1024)}MB.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 {s.media.length === 0 && <p className="text-xs text-ink/40">No media yet.</p>}
                 <button onClick={() => addMedia(i)} className="self-start text-xs text-ink hover:underline">
                   + Add media

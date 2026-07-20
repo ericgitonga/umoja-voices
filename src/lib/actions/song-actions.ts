@@ -15,6 +15,7 @@ import {
 } from "@/lib/constants";
 import { clip, oneOf, subsetOf } from "@/lib/validation";
 import type { ParsedLyricSection } from "@/lib/lyrics-parser";
+import { uploadAudioFile, deleteAudioFile, isOwnAudioUrl } from "@/lib/storage";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -27,6 +28,10 @@ async function requireAdmin() {
 export type MediaInput = {
   label: string;
   mediaUrl: string;
+  // Set when this entry came from the Upload tab instead of the Paste-URL
+  // tab; resolved to a Storage URL (replacing mediaUrl) before it ever
+  // reaches the database.
+  file?: File | null;
 };
 
 export type SectionInput = {
@@ -79,6 +84,37 @@ export async function updateSongFull(
     return { error: "Title is required." };
   }
 
+  // Resolve any Upload-tab entries to Storage URLs before touching the DB —
+  // a failed upload should abort the save, not half-write the song.
+  const resolvedSections: SectionInput[] = [];
+  for (const s of sections) {
+    const resolvedMedia: MediaInput[] = [];
+    for (const m of s.media) {
+      if (m.file && m.file.size > 0) {
+        const result = await uploadAudioFile(m.file);
+        if (result.error) return { error: result.error };
+        resolvedMedia.push({ ...m, mediaUrl: result.url! });
+      } else {
+        resolvedMedia.push(m);
+      }
+    }
+    resolvedSections.push({ ...s, media: resolvedMedia });
+  }
+
+  const keptUrls = new Set(
+    resolvedSections.flatMap((s) => s.media.map((m) => m.mediaUrl.trim())).filter(Boolean)
+  );
+  const existingMedia = await prisma.songMedia.findMany({
+    where: { section: { songId } },
+    select: { mediaUrl: true },
+  });
+  // Sections/media are wholesale-replaced below, so an uploaded file whose
+  // row doesn't survive the replace would otherwise silently keep eating
+  // into the 1GB Storage budget forever.
+  const orphanedUrls = existingMedia
+    .map((m) => m.mediaUrl)
+    .filter((url) => isOwnAudioUrl(url) && !keptUrls.has(url));
+
   await prisma.$transaction([
     prisma.song.update({
       where: { id: songId },
@@ -89,7 +125,7 @@ export async function updateSongFull(
       },
     }),
     prisma.songSection.deleteMany({ where: { songId } }),
-    ...sections
+    ...resolvedSections
       .filter((s) => s.media.some((m) => m.mediaUrl.trim()))
       .map((s, i) =>
         prisma.songSection.create({
@@ -127,6 +163,8 @@ export async function updateSongFull(
     }),
   ]);
 
+  await Promise.all(orphanedUrls.map((url) => deleteAudioFile(url)));
+
   revalidatePath("/songs");
   revalidatePath(`/songs/${songId}`);
   return {};
@@ -148,14 +186,22 @@ export async function addSongMedia(
   songId: string,
   part: string,
   label: string,
-  mediaUrl: string
+  mediaUrl: string,
+  file?: File | null
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
   const trimmedLabel = label.trim();
-  const trimmedUrl = mediaUrl.trim();
+  let trimmedUrl = mediaUrl.trim();
+
+  if (file && file.size > 0) {
+    const result = await uploadAudioFile(file);
+    if (result.error) return { error: result.error };
+    trimmedUrl = result.url!;
+  }
+
   if (!trimmedLabel || !trimmedUrl) {
-    return { error: "Label and URL are required." };
+    return { error: "Label and URL (or an uploaded file) are required." };
   }
 
   const resolvedPart = oneOf(part, SONG_PART_OPTIONS, "All");
@@ -196,7 +242,10 @@ export async function addSongMedia(
 
 export async function removeSongMedia(songId: string, mediaId: string) {
   await requireAdmin();
-  await prisma.songMedia.delete({ where: { id: mediaId } });
+  const media = await prisma.songMedia.delete({ where: { id: mediaId } });
+  if (isOwnAudioUrl(media.mediaUrl)) {
+    await deleteAudioFile(media.mediaUrl);
+  }
   revalidatePath(`/songs/${songId}`);
   revalidatePath(`/songs/${songId}/media`);
 }
