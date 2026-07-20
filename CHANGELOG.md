@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.17.1] - 2026-07-20
+
+### Changed
+
+- **Merged `umoja.pdf` and `extras/design_process.pdf` into one living technical document**:
+  `extras/umoja_technical_document.md` (source, gitignored) rendered to
+  `extras/umoja_technical_document.pdf` via the `topdf` skill, replacing a bespoke ReportLab
+  generator script. The two source files had drifted apart — `design_process.pdf` was already
+  current through v0.16.0, while `umoja.pdf` was stuck at v0.13.3 and still described the
+  pre-Supabase-Auth-migration NextAuth flow and said audio upload was out of scope (false as of
+  #36). The merge brought everything to v0.17.0-current in the process: updated data model
+  (`authUserId`, retired `Invite`/`PasswordResetToken` tables), current invite/reset flow, the
+  new Storage/`/admin/storage` sections, an updated route map and tech stack table, and an
+  extended cost model (140–209hr range, up from 128–192hr, for the #36 work).
+  `extras/generate_design_pdf.py` is deleted outright as a result — dead code now that its
+  output no longer exists. `SKILL.md` and `README.md` updated to reference the new document.
+- Going forward, this document is updated with each issue tackled, not regenerated from scratch
+  — see `SKILL.md`'s "Data handling rules" section.
+
 ## [0.17.0] - 2026-07-20
 
 ### Added

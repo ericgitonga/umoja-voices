@@ -3,14 +3,17 @@
 Umoja Voices is a choir management web app: a song library with per-voice-part media and
 structured, voice-tagged lyrics; admin/chorister accounts with an invite-only signup flow;
 a travel logistics section for performance trips; and a public-facing external links page.
-Full requirements and rationale live in `umoja.pdf` (the design plan, reviewed and confirmed
-section by section before any code was written).
+Full requirements, as-built reference, design rationale, and cost record live in
+`extras/umoja_technical_document.pdf` (source: `extras/umoja_technical_document.md`, converted
+via the `topdf` skill) — a single living document, updated after each issue tackled. It replaces
+what were previously two separate files (`umoja.pdf`, `extras/design_process.pdf`) as of
+v0.17.0.
 
 ---
 
 ## Versioning
 
-Current version: **0.17.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.17.1** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -154,9 +157,9 @@ fixed-delay timing mitigation (#18)).
   permanently — nothing in it is ever added, and nothing from it is ever quoted verbatim into
   a tracked file, a commit message, an issue, a git tag, or a GitHub Release.
 - **Never name a real choir member anywhere tracked or gitignored** — not in `CHANGELOG.md`,
-  a commit message, a git tag, a GitHub Release, `extras/generate_design_pdf.py`,
-  `extras/design_process.pdf`, or any other file. Describe a motivating example generically
-  (e.g. "a member missed the RSVP deadline") instead of naming anyone.
+  a commit message, a git tag, a GitHub Release, `extras/umoja_technical_document.md`, or any
+  other file. Describe a motivating example generically (e.g. "a member missed the RSVP
+  deadline") instead of naming anyone.
 - **The one exception is the app owner, Eric Gitonga**, who is also the seeded admin account
   — safe to name anywhere, same as `gitonga@gmail.com` appears throughout the Career
   Transition project's own `SKILL.md`. **The second exception is "Demo Chorister"**
@@ -164,14 +167,15 @@ fixed-delay timing mitigation (#18)).
   specifically to demo the chorister view, safe to name anywhere, playing the same role Alex
   Mercer plays in the Career Transition project. Use it rather than inventing a new placeholder
   or reaching for a real member's name.
-- **`extras/` is fully gitignored** — effort log, cost workings, generated PDFs, and both
-  generator scripts (`generate_design_pdf.py`, `generate_security_pdf.py`). It is internal
-  business documentation and dev-only authoring tooling, not something that belongs in a
-  project's public history. `generate_design_pdf.py` was tracked as a one-off exception
-  through v0.13.2 (it contains no real member data or secrets, only illustrative market-rate
-  estimates) but was untracked at v0.13.3 for consistency with `generate_security_pdf.py` —
-  both scripts are local tools now, regenerate their PDFs locally rather than expecting them
-  in a fresh clone.
+- **`extras/` is fully gitignored** — effort log, cost workings, generated PDFs, the markdown
+  source, and the security-PDF generator script. It is internal business documentation and
+  dev-only authoring tooling, not something that belongs in a project's public history.
+  `generate_design_pdf.py` was tracked as a one-off exception through v0.13.2 (it contains no
+  real member data or secrets, only illustrative market-rate estimates), untracked at v0.13.3
+  for consistency with `generate_security_pdf.py`, then **deleted outright at v0.17.0**: its
+  output (`design_process.pdf`) was merged into `extras/umoja_technical_document.md`/`.pdf`
+  (see the top of this file), which is maintained directly as markdown and rendered via the
+  `topdf` skill instead of a bespoke ReportLab script.
 - **`extras/generate_security_pdf.py`** and its output `extras/security.pdf` stay fully
   gitignored — internal audit findings, not for public view. The audit was performed earlier
   than originally planned (at v0.3.0, not "post-POC") at the project owner's request; the rule
@@ -210,7 +214,7 @@ work — do not wait to be reminded twice in the same session.
 
 ## Tech stack
 
-See `umoja.pdf` Section 8 for the full production-target rationale (Next.js + Supabase +
+See `extras/umoja_technical_document.pdf` Section 9 for the full production-target rationale (Next.js + Supabase +
 Vercel). Currently:
 
 - Next.js 16 (App Router, TypeScript, Tailwind CSS)
@@ -304,10 +308,11 @@ connection strings — see the "Database" stand-in note above for why.
 ## Files to keep
 
 ```
-prisma/schema.prisma      ← data model (Postgres/Supabase; see file header for the enum note)
-prisma/seed.ts            ← demo data: admin + Demo Chorister + one placeholder song/trip
-umoja.pdf                 ← the reviewed design plan — authoritative for requirements
-extras/effort.xlsx        ← gitignored; hours log, see "Effort tracking" above
-extras/design_process.pdf ← gitignored; generated by the (also gitignored) extras/generate_design_pdf.py
-Media/                    ← gitignored permanently; real WhatsApp export, never committed
+prisma/schema.prisma                 ← data model (Postgres/Supabase; see file header for the enum note)
+prisma/seed.ts                       ← demo data: admin + Demo Chorister + one placeholder song/trip
+extras/umoja_technical_document.md   ← gitignored; single living source — as-built reference,
+                                        design process, and cost record, updated with each issue
+extras/umoja_technical_document.pdf  ← gitignored; rendered from the above via the `topdf` skill
+extras/effort.xlsx                   ← gitignored; hours log, see "Effort tracking" above
+Media/                               ← gitignored permanently; real WhatsApp export, never committed
 ```

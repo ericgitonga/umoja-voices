@@ -6,7 +6,7 @@ and a public external links page.
 
 Live at **https://umoja-voices.vercel.app**.
 
-See `umoja.pdf` for the full, reviewed design plan and `SKILL.md` for this project's
+See `extras/umoja_technical_document.pdf` for the full technical reference and `SKILL.md` for this project's
 versioning/tracking protocol, security posture, and data-handling rules (including deployment
 gotchas worth reading before touching the Vercel/Supabase setup again).
 
