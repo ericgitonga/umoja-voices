@@ -5,6 +5,41 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.23.0] - 2026-07-20
+
+### Added
+
+- **Environment isolation between Production and Preview/local dev** (closes #52): Preview
+  deployments and local development previously hit the exact same live production Supabase
+  project as real users — confirmed directly, every `.env`/`.env.local`-driven Vercel env var
+  (`POSTGRES_*`, `SUPABASE_*`, `NEXT_PUBLIC_SUPABASE_*`) was scoped to Production, Preview, and
+  Development all at once. Repurposed a second, previously-unused Supabase project (created
+  directly on supabase.com before the Vercel Marketplace integration provisioned the current
+  production one, and sitting empty since) as a dedicated Preview/Development database: applied
+  all existing `prisma/migrations` to it, created its own `song-audio`/`song-sheet-music` Storage
+  buckets, and seeded it via the normal `prisma/seed.ts` (admin + Demo Chorister + placeholder
+  song/trip — no real data). Split the five Vercel env vars this codebase actually reads
+  (`POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`, `NEXT_PUBLIC_SUPABASE_URL`,
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`) so Production keeps its original
+  value while Preview and Development point at the new project — verified with a real login
+  round-trip (Supabase Auth + Prisma) against it before touching anything else. A dedicated
+  `app_owner` Postgres role (not `postgres`) owns the new project's schema, since Supabase blocks
+  resetting/altering the `postgres` role's password via API. `README.md`/`SKILL.md`/
+  `.env.example` updated with the new dual-project workflow and the migration-sync process this
+  introduces (apply new migrations to both projects going forward).
+
+### Security
+
+- Confirmed no Production Vercel env var was altered in the process: every change was verified
+  against `production` scope immediately before and after. One brief, harmless mid-flight mistake
+  (a naive `vercel env rm NAME preview` turned out to delete the variable from *every*
+  environment sharing that record, momentarily clearing `NEXT_PUBLIC_SUPABASE_URL` in Production
+  too) was caught immediately via the same verification habit and restored within seconds — a
+  live production deployment's already-built Lambda isn't affected by an env var change until its
+  next build, so this had no real-world impact, but the safe pattern (`vercel env add <name>
+  <environment> --force`, never `rm`, when splitting a shared multi-environment value) is now
+  documented in `SKILL.md` so it isn't attempted again.
+
 ## [0.22.1] - 2026-07-20
 
 ### Added

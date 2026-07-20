@@ -13,7 +13,7 @@ v0.17.0.
 
 ## Versioning
 
-Current version: **0.22.1** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.23.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -111,7 +111,8 @@ and v0.18.0/v0.18.1/v0.19.0.
   dashboard (both remain supported as fallbacks for projects without the integration). Verified
   live: deployed to Vercel production, migration applied, seed data confirmed present, and a
   full login → `mustChangePassword` redirect flow tested against the real deployed URL. No
-  longer a stand-in.
+  longer a stand-in. Environment isolation (Preview/dev vs. Production using separate Supabase
+  projects) closed separately at v0.23.0 (#52) — see the Deployment section below.
 - **Auth provider**: closed at v0.15.0 — Supabase Auth replaces NextAuth Credentials entirely
   (`src/lib/supabase/`, `src/lib/get-session.ts`, `src/proxy.ts`). `public.User` (Prisma) is now
   a profile table (`role`/`status`/`name`) keyed by `authUserId`; the old `Invite`/
@@ -239,6 +240,54 @@ Live at **https://umoja-voices.vercel.app**. Vercel project `egm2/umoja-voices`,
 Marketplace integration (`vercel integration add supabase`) rather than by hand-typing
 connection strings — see the "Database" stand-in note above for why.
 
+### Environment isolation: Production vs. Preview/Development (closed #52, v0.23.0)
+
+Two separate Supabase projects exist:
+
+- **Production** (`tpsvwjeyncgbmuxflizi` / "supabase-celeste-forest", us-east-1) — the one
+  auto-provisioned by `vercel integration add supabase`; only the Production-scoped Vercel env
+  vars point here. Real member/song data lives here.
+- **Preview + Development** (`icmqcqmqvuqyzrjwxfcb` / "Umoja Voices", eu-west-1) — a Supabase
+  project that had actually existed since project setup (created directly on supabase.com a few
+  hours before the Vercel integration provisioned the other one — the exact "don't connect an
+  existing project" gotcha below), sitting empty and unused until #52 repurposed it. Schema
+  applied via the same `prisma/migrations` this app already tracks; seeded via the normal
+  `prisma/seed.ts` (admin + Demo Chorister + placeholder song/trip — no real data). Has its own
+  `song-audio`/`song-sheet-music` Storage buckets (`npm run storage:setup`).
+
+**Vercel env var scoping**: `POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`,
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SECRET_KEY`
+(the only five vars this codebase actually reads — see `src/lib/prisma.ts`, `prisma.config.ts`,
+`src/lib/supabase/*.ts`) are scoped **per environment**: Production keeps its original value,
+Preview and Development point at the non-production project. The other Marketplace-provisioned
+vars (`POSTGRES_HOST`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DATABASE`, `POSTGRES_URL`,
+`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_PUBLISHABLE_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are unread by any app code and were
+deliberately left alone (still shared/Production-valued) rather than migrated for symmetry with
+no functional benefit.
+
+**Non-production project's Postgres role**: rather than the `postgres` superuser role (whose
+password isn't resettable via the Management API or CLI — see gotcha below), a dedicated
+`app_owner` role owns the schema (`GRANT CREATE, USAGE ON SCHEMA public`, default privileges on
+future tables/sequences). Its pooler username is `app_owner.icmqcqmqvuqyzrjwxfcb` (Supavisor's
+`<role>.<project-ref>` convention, not just the ref).
+
+**Keeping schema in sync**: whenever a new Prisma migration is created, apply it to **both**
+projects — `prisma migrate dev` (or `deploy`) against Production as usual, and separately
+`prisma migrate deploy` against the non-production project using its own `DATABASE_URL`/
+`DIRECT_URL` (override, don't edit, `.env`/`.env.local` — see the "safe env override" gotcha
+below). Local dev's `.env`/`.env.local` should always be pulled from Vercel's Development
+environment (`vercel env pull .env` / `.env.local`, no `--environment` flag needed since
+Development is the default), which now correctly resolves to the non-production project.
+
+**Not automated (manual dashboard step, deliberately not scripted)**: the non-production
+project's Supabase Auth Site URL / redirect-URL allow-list isn't configured yet. Automating this
+via `supabase config push` was considered and rejected — it pushes the *entire* `config.toml`,
+risking overwriting unrelated project settings for a nice-to-have (only matters for testing
+invite/reset email links against Preview, not for the core data-isolation goal of #52). Set it by
+hand in the dashboard (Authentication → URL Configuration) if/when Preview-tested auth-link flows
+are actually needed.
+
 ### Gotchas hit while setting this up (don't re-debug these)
 
 - **`supabase.auth.admin.generateLink()`'s `action_link` uses Supabase's own hosted
@@ -283,6 +332,42 @@ connection strings — see the "Database" stand-in note above for why.
   `prisma migrate dev` against production) directly, not through anything that echoes file
   contents back for inspection, and never try to "work around" the redaction — treat it as a
   hard boundary, not a bug to route past.
+- **`vercel env rm <name> <one-environment>` can delete the variable from *every* environment,
+  not just the one named**, when the existing value was originally added as a single record
+  spanning multiple environments (e.g. `Production, Preview, Development` all sharing one value
+  — exactly how the Supabase Marketplace integration provisions everything). Confirmed directly:
+  running it against just `preview` deleted `NEXT_PUBLIC_SUPABASE_URL` from Production too,
+  breaking it for a few seconds until restored (harmless in practice, since Vercel bakes env vars
+  into a deployment at build time — an already-running deployment doesn't pick up the change
+  until its next build/redeploy — but still a real mistake, not a safe operation to repeat).
+  **The safe way to give one environment a different value: skip `rm` entirely and go straight
+  to `vercel env add <name> <environment> --value ... --force --yes`** — this correctly *splits*
+  the target environment into its own record with the new value, leaving the other
+  environments' existing record/value untouched. Verified this repeatedly across 5 variables
+  with zero impact to Production each time.
+- **Supabase blocks `ALTER USER postgres WITH PASSWORD ...` via the Management API's SQL proxy**
+  (`supabase db query --linked`) with "permission denied to alter role... Only superusers can
+  alter privileged roles" — a deliberate protection on the primary role, not a bug to route
+  around (e.g. by trying to escalate further). If you need write access to a Supabase project
+  without knowing/resetting its `postgres` password, `CREATE ROLE <name> WITH LOGIN PASSWORD
+  '...' CREATEDB NOSUPERUSER` works fine via the same `db query --linked` — create your own
+  non-privileged role instead of touching `postgres`.
+- **A Supabase project's direct connection host (`db.<ref>.supabase.co:5432`) is IPv6-only by
+  default on newer projects** — `prisma migrate deploy` against it fails with `P1001: Can't reach
+  database server`, even with real network access and correct credentials. Use the pooler host
+  for both connections instead, exactly as `.env.example` already documents: port `5432` on
+  `aws-0-<region>.pooler.supabase.com` (session mode) for the direct/migration URL, port `6543`
+  (`?pgbouncer=true`) for the pooled/app URL — with username `<role>.<project-ref>`, not just
+  `<role>`.
+- **Piping a value between two `npx <tool>` invocations in one shell pipeline can silently drop
+  stdin** (`echo ... | npx supabase ... | npx vercel env add ...` reported `missing_value` even
+  though the upstream command visibly produced output). Write the value to a file first, then
+  `cat file | npx vercel env add ...` — reliable every time, and also means a secret value never
+  has to appear in anything this session reads back to verify it worked.
+- **This sandbox has no raw network access by default** (DNS to Supabase/GitHub hosts fails) —
+  every `supabase`/`vercel` CLI call, and any `prisma migrate`/`pg` connection, needs Bash's
+  `dangerouslyDisableSandbox: true`. Confirm with the user before disabling it for anything that
+  writes to a real cloud resource, same as for `prisma migrate dev` against production.
 
 ---
 
