@@ -13,7 +13,7 @@ v0.17.0.
 
 ## Versioning
 
-Current version: **0.18.0** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.18.1** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to
@@ -88,7 +88,8 @@ primary requirement, not an afterthought.
 | Admin self-lockout / last-admin protection | `updateMemberRole`/`setMemberStatus` refuse to let an admin change their own role/status, and refuse to leave zero active admins |
 | Server-side enum validation + input length caps | `src/lib/validation.ts` (`clip`/`oneOf`/`subsetOf`), applied to every enum-like and free-text field a Server Action writes — SQLite has no native enum, so this is the only enforcement |
 | Rate limiting on login, forgot-password, and invite creation | `src/lib/rate-limit.ts` — per-IP and per-identifier (email or admin id) fixed windows: 5/15min + 30/15min per IP for login, 3/hr + 10/hr per IP for forgot-password, 20/hr + 40/hr per IP for invites. In-memory, correct for today's single process; a distributed store (Upstash Redis) is needed before multi-instance deployment — tracked, see below |
-| HTTP security headers + scoped CSP | `next.config.ts`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and a CSP whose `frame-src` allow-list matches exactly what `src/components/MediaEmbed.tsx` supports |
+| HTTP security headers | `next.config.ts`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy |
+| Nonce-based CSP (closed #17, v0.18.1) | Generated per-request in `src/proxy.ts` (a fresh nonce every request, not a static header — Next's documented pattern), `script-src`/`style-src` restricted to `'nonce-*' 'strict-dynamic'` in production with no `'unsafe-inline'`; `frame-src` allow-list matches exactly what `src/components/MediaEmbed.tsx` supports. Nonces don't cover inline `style="..."` attributes (only `<style>`/`<script>` elements) — any page needing a dynamic inline style reads the nonce via `headers()` and uses a nonced `<style>` tag instead (see `src/app/admin/storage/page.tsx`) |
 | Server Action CSRF protection (framework) | Next.js's built-in same-origin check on Server Actions — verified with a forged cross-origin request, not just assumed (see `extras/security.pdf`) |
 | Pinned dependencies | `package-lock.json` is committed; dependency bumps are deliberate, not automatic |
 
@@ -96,9 +97,10 @@ A full audit was performed at v0.3.0 (with the rate-limiting gap it found closed
 v0.6.0) — see `extras/security.pdf` (gitignored; regenerate with `conda run -n ds python
 extras/generate_security_pdf.py`, itself gitignored per the data handling rules below) for the
 complete findings, what was fixed, what was reviewed and confirmed safe, and what's still
-accepted as a tracked POC-stage trade-off (swapping the in-memory rate limiter for a
-distributed store before multi-instance deployment (#20), CSP `'unsafe-inline'` (#17), and the
-fixed-delay timing mitigation (#18)).
+accepted as a tracked POC-stage trade-off: swapping the in-memory rate limiter for a
+distributed store before multi-instance deployment (#20). (CSP `'unsafe-inline'` (#17) and the
+fixed-delay timing mitigation (#18), both originally accepted here as trade-offs, are closed —
+see the table above and v0.18.0/v0.18.1.)
 
 ### POC-specific stand-ins (tracked, to close before production)
 

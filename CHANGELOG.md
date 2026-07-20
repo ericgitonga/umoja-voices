@@ -5,6 +5,37 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.18.1] - 2026-07-20
+
+### Changed
+
+- **Nonce-based CSP** (closes #17): replaced the `'unsafe-inline'` stand-in for `script-src`/
+  `style-src` with a per-request nonce, generated in `src/proxy.ts` and threaded via the
+  documented Next.js pattern (`x-nonce` request header + `Content-Security-Policy` response
+  header on every response). CSP generation moved out of `next.config.ts`'s static `headers()`
+  (which can't vary per request) into `proxy.ts`. Production now ships
+  `script-src 'self' 'nonce-*' 'strict-dynamic'` and `style-src 'self' 'nonce-*'` with no
+  `'unsafe-inline'`/`'unsafe-eval'` (dev mode keeps both, per Next's own documented dev/prod
+  split — Turbopack Fast Refresh and React's stack-trace reconstruction both need them).
+  `proxy.ts`'s matcher was broadened from the five auth-gated route prefixes to effectively
+  every page (excluding `api`/`_next/static`/`_next/image`/`favicon.ico`) — a fresh nonce is
+  needed on every page render, not just protected ones, or public pages (login,
+  forgot-password, accept-invite, `/auth/confirm`, the root page) would ship with no CSP at all
+  once the static header was removed. The Supabase auth/role check itself still only runs for
+  the original protected prefixes — the broadened matcher only adds cheap nonce/header work to
+  public pages, not an extra auth check.
+- Fixed a real violation this surfaced: `admin/storage/page.tsx`'s progress-bar `style={{width}}`
+  is an inline style *attribute*, which nonces don't cover (only `<style>`/`<script>` elements
+  get Next's automatic nonce tagging). Replaced with a nonced `<style>` tag (nonce read via
+  `headers()` in the Server Component) targeting a CSS class, rather than a React inline style
+  prop.
+- Verified with isolated-browser-context checks (no shared console listeners, to avoid a
+  cross-page contamination bug hit while testing) across every page type in a genuine
+  **production** build (`npm run start`, not `npm run dev` — dev mode's relaxed CSP wouldn't
+  have exercised the real restriction): zero CSP violations, unauthenticated redirect-to-login
+  and non-admin redirect-to-`/songs` both still correct, all routes still dynamically rendered
+  (a hard requirement for nonce-based CSP — confirmed unchanged via the build output).
+
 ## [0.18.0] - 2026-07-20
 
 ### Fixed

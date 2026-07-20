@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getAudioStorageUsage, AUDIO_MAX_BYTES } from "@/lib/storage";
 
@@ -24,6 +25,12 @@ export default async function AdminStoragePage() {
   const ownerByUrl = new Map(owners.map((o) => [o.mediaUrl, o]));
 
   const pctUsed = Math.min(100, Math.round((usage.totalBytes / BUDGET_BYTES) * 100));
+  // Nonce-based CSP (#17) doesn't cover inline style attributes — only
+  // <style>/<script> elements get Next's automatic nonce tagging — so the
+  // progress bar's dynamic width goes through a nonced <style> tag instead
+  // of a React style={{width}} attribute. pctUsed is a plain server-computed
+  // integer (0-100), never user input, so interpolating it directly is safe.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -40,10 +47,10 @@ export default async function AdminStoragePage() {
           </span>
           <span className="text-xs text-ink/50">{usage.fileCount} file{usage.fileCount === 1 ? "" : "s"}</span>
         </div>
+        <style nonce={nonce}>{`.storage-usage-bar-fill { width: ${pctUsed}%; }`}</style>
         <div className="h-2 w-full overflow-hidden rounded-full bg-ink/10">
           <div
-            className={`h-full rounded-full ${pctUsed >= 90 ? "bg-red-600" : pctUsed >= 70 ? "bg-amber-500" : "bg-ink"}`}
-            style={{ width: `${pctUsed}%` }}
+            className={`storage-usage-bar-fill h-full rounded-full ${pctUsed >= 90 ? "bg-red-600" : pctUsed >= 70 ? "bg-amber-500" : "bg-ink"}`}
           />
         </div>
         {pctUsed >= 90 && (
