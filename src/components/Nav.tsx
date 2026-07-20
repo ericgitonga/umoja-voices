@@ -11,10 +11,47 @@ const LINKS = [
   { href: "/links", label: "Links" },
 ];
 
+// Shown instead of the full member nav for anonymous visitors — /about and
+// /links are public by design (#43), so logged-out visitors need a way to
+// find them rather than seeing no nav at all.
+const PUBLIC_LINKS = [
+  { href: "/about", label: "About" },
+  { href: "/links", label: "Links" },
+];
+
+function PublicNav({ pathname }: { pathname: string | null }) {
+  return (
+    <nav className="flex items-center gap-2 bg-ink px-6 py-3 text-sm">
+      <Link href="/about" className="mr-4 flex items-center gap-2 font-semibold text-white">
+        <span aria-hidden>&#9834;</span> Umoja Voices
+      </Link>
+      {PUBLIC_LINKS.map(({ href, label }) => {
+        const active = pathname?.startsWith(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={
+              active
+                ? "rounded-full bg-white/15 px-3 py-1.5 text-white"
+                : "px-3 py-1.5 text-gray-300 hover:text-white"
+            }
+          >
+            {label}
+          </Link>
+        );
+      })}
+      <Link href="/login" className="ml-auto text-gray-300 hover:text-white">
+        Sign in
+      </Link>
+    </nav>
+  );
+}
+
 export default function Nav({ session }: { session: Session | null }) {
   const pathname = usePathname();
   const router = useRouter();
-  if (!session) return null;
+  if (!session) return <PublicNav pathname={pathname} />;
 
   const isAdmin = session.user.role === "admin";
 

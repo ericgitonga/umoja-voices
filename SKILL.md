@@ -13,7 +13,7 @@ v0.17.0.
 
 ## Versioning
 
-Current version: **0.24.1** (see `VERSION` and `CHANGELOG.md`).
+Current version: **0.25.0** (see `VERSION` and `CHANGELOG.md`).
 
 This project follows [Semantic Versioning](https://semver.org) (MAJOR.MINOR.PATCH) and is
 pre-1.0: the major version stays at `0` throughout initial development. Major only moves to

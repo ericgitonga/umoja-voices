@@ -3,8 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Only these prefixes need the Supabase auth/role check — everything else
 // (login, forgot/reset-password, accept-invite, /auth/confirm, the root
-// page) is intentionally public and must never be redirected to /login.
-const PROTECTED_PREFIXES = ["/songs", "/links", "/logistics", "/profile", "/admin"];
+// page, /about, /links) is intentionally public and must never be
+// redirected to /login. /links and /about are public by design (#43) —
+// each page's own getSession() call still conditionally hides admin-only
+// controls, but never gates the page itself.
+const PROTECTED_PREFIXES = ["/songs", "/logistics", "/profile", "/admin"];
 
 // frame-src must cover every domain MediaEmbed.tsx can render an <iframe> for.
 const FRAME_SRC = ["'self'", "https://www.youtube.com", "https://drive.google.com", "https://w.soundcloud.com"].join(
