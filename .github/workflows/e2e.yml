@@ -36,8 +36,15 @@ jobs:
       - run: npm run build
 
       - name: Start server
+        # Output redirected to a file rather than left to inherit the step's
+        # own stdout: GitHub Actions stops capturing a backgrounded (`&`)
+        # process's output once the step that launched it exits (confirmed
+        # directly — server-side console.log calls from later requests
+        # never appeared in any step's log, even in test runs where those
+        # server actions definitely ran). "Print server log" below cats
+        # this file so it's actually visible regardless of outcome.
         run: |
-          npm run start &
+          npm run start > /tmp/server.log 2>&1 &
           for i in $(seq 1 30); do
             curl -sf http://localhost:3000/login > /dev/null && exit 0
             sleep 1
@@ -63,3 +70,7 @@ jobs:
         run: python e2e/run.py
         env:
           DEBUG: pw:api
+
+      - name: Print server log
+        if: always()
+        run: cat /tmp/server.log
