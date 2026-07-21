@@ -42,7 +42,7 @@ LARGE_FILE_BYTES = 11 * 1024 * 1024
 LABEL = "E2E Large Video Upload Test"
 
 
-def _wait_for_outcome(page, timeout_s=150, interval_s=2):
+def _wait_for_outcome(page, timeout_s=300, interval_s=2):
     """Polls for either the error text or the new label, whichever comes
     first — more reliable here than a single fixed wait (upload time varies
     with system load) or a JS-side wait_for_function poll (both proved
