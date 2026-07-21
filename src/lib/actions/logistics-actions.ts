@@ -5,6 +5,7 @@ import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { DEADLINE_CATEGORIES } from "@/lib/constants";
 import { clip, oneOf } from "@/lib/validation";
+import { logActivity } from "@/lib/activity-log";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -23,12 +24,16 @@ export async function createTrip(formData: FormData) {
   await prisma.trip.create({
     data: { title, destination, startDate, endDate, createdById: session.user.id },
   });
+  await logActivity(`${session.user.name} <${session.user.email}>`, "trip_create", title, {
+    type: "Trip",
+    label: title,
+  });
   revalidatePath("/admin/logistics");
   revalidatePath("/logistics");
 }
 
 export async function addDeadline(tripId: string, formData: FormData) {
-  await requireAdmin();
+  const session = await requireAdmin();
   const label = clip(String(formData.get("label") ?? "").trim(), "label");
   const category = oneOf(String(formData.get("category") ?? ""), DEADLINE_CATEGORIES, "other");
   const dueDate = new Date(String(formData.get("dueDate")));
@@ -39,12 +44,16 @@ export async function addDeadline(tripId: string, formData: FormData) {
   await prisma.logisticsDeadline.create({
     data: { tripId, label, category, dueDate, notes, sortOrder: count },
   });
+  await logActivity(`${session.user.name} <${session.user.email}>`, "logistics_deadline_create", label, {
+    type: "LogisticsDeadline",
+    label,
+  });
   revalidatePath("/admin/logistics");
   revalidatePath("/logistics");
 }
 
 export async function addItineraryItem(tripId: string, formData: FormData) {
-  await requireAdmin();
+  const session = await requireAdmin();
   const title = clip(String(formData.get("title") ?? "").trim(), "title");
   const date = new Date(String(formData.get("date")));
   const time = clip(String(formData.get("time") ?? "").trim(), "label") || null;
@@ -56,12 +65,16 @@ export async function addItineraryItem(tripId: string, formData: FormData) {
   await prisma.itineraryItem.create({
     data: { tripId, title, date, time, location, notes, sortOrder: count },
   });
+  await logActivity(`${session.user.name} <${session.user.email}>`, "itinerary_item_create", title, {
+    type: "ItineraryItem",
+    label: title,
+  });
   revalidatePath("/admin/logistics");
   revalidatePath("/logistics");
 }
 
 export async function addPracticeSession(tripId: string, formData: FormData) {
-  await requireAdmin();
+  const session = await requireAdmin();
   const date = new Date(String(formData.get("date")));
   const time = clip(String(formData.get("time") ?? "").trim(), "label");
   const location = clip(String(formData.get("location") ?? "").trim(), "label");
@@ -72,25 +85,43 @@ export async function addPracticeSession(tripId: string, formData: FormData) {
   await prisma.practiceSession.create({
     data: { tripId, date, time, location, notes, sortOrder: count },
   });
+  const label = `${location} — ${time}`;
+  await logActivity(`${session.user.name} <${session.user.email}>`, "practice_session_create", label, {
+    type: "PracticeSession",
+    label,
+  });
   revalidatePath("/admin/logistics");
   revalidatePath("/logistics");
 }
 
 export async function deleteDeadline(id: string) {
-  await requireAdmin();
-  await prisma.logisticsDeadline.delete({ where: { id } });
+  const session = await requireAdmin();
+  const deadline = await prisma.logisticsDeadline.delete({ where: { id } });
+  await logActivity(`${session.user.name} <${session.user.email}>`, "logistics_deadline_delete", deadline.label, {
+    type: "LogisticsDeadline",
+    label: deadline.label,
+  });
   revalidatePath("/admin/logistics");
   revalidatePath("/logistics");
 }
 export async function deleteItineraryItem(id: string) {
-  await requireAdmin();
-  await prisma.itineraryItem.delete({ where: { id } });
+  const session = await requireAdmin();
+  const item = await prisma.itineraryItem.delete({ where: { id } });
+  await logActivity(`${session.user.name} <${session.user.email}>`, "itinerary_item_delete", item.title, {
+    type: "ItineraryItem",
+    label: item.title,
+  });
   revalidatePath("/admin/logistics");
   revalidatePath("/logistics");
 }
 export async function deletePracticeSession(id: string) {
-  await requireAdmin();
-  await prisma.practiceSession.delete({ where: { id } });
+  const session = await requireAdmin();
+  const practiceSession = await prisma.practiceSession.delete({ where: { id } });
+  const label = `${practiceSession.location} — ${practiceSession.time}`;
+  await logActivity(`${session.user.name} <${session.user.email}>`, "practice_session_delete", label, {
+    type: "PracticeSession",
+    label,
+  });
   revalidatePath("/admin/logistics");
   revalidatePath("/logistics");
 }

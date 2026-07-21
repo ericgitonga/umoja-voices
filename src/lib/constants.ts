@@ -86,18 +86,46 @@ export const DEADLINE_CATEGORIES = ["visa", "tickets", "payment", "other"] as co
 export type DeadlineCategory = (typeof DEADLINE_CATEGORIES)[number];
 
 /**
- * A narrow proof-of-concept slice for #50 — login events plus a handful of
- * high-value admin mutations, not a full audit trail (see #49 for that
- * separate, broader exploration).
+ * Started as a narrow proof-of-concept slice for #50 (login events plus a
+ * handful of high-value admin mutations). Broadened at #49 into the app's
+ * full data-change trail — song edits, member status/deletion, and every
+ * logistics create/delete — sharing this same `ActivityLog` persistence
+ * layer rather than a second, near-duplicate table (the two issues were
+ * explicitly framed as able to share one if picked up together).
  */
-export const ACTIVITY_ACTIONS = ["login", "song_create", "song_delete", "member_role_change"] as const;
+export const ACTIVITY_ACTIONS = [
+  "login",
+  "song_create",
+  "song_update",
+  "song_delete",
+  "member_role_change",
+  "member_status_change",
+  "member_delete",
+  "trip_create",
+  "logistics_deadline_create",
+  "logistics_deadline_delete",
+  "itinerary_item_create",
+  "itinerary_item_delete",
+  "practice_session_create",
+  "practice_session_delete",
+] as const;
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
 export const ACTIVITY_ACTION_LABEL: Record<ActivityAction, string> = {
   login: "Logged in",
   song_create: "Created a song",
+  song_update: "Updated a song",
   song_delete: "Deleted a song",
   member_role_change: "Changed a member's role",
+  member_status_change: "Changed a member's status",
+  member_delete: "Deleted a member",
+  trip_create: "Created a trip",
+  logistics_deadline_create: "Added a logistics deadline",
+  logistics_deadline_delete: "Removed a logistics deadline",
+  itinerary_item_create: "Added an itinerary item",
+  itinerary_item_delete: "Removed an itinerary item",
+  practice_session_create: "Added a practice session",
+  practice_session_delete: "Removed a practice session",
 };
 
 export function parseVoiceTags(stored: string): VoiceTag[] {
