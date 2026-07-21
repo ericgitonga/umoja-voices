@@ -180,6 +180,18 @@ model RateLimitBucket {
   resetAt DateTime
 }
 
+// The public About page's single featured video (#55) — a singleton row
+// (fixed id) rather than a generic key-value settings table, since this is
+// the only site-wide setting the app has today. Replaces the About page's
+// old FEATURED_YOUTUBE_URL constant / Instagram link-out with an
+// admin-uploaded video, stored in the "song-video" Storage bucket like any
+// other direct video upload (src/lib/video-storage.ts).
+model AboutPageVideo {
+  id        String   @id @default("about")
+  videoUrl  String
+  updatedAt DateTime @updatedAt
+}
+
 // Minimal activity log (#50) — a narrow proof-of-concept slice (login
 // events + a handful of high-value admin mutations), not a full audit
 // trail (see #49 for that separate, broader exploration). userLabel is a

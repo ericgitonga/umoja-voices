@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getAudioStorageUsage, AUDIO_MAX_BYTES } from "@/lib/storage";
 import { getSheetMusicStorageUsage, SHEET_MUSIC_MAX_BYTES } from "@/lib/sheet-music-storage";
+import { getVideoStorageUsage, VIDEO_MAX_BYTES } from "@/lib/video-storage";
 import StorageFileList, { type StorageFile } from "@/components/StorageFileList";
 
 // Live quota snapshot — never statically cache it.
@@ -14,12 +15,13 @@ function formatMB(bytes: number): string {
 }
 
 export default async function AdminStoragePage() {
-  const [audioUsage, sheetMusicUsage] = await Promise.all([
+  const [audioUsage, sheetMusicUsage, videoUsage] = await Promise.all([
     getAudioStorageUsage(),
     getSheetMusicStorageUsage(),
+    getVideoStorageUsage(),
   ]);
 
-  const [audioOwners, sheetMusicOwners] = await Promise.all([
+  const [audioOwners, sheetMusicOwners, videoOwners, aboutVideo] = await Promise.all([
     prisma.songMedia.findMany({
       where: { mediaUrl: { in: audioUsage.files.map((f) => f.url) } },
       select: {
@@ -32,9 +34,19 @@ export default async function AdminStoragePage() {
       where: { fileUrl: { in: sheetMusicUsage.files.map((f) => f.url) } },
       select: { fileUrl: true, label: true, song: { select: { title: true } } },
     }),
+    prisma.songMedia.findMany({
+      where: { mediaUrl: { in: videoUsage.files.map((f) => f.url) } },
+      select: {
+        mediaUrl: true,
+        label: true,
+        section: { select: { part: true, song: { select: { title: true } } } },
+      },
+    }),
+    prisma.aboutPageVideo.findUnique({ where: { id: "about" } }),
   ]);
   const audioOwnerByUrl = new Map(audioOwners.map((o) => [o.mediaUrl, o]));
   const sheetMusicOwnerByUrl = new Map(sheetMusicOwners.map((o) => [o.fileUrl, o]));
+  const videoOwnerByUrl = new Map(videoOwners.map((o) => [o.mediaUrl, o]));
 
   const files: StorageFile[] = [
     ...audioUsage.files.map((f) => {
@@ -58,10 +70,22 @@ export default async function AdminStoragePage() {
         songTitle: owner?.song.title ?? "Not attached to any song",
       };
     }),
+    ...videoUsage.files.map((f) => {
+      const owner = videoOwnerByUrl.get(f.url);
+      const isAboutVideo = aboutVideo?.videoUrl === f.url;
+      return {
+        url: f.url,
+        bytes: f.bytes,
+        kind: "Video" as const,
+        name: owner?.label ?? (isAboutVideo ? "About page featured video" : f.path),
+        songTitle: owner?.section.song.title ?? (isAboutVideo ? "About page" : "Not attached to any song"),
+        part: owner?.section.part,
+      };
+    }),
   ];
 
-  const totalBytes = audioUsage.totalBytes + sheetMusicUsage.totalBytes;
-  const fileCount = audioUsage.fileCount + sheetMusicUsage.fileCount;
+  const totalBytes = audioUsage.totalBytes + sheetMusicUsage.totalBytes + videoUsage.totalBytes;
+  const fileCount = audioUsage.fileCount + sheetMusicUsage.fileCount + videoUsage.fileCount;
   const pctUsed = Math.min(100, Math.round((totalBytes / BUDGET_BYTES) * 100));
   // Nonce-based CSP (#17) doesn't cover inline style attributes — only
   // <style>/<script> elements get Next's automatic nonce tagging — so the
@@ -74,7 +98,7 @@ export default async function AdminStoragePage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-2 text-2xl font-semibold text-ink">Storage</h1>
       <p className="mb-6 text-sm text-ink/60">
-        Direct audio-file and sheet-music uploads only — pasted links (YouTube, Drive, SoundCloud)
+        Direct audio, video, and sheet-music uploads only — pasted links (YouTube, Drive, SoundCloud)
         don&apos;t count against this budget.
       </p>
 
@@ -101,8 +125,8 @@ export default async function AdminStoragePage() {
       <StorageFileList files={files} />
 
       <p className="mt-6 text-xs text-ink/40">
-        App-level per-file caps: {AUDIO_MAX_BYTES / (1024 * 1024)}MB audio, {SHEET_MUSIC_MAX_BYTES / (1024 * 1024)}MB
-        sheet music — both below Supabase&apos;s 50MB hard limit.
+        App-level per-file caps: {AUDIO_MAX_BYTES / (1024 * 1024)}MB audio, {VIDEO_MAX_BYTES / (1024 * 1024)}MB video,{" "}
+        {SHEET_MUSIC_MAX_BYTES / (1024 * 1024)}MB sheet music — all below Supabase&apos;s 50MB hard limit.
       </p>
     </div>
   );

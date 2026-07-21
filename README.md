@@ -31,7 +31,7 @@ vercel env pull .env.local
 # NEXTAUTH_SECRET.
 
 npx prisma migrate deploy   # applies any migrations not yet on this DB
-npm run storage:setup       # creates the song-audio / song-sheet-music Storage buckets
+npm run storage:setup       # creates the song-audio / song-sheet-music / song-video Storage buckets
 npm run db:seed
 npm run dev
 ```

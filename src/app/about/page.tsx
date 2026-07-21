@@ -1,17 +1,25 @@
 import MediaEmbed from "@/components/MediaEmbed";
+import AboutVideoForm from "@/components/AboutVideoForm";
+import { getSession } from "@/lib/get-session";
+import { prisma } from "@/lib/prisma";
 
-// Starter copy (#43) — refine with the app owner's own wording as the trip
-// firms up. The Instagram reel showing White Ribbon Alliance Kenya's story
-// (https://www.instagram.com/reel/DObXiuyiB79/) is linked out to rather than
-// embedded: Instagram has no simple public iframe embed without loading its
-// own embed.js, which this app's strict nonce-based CSP (script-src
-// 'nonce-*' 'strict-dynamic', no external script domains) deliberately
-// doesn't allow for. A real YouTube link can go straight into
-// FEATURED_YOUTUBE_URL below and will render via the same MediaEmbed used
-// for song media, once one exists.
-const FEATURED_YOUTUBE_URL: string | null = null;
+// Live admin-uploaded video — never statically cache it.
+export const dynamic = "force-dynamic";
 
-export default function AboutPage() {
+// Starter copy (#43). The Instagram reel showing White Ribbon Alliance
+// Kenya's story (https://www.instagram.com/reel/DObXiuyiB79/) was originally
+// linked out to rather than embedded: Instagram has no simple public iframe
+// embed without loading its own embed.js, which this app's strict
+// nonce-based CSP (script-src 'nonce-*' 'strict-dynamic', no external script
+// domains) deliberately doesn't allow for. As of #55, the app owner uploads
+// the video directly instead (below the Instagram link-out, which stays as
+// a reference to the original post) rather than pursuing the embed further.
+
+export default async function AboutPage() {
+  const session = await getSession();
+  const isAdmin = session?.user.role === "admin";
+  const video = await prisma.aboutPageVideo.findUnique({ where: { id: "about" } });
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-6 text-2xl font-semibold text-ink">About Umoja Voices</h1>
@@ -61,9 +69,15 @@ export default function AboutPage() {
           </p>
         </section>
 
-        {FEATURED_YOUTUBE_URL && (
+        {video && (
           <section>
-            <MediaEmbed url={FEATURED_YOUTUBE_URL} kind="youtube" />
+            <MediaEmbed url={video.videoUrl} kind="video" />
+          </section>
+        )}
+
+        {isAdmin && (
+          <section>
+            <AboutVideoForm hasVideo={Boolean(video)} />
           </section>
         )}
       </div>

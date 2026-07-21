@@ -4,11 +4,16 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addSongMedia } from "@/lib/actions/song-actions";
 import { SONG_PART_OPTIONS, SONG_PART_LABEL_TEXT, type SongPartOption } from "@/lib/constants";
-import { AUDIO_MAX_BYTES, AUDIO_ACCEPT } from "@/lib/media-constants";
+import { AUDIO_MAX_BYTES, AUDIO_ACCEPT, VIDEO_MAX_BYTES, VIDEO_ACCEPT } from "@/lib/media-constants";
 
 type Mode = "paste" | "upload";
 
-export default function AddAudioForm({ songId }: { songId: string }) {
+// Both direct-upload kinds share the same 20MB cap today; computed rather
+// than hardcoded so this stays correct if either constant ever diverges.
+const UPLOAD_MAX_BYTES = Math.max(AUDIO_MAX_BYTES, VIDEO_MAX_BYTES);
+const MEDIA_ACCEPT = [AUDIO_ACCEPT, VIDEO_ACCEPT].join(",");
+
+export default function AddMediaForm({ songId }: { songId: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("paste");
   const [url, setUrl] = useState("");
@@ -33,8 +38,8 @@ export default function AddAudioForm({ songId }: { songId: string }) {
       setError(mode === "paste" ? "URL, Label, and Voice are all required." : "A file, Label, and Voice are all required.");
       return;
     }
-    if (mode === "upload" && file && file.size > AUDIO_MAX_BYTES) {
-      setError(`File is too large — max ${AUDIO_MAX_BYTES / (1024 * 1024)}MB.`);
+    if (mode === "upload" && file && file.size > UPLOAD_MAX_BYTES) {
+      setError(`File is too large — max ${UPLOAD_MAX_BYTES / (1024 * 1024)}MB.`);
       return;
     }
     setSaving(true);
@@ -62,7 +67,7 @@ export default function AddAudioForm({ songId }: { songId: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-lg border border-ink/10 bg-white p-4">
-      <h3 className="font-semibold text-ink">Add Audio</h3>
+      <h3 className="font-semibold text-ink">Add Media</h3>
 
       <div className="flex gap-4 border-b border-ink/10 text-sm">
         <button
@@ -102,17 +107,17 @@ export default function AddAudioForm({ songId }: { songId: string }) {
         </label>
       ) : (
         <label className="flex flex-col gap-1 text-sm">
-          Audio file <span className="text-red-600">*</span>
+          Audio or video file <span className="text-red-600">*</span>
           <input
             ref={fileInputRef}
             required
             type="file"
-            accept={AUDIO_ACCEPT}
+            accept={MEDIA_ACCEPT}
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="rounded border border-ink/20 px-3 py-2"
           />
           <span className="text-xs text-ink/50">
-            MP3, WAV, M4A, or OGG — max {AUDIO_MAX_BYTES / (1024 * 1024)}MB.
+            MP3/WAV/M4A/OGG audio or MP4/MOV/WEBM video — max {UPLOAD_MAX_BYTES / (1024 * 1024)}MB.
           </span>
         </label>
       )}
@@ -151,7 +156,7 @@ export default function AddAudioForm({ songId }: { songId: string }) {
         disabled={saving}
         className="self-start rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-60"
       >
-        {saving ? "Adding…" : "Add Audio"}
+        {saving ? "Adding…" : "Add Media"}
       </button>
     </form>
   );

@@ -9,7 +9,12 @@ import {
   type MediaInput,
   type LyricSectionInput,
 } from "@/lib/actions/song-actions";
-import { AUDIO_MAX_BYTES, AUDIO_ACCEPT } from "@/lib/media-constants";
+import { AUDIO_MAX_BYTES, AUDIO_ACCEPT, VIDEO_MAX_BYTES, VIDEO_ACCEPT } from "@/lib/media-constants";
+
+// Both direct-upload kinds share the same 20MB cap today; computed rather
+// than hardcoded so this stays correct if either constant ever diverges.
+const UPLOAD_MAX_BYTES = Math.max(AUDIO_MAX_BYTES, VIDEO_MAX_BYTES);
+const MEDIA_ACCEPT = [AUDIO_ACCEPT, VIDEO_ACCEPT].join(",");
 
 type Meta = { title: string; composer: string; lyricist: string; arranger: string };
 type MediaMode = "paste" | "upload";
@@ -94,9 +99,9 @@ export default function SongEditor({
   }
 
   async function handleSave() {
-    const oversized = voiceSections.some((s) => s.media.some((m) => m.file && m.file.size > AUDIO_MAX_BYTES));
+    const oversized = voiceSections.some((s) => s.media.some((m) => m.file && m.file.size > UPLOAD_MAX_BYTES));
     if (oversized) {
-      setStatus(`One or more uploaded files are too large — max ${AUDIO_MAX_BYTES / (1024 * 1024)}MB.`);
+      setStatus(`One or more uploaded files are too large — max ${UPLOAD_MAX_BYTES / (1024 * 1024)}MB.`);
       return;
     }
     setSaving(true);
@@ -236,12 +241,12 @@ export default function SongEditor({
                         <div className="flex flex-col gap-1">
                           <input
                             type="file"
-                            accept={AUDIO_ACCEPT}
+                            accept={MEDIA_ACCEPT}
                             onChange={(e) => updateMedia(i, j, { file: e.target.files?.[0] ?? null })}
                             className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm"
                           />
                           <span className="text-xs text-ink/40">
-                            MP3, WAV, M4A, or OGG — max {AUDIO_MAX_BYTES / (1024 * 1024)}MB.
+                            MP3/WAV/M4A/OGG audio or MP4/MOV/WEBM video — max {UPLOAD_MAX_BYTES / (1024 * 1024)}MB.
                           </span>
                         </div>
                       )}

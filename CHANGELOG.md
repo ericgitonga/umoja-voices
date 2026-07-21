@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.27.0] - 2026-07-21
+
+### Added
+
+- **Direct video upload** (closes #55): follow-up to #43 — the About page linked out to White
+  Ribbon Alliance Kenya's Instagram reel rather than embedding it, since Instagram's embed
+  widget needs an external `embed.js` this app's nonce-based CSP doesn't allow. Rather than
+  pursue the embed further, videos are now uploaded directly (all featured videos are under
+  20MB; larger ones get ffmpeg-compressed first), mirroring the existing audio (#36) and
+  sheet-music (#38) direct-upload pattern exactly: a new `song-video` Storage bucket
+  (`src/lib/video-storage.ts`, created via `npm run storage:setup` on both the Preview/dev and
+  Production Supabase projects), MIME/extension/size validation, cleanup-on-delete. `AddAudioForm`
+  generalized to `AddMediaForm` (audio-or-video upload, alongside the existing paste-URL tab) for
+  the song-media flow; `SongEditor`'s per-item upload also now accepts video. Uploaded files are
+  routed to the audio or video bucket by MIME type at the Server Action layer
+  (`uploadMediaFile`/`isOwnMediaUrl`/`deleteMediaFile` in `song-actions.ts`).
+  Added a singleton `AboutPageVideo` model (migration applied to both Supabase projects) for the
+  About page's single featured video — admin-only upload/replace/remove via a new
+  `AboutVideoForm`/`about-actions.ts`, rendered through the existing `MediaEmbed`. The Instagram
+  link-out stays as a reference to the original post. The admin Storage page now also accounts
+  for video files (new "Video" `StorageFileList` kind), and `/about` was added to the signed-in
+  nav (it was public-nav-only before, so logged-in members had no way to reach it).
+
 ## [0.26.0] - 2026-07-21
 
 ### Added
