@@ -20,8 +20,13 @@ export default function AddMediaForm({ songId }: { songId: string }) {
   const [mode, setMode] = useState<Mode>("paste");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [label, setLabel] = useState("");
+  const [label, setLabel] = useState(SONG_PART_LABEL_TEXT.S);
   const [part, setPart] = useState<SongPartOption>("S");
+
+  function handlePartChange(next: SongPartOption) {
+    setPart(next);
+    setLabel(SONG_PART_LABEL_TEXT[next]);
+  }
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,7 +81,7 @@ export default function AddMediaForm({ songId }: { songId: string }) {
       }
       setUrl("");
       setFile(null);
-      setLabel("");
+      setLabel(SONG_PART_LABEL_TEXT.S);
       setPart("S");
       if (fileInputRef.current) fileInputRef.current.value = "";
       router.refresh();
@@ -147,22 +152,11 @@ export default function AddMediaForm({ songId }: { songId: string }) {
       )}
 
       <label className="flex flex-col gap-1 text-sm">
-        Label <span className="text-red-600">*</span>
-        <input
-          required
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder="e.g. Soprano part, Full choir recording"
-          className="rounded border border-ink/20 px-3 py-2"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1 text-sm">
         Voice <span className="text-red-600">*</span>
         <select
           required
           value={part}
-          onChange={(e) => setPart(e.target.value as SongPartOption)}
+          onChange={(e) => handlePartChange(e.target.value as SongPartOption)}
           className="rounded border border-ink/20 px-3 py-2"
         >
           {SONG_PART_OPTIONS.map((opt) => (
@@ -171,6 +165,17 @@ export default function AddMediaForm({ songId }: { songId: string }) {
             </option>
           ))}
         </select>
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm">
+        Label <span className="text-red-600">*</span>
+        <input
+          required
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="Auto-filled from Voice — edit for e.g. Full choir recording"
+          className="rounded border border-ink/20 px-3 py-2"
+        />
       </label>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
