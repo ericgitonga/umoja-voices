@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.31.2] - 2026-07-22
+
+### Fixed
+
+- **Clarify the add-song-media voice/label fields** (closes #65): selecting a Voice on the "Add
+  Media" form (`src/components/AddMediaForm.tsx`) now auto-fills the adjacent Label field with
+  that voice's display name (e.g. choosing "Alto" fills the label with "Alto"), instead of
+  leaving it blank and requiring the same text be typed in manually — the confusion the issue
+  reported. The Label field stays editable afterward for cases needing a custom value (e.g. "Full
+  choir recording"). Voice now renders above Label so the auto-fill reads in the natural order.
+
 ## [0.31.1] - 2026-07-22
 
 ### Changed
