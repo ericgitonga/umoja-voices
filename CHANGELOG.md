@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.31.1] - 2026-07-22
+
+### Changed
+
+- **Documentation housekeeping for #59/#70/#72**: `README.md`'s top-line feature summary now
+  mentions the admin-configurable About page. `SKILL.md` gains two gotchas found live while
+  shipping this work: `prisma.config.ts` loads `.env.local` after `.env` with `override: true`,
+  so a plain shell env-var prefix can't override it when targeting Production (temporarily
+  `mv`-ing `.env.local` aside is the reliable way); and a local `.env` file's contents can go
+  stale/mislabeled without any obvious signal, so it's worth re-pulling fresh and diffing before
+  trusting it for a Production-targeting command. No code changes.
+
 ## [0.31.0] - 2026-07-22
 
 ### Added
