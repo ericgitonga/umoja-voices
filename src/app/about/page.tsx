@@ -2,7 +2,7 @@ import Link from "next/link";
 import MediaEmbed from "@/components/MediaEmbed";
 import LinkifiedText from "@/components/LinkifiedText";
 import { getSession } from "@/lib/get-session";
-import { prisma } from "@/lib/prisma";
+import { getOrderedAboutBlocks } from "@/lib/about-blocks";
 import type { MediaKind } from "@/lib/constants";
 
 // Admin-editable content (#59) — never statically cache it.
@@ -12,10 +12,7 @@ export default async function AboutPage() {
   const session = await getSession();
   const isAdmin = session?.user.role === "admin";
 
-  const [sections, media] = await Promise.all([
-    prisma.aboutPageSection.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.aboutPageMedia.findMany({ orderBy: { sortOrder: "asc" } }),
-  ]);
+  const blocks = await getOrderedAboutBlocks();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -29,18 +26,18 @@ export default async function AboutPage() {
       </div>
 
       <div className="flex flex-col gap-6 text-ink/80">
-        {sections.map((section) => (
-          <section key={section.id}>
-            {section.title && <h2 className="mb-2 text-lg font-semibold text-ink">{section.title}</h2>}
-            <LinkifiedText text={section.body} />
-          </section>
-        ))}
-
-        {media.map((item) => (
-          <section key={item.id}>
-            <MediaEmbed url={item.mediaUrl} kind={item.mediaKind as MediaKind} />
-          </section>
-        ))}
+        {blocks.map((block) =>
+          block.kind === "section" ? (
+            <section key={block.id}>
+              {block.title && <h2 className="mb-2 text-lg font-semibold text-ink">{block.title}</h2>}
+              <LinkifiedText text={block.body} />
+            </section>
+          ) : (
+            <section key={block.id}>
+              <MediaEmbed url={block.mediaUrl} kind={block.mediaKind as MediaKind} />
+            </section>
+          )
+        )}
       </div>
     </div>
   );

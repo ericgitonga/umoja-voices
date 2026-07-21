@@ -100,9 +100,66 @@ def test_admin_can_add_and_remove_pasted_media():
         assert page.get_by_text(MARKER_MEDIA_LABEL).count() == 0
 
 
+def test_admin_can_reorder_section_and_media():
+    # #72: sections and media share one order, so a media item can be moved
+    # above a text section (or vice versa) rather than always rendering
+    # after every section.
+    section_title = "E2E Reorder Section Test"
+    media_label = "E2E Reorder Media Test"
+
+    with admin_page() as page:
+        page.goto("/admin/about")
+        page.get_by_label("Title (optional)").fill(section_title)
+        page.get_by_label("Body").fill("Reorder test body.")
+        page.get_by_role("button", name="Add Section").click()
+        page.wait_for_timeout(1500)
+        page.goto("/admin/about")
+
+        page.get_by_placeholder("YouTube, Spotify, Google Drive, or direct URL").fill(MARKER_MEDIA_URL)
+        page.get_by_label("Label").fill(media_label)
+        page.get_by_role("button", name="Add Media").click()
+        page.wait_for_timeout(1500)
+        page.goto("/admin/about")
+
+        try:
+            # New items append to the end, so the media row's own "Move up"
+            # button (not the section's) moves it above the section.
+            media_row = page.locator('[data-testid^="about-media-"]').last
+            media_row.get_by_role("button", name="Move up").click(no_wait_after=True)
+            page.wait_for_timeout(1500)
+
+            page.goto("/about")
+            html = page.content()
+            assert html.index("youtube.com/embed") < html.index(section_title), (
+                "Expected the media item to render before the section after moving it up"
+            )
+        finally:
+            page.goto("/admin/about")
+            section_row = page.locator('[data-testid^="about-section-"]', has_text=section_title)
+            page.on("dialog", lambda d: d.accept())
+            try:
+                section_row.get_by_role("button", name="Delete").click(no_wait_after=True)
+            except Exception:
+                pass
+            page.wait_for_timeout(1500)
+            page.goto("/admin/about")
+            media_row = page.locator('[data-testid^="about-media-"]', has_text=media_label)
+            try:
+                media_row.get_by_role("button", name="Remove").click(no_wait_after=True)
+            except Exception:
+                pass
+            page.wait_for_timeout(1500)
+
+        page.goto("/about")
+        assert page.get_by_text(section_title).count() == 0
+        page.goto("/admin/about")
+        assert page.get_by_text(media_label).count() == 0
+
+
 TESTS = [
     test_admin_can_add_edit_and_delete_a_section,
     test_admin_can_add_and_remove_pasted_media,
+    test_admin_can_reorder_section_and_media,
 ]
 
 if __name__ == "__main__":

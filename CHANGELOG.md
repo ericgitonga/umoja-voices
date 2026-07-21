@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.31.0] - 2026-07-22
+
+### Added
+
+- **About page: link-entry UI + interleaved text/media ordering** (closes #72): follow-up to
+  #59/#70. `AboutPageSection` and `AboutPageMedia` now draw `sortOrder` from one shared space
+  (`src/lib/about-blocks.ts`'s `getOrderedAboutBlocks`/`nextAboutSortOrder`/`moveAboutBlock`)
+  instead of two independent per-table sequences, so text and media can be freely interleaved
+  (e.g. a video between two paragraphs) — no schema change needed, since both already had their
+  own `sortOrder Int`. Both `/about` and `/admin/about` render one merged, ordered list. New ↑/↓
+  buttons (`AboutSectionEditor`, new `MoveAboutMediaButtons`) reposition an item by swapping
+  `sortOrder` with its immediate neighbor in the shared order, regardless of which table it
+  belongs to — new content still appends to the end and gets repositioned afterward, rather than
+  an "insert at position N" control on the add forms. New `LinkInsertField` component gives admins
+  a text+URL input for links instead of typing #70's `[text](url)` syntax by hand — it still
+  produces the same markdown snippet under the hood (`LinkifiedText`'s parser is unchanged),
+  spliced in at the textarea's live cursor/selection via a ref rather than always appended to the
+  end. The plain `<form action={createAboutSection}>` (#59) is replaced by a client component
+  (`AddAboutSectionForm`) since inserting at a live cursor position needs a DOM ref a
+  server-rendered form submission can't provide — `createAboutSection`'s signature changed from
+  `FormData` to direct `(title, body)` args to match, mirroring `updateAboutSection`'s existing
+  shape.
+
 ## [0.30.0] - 2026-07-22
 
 ### Added

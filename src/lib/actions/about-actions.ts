@@ -8,6 +8,7 @@ import { clip } from "@/lib/validation";
 import type { UploadTicket } from "@/lib/media-constants";
 import { verifyUploadedAudioFile, isOwnAudioUrl } from "@/lib/storage";
 import { createAnyMediaUploadTicket, isOwnAnyMediaUrl, deleteAnyMediaFile } from "@/lib/media-dispatch";
+import { nextAboutSortOrder, moveAboutBlock } from "@/lib/about-blocks";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -27,19 +28,21 @@ function revalidateAbout() {
  * blocks replacing what used to be hardcoded JSX. Append-only ordering (no
  * reorder UI), matching ExternalLink's own simplicity.
  */
-export async function createAboutSection(formData: FormData) {
+export async function createAboutSection(title: string, body: string): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const title = clip(String(formData.get("title") ?? "").trim(), "title");
-  const body = clip(String(formData.get("body") ?? "").trim(), "content");
-  if (!body) return;
+  const trimmedBody = body.trim();
+  if (!trimmedBody) {
+    return { error: "Body text is required." };
+  }
 
-  const count = await prisma.aboutPageSection.count();
+  const sortOrder = await nextAboutSortOrder();
   await prisma.aboutPageSection.create({
-    data: { title: title || null, body, sortOrder: count },
+    data: { title: clip(title.trim(), "title") || null, body: clip(trimmedBody, "content"), sortOrder },
   });
 
   revalidateAbout();
+  return {};
 }
 
 export async function updateAboutSection(id: string, title: string, body: string): Promise<{ error?: string }> {
@@ -101,18 +104,31 @@ export async function addAboutMedia(label: string, mediaUrl: string): Promise<{ 
     return { error: "Label and URL (or an uploaded file) are required." };
   }
 
-  const count = await prisma.aboutPageMedia.count();
+  const sortOrder = await nextAboutSortOrder();
   await prisma.aboutPageMedia.create({
     data: {
       label: clip(trimmedLabel, "label"),
       mediaUrl: clip(trimmedUrl, "url"),
       mediaKind: detectMediaKind(trimmedUrl),
-      sortOrder: count,
+      sortOrder,
     },
   });
 
   revalidateAbout();
   return {};
+}
+
+/** Reposition a section or media item within the shared, interleaved order (#72). */
+export async function moveAboutSection(id: string, direction: "up" | "down") {
+  await requireAdmin();
+  await moveAboutBlock("section", id, direction);
+  revalidateAbout();
+}
+
+export async function moveAboutMedia(id: string, direction: "up" | "down") {
+  await requireAdmin();
+  await moveAboutBlock("media", id, direction);
+  revalidateAbout();
 }
 
 export async function removeAboutMedia(id: string) {
