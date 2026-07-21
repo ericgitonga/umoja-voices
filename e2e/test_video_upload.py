@@ -95,7 +95,7 @@ def test_large_video_upload_succeeds():
 
             page.get_by_role("button", name="Upload file").click()
             page.set_input_files('input[type="file"]', video_path)
-            page.locator('input[placeholder="e.g. Soprano part, Full choir recording"]').fill(LABEL)
+            page.get_by_label("Label").fill(LABEL)
             page.get_by_role("button", name="Add Media").click()
             _wait_for_outcome(page)
 
