@@ -3,7 +3,7 @@ import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import MediaEmbed from "@/components/MediaEmbed";
 import RemoveMediaButton from "@/components/RemoveMediaButton";
-import AddAudioForm from "@/components/AddAudioForm";
+import AddMediaForm from "@/components/AddMediaForm";
 import Breadcrumb from "@/components/Breadcrumb";
 import {
   SONG_PART_OPTIONS,
@@ -84,7 +84,7 @@ export default async function SongMediaPage({ params }: { params: Promise<{ id: 
 
       {isAdmin && (
         <div className="mt-10">
-          <AddAudioForm songId={song.id} />
+          <AddMediaForm songId={song.id} />
         </div>
       )}
     </div>

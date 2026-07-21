@@ -27,3 +27,15 @@ export const SHEET_MUSIC_MAX_BYTES = 20 * 1024 * 1024;
 export const SHEET_MUSIC_ALLOWED_EXTENSIONS = ["pdf"] as const;
 export const SHEET_MUSIC_ALLOWED_MIME_TYPES = ["application/pdf"] as const;
 export const SHEET_MUSIC_ACCEPT = [...SHEET_MUSIC_ALLOWED_EXTENSIONS.map((e) => `.${e}`), "application/pdf"].join(",");
+
+// Client-safe constants for direct video-file uploads (#55). Server-side
+// upload/delete logic lives in src/lib/video-storage.ts. Mirrors
+// detectMediaKind's video regex (src/lib/constants.ts) so an upload can only
+// ever produce a URL that constants.ts will also classify "video". All
+// featured videos are under 20MB by app-owner convention (larger ones get
+// ffmpeg-compressed before upload), matching the existing audio/sheet-music
+// cap and the Server Actions body-size limit already raised for #36.
+export const VIDEO_MAX_BYTES = 20 * 1024 * 1024;
+export const VIDEO_ALLOWED_EXTENSIONS = ["mp4", "mov", "webm"] as const;
+export const VIDEO_ALLOWED_MIME_TYPES = ["video/mp4", "video/quicktime", "video/webm"] as const;
+export const VIDEO_ACCEPT = [...VIDEO_ALLOWED_EXTENSIONS.map((e) => `.${e}`), "video/*"].join(",");

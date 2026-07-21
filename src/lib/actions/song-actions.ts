@@ -16,7 +16,24 @@ import {
 import { clip, oneOf, subsetOf } from "@/lib/validation";
 import type { ParsedLyricSection } from "@/lib/lyrics-parser";
 import { uploadAudioFile, deleteAudioFile, isOwnAudioUrl } from "@/lib/storage";
+import { uploadVideoFile, deleteVideoFile, isOwnVideoUrl } from "@/lib/video-storage";
 import { logActivity } from "@/lib/activity-log";
+
+/** Routes an Upload-tab file to the audio or video bucket by its MIME type. */
+async function uploadMediaFile(file: File): Promise<{ url?: string; error?: string }> {
+  return file.type.startsWith("video/") ? uploadVideoFile(file) : uploadAudioFile(file);
+}
+
+/** True if this URL was produced by either of our own upload buckets. */
+function isOwnMediaUrl(url: string): boolean {
+  return isOwnAudioUrl(url) || isOwnVideoUrl(url);
+}
+
+/** No-op if the URL isn't one of ours — routes to whichever bucket actually owns it. */
+async function deleteMediaFile(url: string): Promise<void> {
+  if (isOwnAudioUrl(url)) return deleteAudioFile(url);
+  if (isOwnVideoUrl(url)) return deleteVideoFile(url);
+}
 
 async function requireAdmin() {
   const session = await getSession();
@@ -96,7 +113,7 @@ export async function updateSongFull(
     const resolvedMedia: MediaInput[] = [];
     for (const m of s.media) {
       if (m.file && m.file.size > 0) {
-        const result = await uploadAudioFile(m.file);
+        const result = await uploadMediaFile(m.file);
         if (result.error) return { error: result.error };
         resolvedMedia.push({ ...m, mediaUrl: result.url! });
       } else {
@@ -118,7 +135,7 @@ export async function updateSongFull(
   // into the 1GB Storage budget forever.
   const orphanedUrls = existingMedia
     .map((m) => m.mediaUrl)
-    .filter((url) => isOwnAudioUrl(url) && !keptUrls.has(url));
+    .filter((url) => isOwnMediaUrl(url) && !keptUrls.has(url));
 
   await prisma.$transaction([
     prisma.song.update({
@@ -169,7 +186,7 @@ export async function updateSongFull(
     }),
   ]);
 
-  await Promise.all(orphanedUrls.map((url) => deleteAudioFile(url)));
+  await Promise.all(orphanedUrls.map((url) => deleteMediaFile(url)));
 
   revalidatePath("/songs");
   revalidatePath(`/songs/${songId}`);
@@ -202,7 +219,7 @@ export async function addSongMedia(
   let trimmedUrl = mediaUrl.trim();
 
   if (file && file.size > 0) {
-    const result = await uploadAudioFile(file);
+    const result = await uploadMediaFile(file);
     if (result.error) return { error: result.error };
     trimmedUrl = result.url!;
   }
@@ -250,8 +267,8 @@ export async function addSongMedia(
 export async function removeSongMedia(songId: string, mediaId: string) {
   await requireAdmin();
   const media = await prisma.songMedia.delete({ where: { id: mediaId } });
-  if (isOwnAudioUrl(media.mediaUrl)) {
-    await deleteAudioFile(media.mediaUrl);
+  if (isOwnMediaUrl(media.mediaUrl)) {
+    await deleteMediaFile(media.mediaUrl);
   }
   revalidatePath(`/songs/${songId}`);
   revalidatePath(`/songs/${songId}/media`);

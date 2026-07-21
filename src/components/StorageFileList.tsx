@@ -5,7 +5,7 @@ import { useState } from "react";
 export type StorageFile = {
   url: string;
   bytes: number;
-  kind: "Audio" | "Sheet Music";
+  kind: "Audio" | "Video" | "Sheet Music";
   name: string;
   songTitle: string;
   part?: string;
