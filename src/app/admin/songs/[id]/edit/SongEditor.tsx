@@ -10,6 +10,7 @@ import {
   type LyricSectionInput,
 } from "@/lib/actions/song-actions";
 import { AUDIO_MAX_BYTES, AUDIO_ACCEPT, VIDEO_MAX_BYTES, VIDEO_ACCEPT } from "@/lib/media-constants";
+import { describeUploadFailure } from "@/lib/upload-error";
 
 // Both direct-upload kinds share the same 20MB cap today; computed rather
 // than hardcoded so this stays correct if either constant ever diverges.
@@ -114,8 +115,8 @@ export default function SongEditor({
       }
       setStatus("Saved.");
       router.refresh();
-    } catch {
-      setStatus("Something went wrong — please try again.");
+    } catch (err) {
+      setStatus(describeUploadFailure(err));
     } finally {
       setSaving(false);
     }

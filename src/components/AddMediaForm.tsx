@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { addSongMedia } from "@/lib/actions/song-actions";
 import { SONG_PART_OPTIONS, SONG_PART_LABEL_TEXT, type SongPartOption } from "@/lib/constants";
 import { AUDIO_MAX_BYTES, AUDIO_ACCEPT, VIDEO_MAX_BYTES, VIDEO_ACCEPT } from "@/lib/media-constants";
+import { describeUploadFailure } from "@/lib/upload-error";
 
 type Mode = "paste" | "upload";
 
@@ -56,10 +57,10 @@ export default function AddMediaForm({ songId }: { songId: string }) {
       setPart("S");
       if (fileInputRef.current) fileInputRef.current.value = "";
       router.refresh();
-    } catch {
+    } catch (err) {
       // A thrown network/server error (e.g. a dropped connection) must never
       // leave the button stuck at "Adding…" forever with no way to retry.
-      setError("Something went wrong — please try again.");
+      setError(describeUploadFailure(err));
     } finally {
       setSaving(false);
     }
