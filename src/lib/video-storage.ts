@@ -49,12 +49,33 @@ export async function uploadVideoFile(file: File): Promise<{ url?: string; error
 
   const supabase = createAdminClient();
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(VIDEO_BUCKET).upload(path, file, {
-    contentType: file.type,
-    cacheControl: "3600",
-  });
 
-  if (error) {
+  // Temporary instrumentation for the test_large_video_upload_succeeds CI
+  // hang: logs when the underlying Supabase Storage call is still pending
+  // (heartbeat) and how long it actually took to settle, even if that's
+  // past the e2e test's own poll timeout — the server process outlives the
+  // test and keeps streaming to the same CI log. Remove once resolved.
+  const uploadStart = Date.now();
+  console.log(`[video-upload] starting Storage upload: ${file.size} bytes, path=${path}`);
+  const heartbeat = setInterval(() => {
+    console.log(`[video-upload] still waiting on Storage upload after ${Date.now() - uploadStart}ms`);
+  }, 15_000);
+
+  let uploadErrorMessage: string | null = null;
+  try {
+    const { error } = await supabase.storage.from(VIDEO_BUCKET).upload(path, file, {
+      contentType: file.type,
+      cacheControl: "3600",
+    });
+    uploadErrorMessage = error?.message ?? null;
+  } finally {
+    clearInterval(heartbeat);
+  }
+  console.log(
+    `[video-upload] Storage upload settled after ${Date.now() - uploadStart}ms (error: ${uploadErrorMessage ?? "none"})`
+  );
+
+  if (uploadErrorMessage) {
     return { error: "Upload failed — please try again." };
   }
 
