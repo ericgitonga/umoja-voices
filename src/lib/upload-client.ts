@@ -23,10 +23,7 @@ export async function uploadFileDirectly(ticket: UploadTicket, file: File): Prom
       .uploadToSignedUrl(ticket.path, ticket.token, file, { contentType: file.type });
 
     if (error) {
-      // TEMPORARY diagnostic: surfacing the raw Storage error to find out
-      // why direct browser uploads are failing in CI. Revert to the plain
-      // "Upload failed — please try again." once root-caused.
-      return { error: `Upload failed (direct): ${error.message}` };
+      return { error: "Upload failed — please try again." };
     }
 
     return { url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${ticket.bucket}/${ticket.path}` };

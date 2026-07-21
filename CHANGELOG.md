@@ -36,6 +36,16 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   before. Also fixed `AddSheetMusicForm.tsx` never using `describeUploadFailure` for a thrown
   error like the other three upload forms already did, noticed while rewriting its handler
   anyway.
+- **Direct-to-Storage uploads (this same #63) were blocked by this app's own
+  Content-Security-Policy when tested against the Preview environment**: `src/proxy.ts`'s CSP
+  hardcoded Production's Supabase hostname literally in `connect-src`/`media-src`, rather than
+  deriving it from `NEXT_PUBLIC_SUPABASE_URL` — invisible until now since every Supabase call
+  used to run server-side, unaffected by browser CSP, but the browser's own devtools/console
+  showed it immediately once a real client-side Storage call existed: "Refused to connect
+  because it violates the document's Content Security Policy." Preview and Production use two
+  different Supabase projects (#52), so the hardcoded value happened to work for Production
+  uploads specifically but silently blocked the identical flow everywhere else. Fixed by
+  building both directives from the actual configured project URL instead of a literal string.
 
 ## [0.28.1] - 2026-07-21
 

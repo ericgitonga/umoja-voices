@@ -40,14 +40,21 @@ function buildCsp(nonce: string): string {
     `style-src 'self' ${isDev ? "'unsafe-inline'" : `'nonce-${nonce}'`}`,
     "img-src 'self' data:",
     "font-src 'self' data:",
-    // Supabase Auth's browser client (updateUser/signOut/session refresh) needs
-    // to reach the project's own API — without this, every call is silently
-    // blocked by the browser with only a devtools CSP violation to go on.
-    "connect-src 'self' https://tpsvwjeyncgbmuxflizi.supabase.co",
-    // Uploaded audio (#36) plays from Supabase Storage's public URL — same
-    // domain as connect-src above. Without this, default-src 'self' silently
-    // blocks the <audio> tag with only a devtools CSP violation to go on.
-    "media-src 'self' https://tpsvwjeyncgbmuxflizi.supabase.co",
+    // Derived from the actual configured project (#63) rather than a
+    // hardcoded production hostname — a literal URL here silently blocked
+    // every direct-to-Storage upload (and any other client-side Supabase
+    // call) against the Preview/Development project, which uses a
+    // different Supabase project than Production (#52). Supabase Auth's
+    // browser client (updateUser/signOut/session refresh) and direct
+    // Storage uploads (#63) both need to reach the project's own API —
+    // without this, every call is silently blocked by the browser with
+    // only a devtools CSP violation to go on.
+    `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL}`,
+    // Uploaded audio/video (#36, #63) plays from Supabase Storage's public
+    // URL — same domain as connect-src above. Without this, default-src
+    // 'self' silently blocks <audio>/<video> tags with only a devtools CSP
+    // violation to go on.
+    `media-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL}`,
     `frame-src ${FRAME_SRC}`,
     "object-src 'none'",
     "base-uri 'self'",
