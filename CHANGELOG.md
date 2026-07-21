@@ -27,8 +27,22 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   network-layer failure (`TypeError: Failed to fetch` and equivalents) from any other thrown
   error and gives the user specific, actionable guidance instead of a generic message — wired
   into `AddMediaForm`, `AboutVideoForm`, and `SongEditor`'s save handler. Added
-  `e2e/test_video_upload.py` as a regression test — an in-memory 14MB fake file (video uploads
-  aren't content-sniffed, so no real video/ffmpeg dependency is needed for this).
+  `e2e/test_video_upload.py` as a regression test — an 11MB fake file written to a real temp
+  path (video uploads aren't content-sniffed, so no real video/ffmpeg dependency is needed for
+  this; a real file rather than an in-memory buffer avoids CDP base64-transfer overhead in CI).
+  This regression test itself then surfaced two further, unrelated problems before it could go
+  green: the Preview environment's `SUPABASE_SECRET_KEY` had been stored as a Vercel "sensitive"
+  variable, which is unreadable by `vercel env pull` (this repo's CI setup step) and was
+  silently resolving to the literal string `"[SENSITIVE]"`, so every Storage upload failed auth
+  in under a second (fixed by re-adding the key as non-sensitive); and the test's own
+  `_wait_for_outcome()` only recognized one specific error string as a failure signal, so that
+  near-instant auth failure was invisible to it and it just polled the full timeout instead
+  (fixed by anchoring on the error paragraph's own CSS class so any inline form error is caught
+  generically, and raising immediately with the real message instead of returning silently).
+  Also fixed `.github/workflows/e2e.yml` to actually capture the app server's own console
+  output (redirected to a file, printed unconditionally at the end) — GitHub Actions had been
+  silently dropping it once the step that backgrounded `npm run start` exited, which is what
+  made the real error invisible during the investigation in the first place.
 
 ## [0.28.0] - 2026-07-21
 
