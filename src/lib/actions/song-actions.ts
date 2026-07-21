@@ -16,6 +16,7 @@ import {
 import { clip, oneOf, subsetOf } from "@/lib/validation";
 import type { ParsedLyricSection } from "@/lib/lyrics-parser";
 import { uploadAudioFile, deleteAudioFile, isOwnAudioUrl } from "@/lib/storage";
+import { logActivity } from "@/lib/activity-log";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -69,6 +70,8 @@ export async function createSong(formData: FormData) {
       createdById: session.user.id,
     },
   });
+
+  await logActivity(`${session.user.name} <${session.user.email}>`, "song_create", song.title);
 
   revalidatePath("/songs");
   redirect(`/admin/songs/${song.id}/edit`);
@@ -174,8 +177,9 @@ export async function updateSongFull(
 }
 
 export async function deleteSong(songId: string) {
-  await requireAdmin();
-  await prisma.song.delete({ where: { id: songId } });
+  const session = await requireAdmin();
+  const song = await prisma.song.delete({ where: { id: songId } });
+  await logActivity(`${session.user.name} <${session.user.email}>`, "song_delete", song.title);
   revalidatePath("/songs");
 }
 

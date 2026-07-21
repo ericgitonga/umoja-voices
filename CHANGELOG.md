@@ -5,6 +5,34 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.26.0] - 2026-07-21
+
+### Added
+
+- **Minimal activity logging** (closes #50): explicitly exploratory — a narrow proof-of-concept
+  slice (login events + a handful of high-value admin mutations), not a full audit trail (see
+  #49 for that separate, broader exploration). Checked Supabase's own Auth/Postgres logging
+  first per the issue's own suggestion — its dashboard Logs Explorer isn't queryable from within
+  the app and has short free-tier retention, so it's not a substitute for an in-app, durable
+  record. Added an `ActivityLog` Prisma model (migration applied to both the Preview/dev and
+  Production Supabase projects, per #52's dual-project workflow) — `userLabel` is a snapshot of
+  the actor's name/email at the time of the action, not a live FK to `User`, so the log stays
+  meaningful even after a user is later deleted. Wired into `login()`, `createSong()`,
+  `deleteSong()`, and `updateMemberRole()`. New admin-only `/admin/activity` page (linked from
+  `Nav`) lists the most recent 100 entries — no pagination/filtering for this pass. Logging is
+  best-effort: a failure never blocks the action it's describing.
+
+### Testing
+
+- Added `e2e/test_activity_log.py` (3 specs, each cleaning up after itself since the suite runs
+  against a shared Preview database). Discovered along the way that the growing suite's
+  "every spec logs in fresh" pattern was tripping the app's own login rate limiter (5 attempts
+  per email per 15 minutes, #20) on its own, once past ~5 admin logins in one run — a real
+  security control working as intended, not a bug. Added `admin_page()`/`chorister_page()` to
+  `e2e/_common.py`: a cached, reused authenticated session shared across every spec in a run
+  that doesn't need to exercise the login flow itself, cutting real admin logins per full suite
+  run from 6 to 2.
+
 ## [0.25.0] - 2026-07-21
 
 ### Added
