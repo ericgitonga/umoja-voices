@@ -62,14 +62,7 @@ jobs:
           playwright install --with-deps chromium
 
       - name: Run E2E suite
-        # DEBUG=pw:api traces every Playwright protocol call (with
-        # timestamps) to help diagnose the test_large_video_upload_succeeds
-        # hang — shows exactly how long the browser-side click/upload
-        # interaction takes and whether it's stuck client-side vs. still
-        # waiting on the server. Temporary — remove once that's resolved.
         run: python e2e/run.py
-        env:
-          DEBUG: pw:api
 
       - name: Print server log
         if: always()

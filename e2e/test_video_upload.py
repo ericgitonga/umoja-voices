@@ -42,21 +42,33 @@ LARGE_FILE_BYTES = 11 * 1024 * 1024
 LABEL = "E2E Large Video Upload Test"
 
 
-def _wait_for_outcome(page, timeout_s=300, interval_s=2):
-    """Polls for either the error text or the new label, whichever comes
-    first — more reliable here than a single fixed wait (upload time varies
-    with system load) or a JS-side wait_for_function poll (both proved
-    flaky in practice: the fixed wait was sometimes too short, and
+def _wait_for_outcome(page, timeout_s=300, interval_s=1):
+    """Polls for either an inline form error or the new label, whichever
+    comes first — more reliable here than a single fixed wait (upload time
+    varies with system load) or a JS-side wait_for_function poll (both
+    proved flaky in practice: the fixed wait was sometimes too short, and
     wait_for_function's document.body.innerText poll didn't reliably fire
-    even once the content had visibly rendered). Generous relative to local
-    (~20-30s total) since CI's runner has repeatedly needed much longer for
-    this specific upload."""
+    even once the content had visibly rendered). Returns elapsed seconds on
+    success.
+
+    Raises immediately on any inline error rather than just returning and
+    letting the caller assert afterward: a real failure once surfaced here
+    as "Upload failed — please try again." (AddMediaForm's own returned-
+    error path), which is a different string from "Something went wrong"
+    (only used for a thrown/network-level error) — silently returning on
+    neither string ever matching left this polling the full timeout with
+    no useful signal. Anchored on the error paragraph's own CSS class
+    instead of a hardcoded message so this can't recur if the message
+    changes again.
+    """
     deadline = time.monotonic() + timeout_s
+    start = time.monotonic()
+    error_locator = page.locator("p.text-red-600")
     while time.monotonic() < deadline:
-        if page.get_by_text("Something went wrong").count() > 0:
-            return
+        if error_locator.count() > 0:
+            raise AssertionError(f"Upload failed: {error_locator.first.inner_text()}")
         if page.get_by_text(LABEL).count() > 0:
-            return
+            return time.monotonic() - start
         page.wait_for_timeout(interval_s * 1000)
     raise TimeoutError(f"Neither an error nor '{LABEL}' appeared within {timeout_s}s")
 
@@ -78,10 +90,10 @@ def test_large_video_upload_succeeds():
             page.set_input_files('input[type="file"]', video_path)
             page.locator('input[placeholder="e.g. Soprano part, Full choir recording"]').fill(LABEL)
             page.get_by_role("button", name="Add Media").click()
-            _wait_for_outcome(page)
+            elapsed = _wait_for_outcome(page)
+            print(f"[test_large_video_upload_succeeds] upload completed in {elapsed:.1f}s")
 
             try:
-                assert page.get_by_text("Something went wrong").count() == 0
                 assert page.get_by_text(LABEL).count() > 0
             finally:
                 # A broad `div[has_text=...]` locator matches every ancestor
