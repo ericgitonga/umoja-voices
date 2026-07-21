@@ -5,6 +5,38 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.28.2] - 2026-07-21
+
+### Fixed
+
+- **Uploads over ~4.5MB still failed on production after 0.28.1** (closes #63): manual
+  testing found "Something went wrong" on a plain 6MB file, confirmed live as a `413` on
+  the POST request. Root cause: Vercel Serverless Functions enforce a hard, non-configurable
+  4.5MB request body limit (`413 FUNCTION_PAYLOAD_TOO_LARGE`), completely separate from and
+  in front of `next.config.ts`'s `experimental.serverActions.bodySizeLimit`/
+  `proxyClientMaxBodySize` (both already at 22MB from 0.28.1 — irrelevant here, since Vercel
+  rejects the request before it ever reaches Next.js). 0.28.1's E2E test never caught this
+  because it runs the app via `next start` directly on the GitHub Actions runner, never
+  through Vercel's actual routing layer where this limit applies. Affected every upload path
+  that sent a raw `File` through a Server Action body: video (`AddMediaForm`, `AboutVideoForm`,
+  `SongEditor`), audio (`AddMediaForm`, `SongEditor`), and sheet-music/PDF
+  (`AddSheetMusicForm`) — the app's own 20MB per-file cap was never actually reachable on a
+  real deployment. Fixed via Vercel's own recommended pattern for this exact problem: file
+  bytes now go straight from the browser to Supabase Storage using a signed upload URL
+  (`createSignedUploadUrl`/`uploadToSignedUrl`, confirmed to need zero new RLS policies —
+  the signed token itself is the auth mechanism), bypassing Vercel Functions entirely; a tiny
+  follow-up Server Action then just records the resulting URL in Postgres. Each storage
+  module (`src/lib/video-storage.ts`, `src/lib/storage.ts`, `src/lib/sheet-music-storage.ts`)
+  now mints a ticket (`createXUploadTicket`) instead of receiving the file directly; a new
+  `src/lib/upload-client.ts` does the direct browser upload, reused by all four forms.
+  Audio's pre-upload binary content sniff (catching a mislabeled AAC-as-.mp3 file) moved to a
+  post-upload check (`verifyUploadedAudioFile`, a ranged fetch of the first 12 bytes back from
+  Storage) since the file's bytes no longer reach the server before the upload happens — same
+  detection, same rejection-and-delete behavior, just after the direct upload instead of
+  before. Also fixed `AddSheetMusicForm.tsx` never using `describeUploadFailure` for a thrown
+  error like the other three upload forms already did, noticed while rewriting its handler
+  anyway.
+
 ## [0.28.1] - 2026-07-21
 
 ### Fixed

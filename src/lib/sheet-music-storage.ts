@@ -3,6 +3,7 @@ import {
   SHEET_MUSIC_MAX_BYTES,
   SHEET_MUSIC_ALLOWED_EXTENSIONS,
   SHEET_MUSIC_ALLOWED_MIME_TYPES,
+  type UploadTicket,
 } from "@/lib/media-constants";
 
 /**
@@ -30,39 +31,44 @@ function storagePathFromUrl(url: string): string | null {
 }
 
 /**
- * Validates and uploads a PDF via the admin/service-role client — consistent
- * with this app's pattern of never talking to Storage from the client and
- * not relying on Storage RLS policies.
+ * Validates the declared file metadata and mints a signed upload URL so the
+ * browser can upload directly to Storage (#63) — Vercel Functions reject any
+ * request body over 4.5MB, so the file itself can never ride through a
+ * Server Action; only this small ticket-minting call does. `createAdminClient()`
+ * bypasses RLS to mint the ticket, but the ticket itself needs none to use
+ * (see uploadToSignedUrl's own docs) — never import this from a client
+ * component (pulls in the admin client).
  */
-export async function uploadSheetMusicFile(file: File): Promise<{ url?: string; error?: string }> {
-  if (file.type !== "application/pdf") {
+export async function createSheetMusicUploadTicket(
+  fileName: string,
+  fileSize: number,
+  mimeType: string
+): Promise<UploadTicket | { error: string }> {
+  if (mimeType !== "application/pdf") {
     return { error: "File must be a PDF." };
   }
-  if (!SHEET_MUSIC_ALLOWED_MIME_TYPES.includes(file.type as (typeof SHEET_MUSIC_ALLOWED_MIME_TYPES)[number])) {
+  if (!SHEET_MUSIC_ALLOWED_MIME_TYPES.includes(mimeType as (typeof SHEET_MUSIC_ALLOWED_MIME_TYPES)[number])) {
     return { error: "Unsupported file type — use PDF." };
   }
 
-  const ext = file.name.split(".").pop()?.toLowerCase();
+  const ext = fileName.split(".").pop()?.toLowerCase();
   if (!ext || !SHEET_MUSIC_ALLOWED_EXTENSIONS.includes(ext as (typeof SHEET_MUSIC_ALLOWED_EXTENSIONS)[number])) {
     return { error: "Unsupported file extension — use .pdf." };
   }
 
-  if (file.size > SHEET_MUSIC_MAX_BYTES) {
+  if (fileSize > SHEET_MUSIC_MAX_BYTES) {
     return { error: `File is too large — max ${SHEET_MUSIC_MAX_BYTES / (1024 * 1024)}MB.` };
   }
 
   const supabase = createAdminClient();
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(SHEET_MUSIC_BUCKET).upload(path, file, {
-    contentType: file.type,
-    cacheControl: "3600",
-  });
+  const { data, error } = await supabase.storage.from(SHEET_MUSIC_BUCKET).createSignedUploadUrl(path);
 
-  if (error) {
+  if (error || !data) {
     return { error: "Upload failed — please try again." };
   }
 
-  return { url: `${publicUrlPrefix()}${path}` };
+  return { bucket: SHEET_MUSIC_BUCKET, path: data.path, token: data.token };
 }
 
 /** No-op if the URL isn't one of ours — nothing to clean up. */

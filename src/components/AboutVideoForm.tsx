@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateAboutVideo, removeAboutVideo } from "@/lib/actions/about-actions";
+import { updateAboutVideo, removeAboutVideo, createAboutVideoUploadTicket } from "@/lib/actions/about-actions";
 import { VIDEO_MAX_BYTES, VIDEO_ACCEPT } from "@/lib/media-constants";
 import { describeUploadFailure } from "@/lib/upload-error";
+import { uploadFileDirectly } from "@/lib/upload-client";
 
 export default function AboutVideoForm({ hasVideo }: { hasVideo: boolean }) {
   const router = useRouter();
@@ -26,7 +27,18 @@ export default function AboutVideoForm({ hasVideo }: { hasVideo: boolean }) {
     setSaving(true);
     setError(null);
     try {
-      const result = await updateAboutVideo(file);
+      const ticket = await createAboutVideoUploadTicket(file.name, file.size, file.type);
+      if ("error" in ticket) {
+        setError(ticket.error);
+        return;
+      }
+      const uploaded = await uploadFileDirectly(ticket, file);
+      if (uploaded.error) {
+        setError(uploaded.error);
+        return;
+      }
+
+      const result = await updateAboutVideo(uploaded.url!);
       if (result.error) {
         setError(result.error);
         return;

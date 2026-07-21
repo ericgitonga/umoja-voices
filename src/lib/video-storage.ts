@@ -1,5 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { VIDEO_MAX_BYTES, VIDEO_ALLOWED_EXTENSIONS, VIDEO_ALLOWED_MIME_TYPES } from "@/lib/media-constants";
+import {
+  VIDEO_MAX_BYTES,
+  VIDEO_ALLOWED_EXTENSIONS,
+  VIDEO_ALLOWED_MIME_TYPES,
+  type UploadTicket,
+} from "@/lib/media-constants";
 
 /**
  * Direct video-file uploads to Supabase Storage (#55) — a separate bucket
@@ -26,39 +31,44 @@ function storagePathFromUrl(url: string): string | null {
 }
 
 /**
- * Validates and uploads a video file via the admin/service-role client —
- * consistent with this app's pattern of never talking to Storage from the
- * client and not relying on Storage RLS policies.
+ * Validates the declared file metadata and mints a signed upload URL so the
+ * browser can upload directly to Storage (#63) — Vercel Functions reject any
+ * request body over 4.5MB, so the file itself can never ride through a
+ * Server Action; only this small ticket-minting call does. `createAdminClient()`
+ * bypasses RLS to mint the ticket, but the ticket itself needs none to use
+ * (see uploadToSignedUrl's own docs) — never import this from a client
+ * component (pulls in the admin client).
  */
-export async function uploadVideoFile(file: File): Promise<{ url?: string; error?: string }> {
-  if (!file.type.startsWith("video/")) {
+export async function createVideoUploadTicket(
+  fileName: string,
+  fileSize: number,
+  mimeType: string
+): Promise<UploadTicket | { error: string }> {
+  if (!mimeType.startsWith("video/")) {
     return { error: "File must be a video file." };
   }
-  if (!VIDEO_ALLOWED_MIME_TYPES.includes(file.type as (typeof VIDEO_ALLOWED_MIME_TYPES)[number])) {
+  if (!VIDEO_ALLOWED_MIME_TYPES.includes(mimeType as (typeof VIDEO_ALLOWED_MIME_TYPES)[number])) {
     return { error: "Unsupported video format — use MP4, MOV, or WEBM." };
   }
 
-  const ext = file.name.split(".").pop()?.toLowerCase();
+  const ext = fileName.split(".").pop()?.toLowerCase();
   if (!ext || !VIDEO_ALLOWED_EXTENSIONS.includes(ext as (typeof VIDEO_ALLOWED_EXTENSIONS)[number])) {
     return { error: "Unsupported file extension — use .mp4, .mov, or .webm." };
   }
 
-  if (file.size > VIDEO_MAX_BYTES) {
+  if (fileSize > VIDEO_MAX_BYTES) {
     return { error: `File is too large — max ${VIDEO_MAX_BYTES / (1024 * 1024)}MB.` };
   }
 
   const supabase = createAdminClient();
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(VIDEO_BUCKET).upload(path, file, {
-    contentType: file.type,
-    cacheControl: "3600",
-  });
+  const { data, error } = await supabase.storage.from(VIDEO_BUCKET).createSignedUploadUrl(path);
 
-  if (error) {
+  if (error || !data) {
     return { error: "Upload failed — please try again." };
   }
 
-  return { url: `${publicUrlPrefix()}${path}` };
+  return { bucket: VIDEO_BUCKET, path: data.path, token: data.token };
 }
 
 /** No-op if the URL isn't one of ours (e.g. a pasted link) — nothing to clean up. */

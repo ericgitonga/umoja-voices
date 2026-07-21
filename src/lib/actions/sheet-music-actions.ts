@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { clip } from "@/lib/validation";
-import { uploadSheetMusicFile, deleteSheetMusicFile, isOwnSheetMusicUrl } from "@/lib/sheet-music-storage";
+import type { UploadTicket } from "@/lib/media-constants";
+import {
+  createSheetMusicUploadTicket as mintSheetMusicUploadTicket,
+  deleteSheetMusicFile,
+  isOwnSheetMusicUrl,
+} from "@/lib/sheet-music-storage";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -14,27 +19,40 @@ async function requireAdmin() {
   return session;
 }
 
+/**
+ * Mints a signed upload ticket for a sheet-music PDF (#63) — the file itself
+ * never reaches this action; only its metadata does, so this call can never
+ * hit Vercel's 4.5MB Function body limit the way sending the actual file
+ * would.
+ */
+export async function createSheetMusicUploadTicket(
+  fileName: string,
+  fileSize: number,
+  mimeType: string
+): Promise<UploadTicket | { error: string }> {
+  await requireAdmin();
+  return mintSheetMusicUploadTicket(fileName, fileSize, mimeType);
+}
+
 export async function addSheetMusic(
   songId: string,
   label: string,
-  file: File
+  fileUrl: string
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
   const trimmedLabel = label.trim();
-  if (!trimmedLabel || !file || file.size === 0) {
+  const trimmedUrl = fileUrl.trim();
+  if (!trimmedLabel || !trimmedUrl) {
     return { error: "Label and a PDF file are required." };
   }
-
-  const result = await uploadSheetMusicFile(file);
-  if (result.error) return { error: result.error };
 
   const sortOrder = await prisma.songSheetMusic.count({ where: { songId } });
   await prisma.songSheetMusic.create({
     data: {
       songId,
       label: clip(trimmedLabel, "label"),
-      fileUrl: result.url!,
+      fileUrl: trimmedUrl,
       sortOrder,
     },
   });

@@ -15,13 +15,37 @@ import {
 } from "@/lib/constants";
 import { clip, oneOf, subsetOf } from "@/lib/validation";
 import type { ParsedLyricSection } from "@/lib/lyrics-parser";
-import { uploadAudioFile, deleteAudioFile, isOwnAudioUrl } from "@/lib/storage";
-import { uploadVideoFile, deleteVideoFile, isOwnVideoUrl } from "@/lib/video-storage";
+import type { UploadTicket } from "@/lib/media-constants";
+import { createAudioUploadTicket, verifyUploadedAudioFile, deleteAudioFile, isOwnAudioUrl } from "@/lib/storage";
+import { createVideoUploadTicket, deleteVideoFile, isOwnVideoUrl } from "@/lib/video-storage";
 import { logActivity } from "@/lib/activity-log";
 
-/** Routes an Upload-tab file to the audio or video bucket by its MIME type. */
-async function uploadMediaFile(file: File): Promise<{ url?: string; error?: string }> {
-  return file.type.startsWith("video/") ? uploadVideoFile(file) : uploadAudioFile(file);
+/**
+ * Mints a signed upload ticket for an Upload-tab file, routed to the audio
+ * or video bucket by its declared MIME type (#63) — the file itself never
+ * reaches this action; only its metadata does, so this call can never hit
+ * Vercel's 4.5MB Function body limit the way sending the actual file would.
+ */
+export async function createMediaUploadTicket(
+  fileName: string,
+  fileSize: number,
+  mimeType: string
+): Promise<UploadTicket | { error: string }> {
+  await requireAdmin();
+  return mimeType.startsWith("video/")
+    ? createVideoUploadTicket(fileName, fileSize, mimeType)
+    : createAudioUploadTicket(fileName, fileSize, mimeType);
+}
+
+/**
+ * Post-upload content check for a freshly uploaded audio file (#63) — see
+ * verifyUploadedAudioFile's own docs. No-ops for a video URL or a pasted
+ * external link (isOwnAudioUrl is false for both).
+ */
+export async function verifyAudioUpload(url: string): Promise<{ error?: string }> {
+  await requireAdmin();
+  if (!isOwnAudioUrl(url)) return {};
+  return verifyUploadedAudioFile(url);
 }
 
 /** True if this URL was produced by either of our own upload buckets. */
@@ -45,11 +69,10 @@ async function requireAdmin() {
 
 export type MediaInput = {
   label: string;
+  // Always a final Storage/pasted URL by the time this reaches the server
+  // (#63) — an Upload-tab file is resolved to its Storage URL client-side,
+  // via createMediaUploadTicket + a direct browser upload, before submission.
   mediaUrl: string;
-  // Set when this entry came from the Upload tab instead of the Paste-URL
-  // tab; resolved to a Storage URL (replacing mediaUrl) before it ever
-  // reaches the database.
-  file?: File | null;
 };
 
 export type SectionInput = {
@@ -109,26 +132,10 @@ export async function updateSongFull(
     return { error: "Title is required." };
   }
 
-  // Resolve any Upload-tab entries to Storage URLs before touching the DB —
-  // a failed upload should abort the save, not half-write the song.
-  const resolvedSections: SectionInput[] = [];
-  for (const s of sections) {
-    const resolvedMedia: MediaInput[] = [];
-    for (const m of s.media) {
-      if (m.file && m.file.size > 0) {
-        const result = await uploadMediaFile(m.file);
-        if (result.error) return { error: result.error };
-        resolvedMedia.push({ ...m, mediaUrl: result.url! });
-      } else {
-        resolvedMedia.push(m);
-      }
-    }
-    resolvedSections.push({ ...s, media: resolvedMedia });
-  }
-
-  const keptUrls = new Set(
-    resolvedSections.flatMap((s) => s.media.map((m) => m.mediaUrl.trim())).filter(Boolean)
-  );
+  // Any Upload-tab entry has already been resolved to a Storage URL
+  // client-side by this point (#63) — a failed upload aborts the save there,
+  // before this action is even called, so every m.mediaUrl below is final.
+  const keptUrls = new Set(sections.flatMap((s) => s.media.map((m) => m.mediaUrl.trim())).filter(Boolean));
   const existingMedia = await prisma.songMedia.findMany({
     where: { section: { songId } },
     select: { mediaUrl: true },
@@ -151,7 +158,7 @@ export async function updateSongFull(
       },
     }),
     prisma.songSection.deleteMany({ where: { songId } }),
-    ...resolvedSections
+    ...sections
       .filter((s) => s.media.some((m) => m.mediaUrl.trim()))
       .map((s, i) =>
         prisma.songSection.create({
@@ -222,19 +229,15 @@ export async function addSongMedia(
   songId: string,
   part: string,
   label: string,
-  mediaUrl: string,
-  file?: File | null
+  mediaUrl: string
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
   const trimmedLabel = label.trim();
-  let trimmedUrl = mediaUrl.trim();
-
-  if (file && file.size > 0) {
-    const result = await uploadMediaFile(file);
-    if (result.error) return { error: result.error };
-    trimmedUrl = result.url!;
-  }
+  // Already a final Storage/pasted URL by the time this reaches the server
+  // (#63) — an Upload-tab file is resolved to its Storage URL client-side
+  // before this action is ever called.
+  const trimmedUrl = mediaUrl.trim();
 
   if (!trimmedLabel || !trimmedUrl) {
     return { error: "Label and URL (or an uploaded file) are required." };

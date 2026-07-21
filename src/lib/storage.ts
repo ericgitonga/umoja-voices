@@ -1,5 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { AUDIO_MAX_BYTES, AUDIO_ALLOWED_EXTENSIONS, AUDIO_ALLOWED_MIME_TYPES } from "@/lib/media-constants";
+import {
+  AUDIO_MAX_BYTES,
+  AUDIO_ALLOWED_EXTENSIONS,
+  AUDIO_ALLOWED_MIME_TYPES,
+  type UploadTicket,
+} from "@/lib/media-constants";
 
 /**
  * Direct audio-file uploads to Supabase Storage (#36). Video stays link-only
@@ -43,10 +48,12 @@ const EXTENSION_EXPECTED_FORMAT: Record<string, SniffedAudioFormat> = {
  * bytes — a browser's reported `File.type` for a local file is derived from
  * its extension, not its content, so it can't be trusted to catch a
  * mislabeled file (see the .mp3-that's-really-AAC/MP4 case this guards
- * against). 12 bytes is enough to identify every format below.
+ * against). 12 bytes is enough to identify every format below. Takes raw
+ * bytes rather than a `File` (#63) — the actual file content now arrives via
+ * a post-upload ranged fetch (see verifyUploadedAudioFile) rather than a
+ * File object reaching this server directly.
  */
-async function sniffAudioFormat(file: File): Promise<SniffedAudioFormat> {
-  const head = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+function sniffAudioFormat(head: Uint8Array): SniffedAudioFormat {
   const ascii = (start: number, len: number) =>
     String.fromCharCode(...head.slice(start, start + len));
 
@@ -60,30 +67,72 @@ async function sniffAudioFormat(file: File): Promise<SniffedAudioFormat> {
 }
 
 /**
- * Validates and uploads an audio file via the admin/service-role client —
- * consistent with this app's pattern of never talking to Storage from the
- * client and not relying on Storage RLS policies.
+ * Validates the declared file metadata and mints a signed upload URL so the
+ * browser can upload directly to Storage (#63) — Vercel Functions reject any
+ * request body over 4.5MB, so the file itself can never ride through a
+ * Server Action; only this small ticket-minting call does. Binary content
+ * can't be sniffed at this point since it hasn't arrived yet — see
+ * verifyUploadedAudioFile below for the post-upload equivalent of the old
+ * pre-upload sniff check.
  */
-export async function uploadAudioFile(file: File): Promise<{ url?: string; error?: string }> {
-  if (!file.type.startsWith("audio/")) {
+export async function createAudioUploadTicket(
+  fileName: string,
+  fileSize: number,
+  mimeType: string
+): Promise<UploadTicket | { error: string }> {
+  if (!mimeType.startsWith("audio/")) {
     return { error: "File must be an audio file." };
   }
-  if (!AUDIO_ALLOWED_MIME_TYPES.includes(file.type as (typeof AUDIO_ALLOWED_MIME_TYPES)[number])) {
+  if (!AUDIO_ALLOWED_MIME_TYPES.includes(mimeType as (typeof AUDIO_ALLOWED_MIME_TYPES)[number])) {
     return { error: "Unsupported audio format — use MP3, WAV, M4A, or OGG." };
   }
 
-  const ext = file.name.split(".").pop()?.toLowerCase();
+  const ext = fileName.split(".").pop()?.toLowerCase();
   if (!ext || !AUDIO_ALLOWED_EXTENSIONS.includes(ext as (typeof AUDIO_ALLOWED_EXTENSIONS)[number])) {
     return { error: "Unsupported file extension — use .mp3, .wav, .m4a, or .ogg." };
   }
 
-  if (file.size > AUDIO_MAX_BYTES) {
+  if (fileSize > AUDIO_MAX_BYTES) {
     return { error: `File is too large — max ${AUDIO_MAX_BYTES / (1024 * 1024)}MB.` };
   }
 
-  const sniffed = await sniffAudioFormat(file);
-  const expected = EXTENSION_EXPECTED_FORMAT[ext];
+  const supabase = createAdminClient();
+  const path = `${crypto.randomUUID()}.${ext}`;
+  const { data, error } = await supabase.storage.from(AUDIO_BUCKET).createSignedUploadUrl(path);
+
+  if (error || !data) {
+    return { error: "Upload failed — please try again." };
+  }
+
+  return { bucket: AUDIO_BUCKET, path: data.path, token: data.token };
+}
+
+/**
+ * Ranged-fetches the first 12 bytes of a freshly uploaded audio file back
+ * from its (public) Storage URL and re-applies sniffAudioFormat against the
+ * real content — the equivalent of the old pre-upload sniff check, moved
+ * here because the file's bytes no longer reach this server before the
+ * upload happens (#63). Deletes the object and returns the same error as
+ * before on a mismatch, so a mislabeled file never lingers in Storage.
+ * No-ops (returns no error) for anything that isn't one of our own audio
+ * files with a recognized extension — nothing for this check to do there.
+ */
+export async function verifyUploadedAudioFile(url: string): Promise<{ error?: string }> {
+  const path = storagePathFromUrl(url);
+  const ext = path?.split(".").pop()?.toLowerCase();
+  const expected = ext ? EXTENSION_EXPECTED_FORMAT[ext] : undefined;
+  if (!path || !ext || !expected) {
+    return {};
+  }
+
+  const response = await fetch(url, { headers: { Range: "bytes=0-11" } });
+  if (!response.ok) {
+    return { error: "Upload failed — please try again." };
+  }
+
+  const sniffed = sniffAudioFormat(new Uint8Array(await response.arrayBuffer()));
   if (sniffed !== expected) {
+    await deleteAudioFile(url);
     return {
       error:
         ext === "mp3" && sniffed === "mp4"
@@ -92,18 +141,7 @@ export async function uploadAudioFile(file: File): Promise<{ url?: string; error
     };
   }
 
-  const supabase = createAdminClient();
-  const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(AUDIO_BUCKET).upload(path, file, {
-    contentType: file.type,
-    cacheControl: "3600",
-  });
-
-  if (error) {
-    return { error: "Upload failed — please try again." };
-  }
-
-  return { url: `${publicUrlPrefix()}${path}` };
+  return {};
 }
 
 /** No-op if the URL isn't one of ours (e.g. a pasted link) — nothing to clean up. */
