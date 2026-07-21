@@ -65,7 +65,8 @@ export async function createVideoUploadTicket(
   const { data, error } = await supabase.storage.from(VIDEO_BUCKET).createSignedUploadUrl(path);
 
   if (error || !data) {
-    return { error: "Upload failed — please try again." };
+    // TEMPORARY diagnostic — revert to the plain message once root-caused.
+    return { error: `Upload failed (mint): ${error?.message ?? "no data"}` };
   }
 
   return { bucket: VIDEO_BUCKET, path: data.path, token: data.token };
