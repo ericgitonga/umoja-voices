@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.28.0] - 2026-07-21
+
+### Added
+
+- **Audit history / broadened data-change trail** (closes #49): originally filed as an
+  explore-and-scope issue, implemented in full at the app owner's later request. Broadens #50's
+  narrow `ActivityLog` (login + song create/delete + member role change) into the app's real
+  data-change trail rather than adding a second, near-duplicate table — the two issues were
+  explicitly framed as able to share one persistence layer if picked up together. Newly tracked:
+  song edits (`song_update`), member status changes/deactivation (`member_status_change`) and
+  deletion (`member_delete`) — neither was logged anywhere before this — plus every logistics
+  create/delete (trip, deadline, itinerary item, practice session; there's no logistics *edit*
+  path today, only create/delete). Every entry now also records the actor's IP address and raw
+  User-Agent (`ActivityLog.ipAddress`/`.userAgent`, both nullable so pre-#49 rows stay valid) —
+  captured inside `logActivity()` itself via `next/headers`, so every existing call site (login,
+  song create/delete, member role change) started recording them with no changes of its own
+  needed. Browser/OS are parsed from the stored User-Agent at render time
+  (`src/lib/user-agent.ts`, a small dependency-free regex parser) rather than stored as separate
+  columns. `/admin/activity` now shows the affected entity, IP, browser/OS, and formats every
+  timestamp in East Africa Time (`src/lib/format-eat.ts`, per the issue's explicit request) —
+  Vercel's Node runtime defaults to UTC, so this needed an explicit timezone rather than relying
+  on the server's own clock. Migration applied to both the Preview/dev and Production Supabase
+  projects. Added `e2e/test_audit_history.py` covering the newly-tracked actions and the IP/
+  browser-context fields.
+
 ## [0.27.0] - 2026-07-21
 
 ### Added

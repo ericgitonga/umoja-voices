@@ -88,7 +88,10 @@ export async function createSong(formData: FormData) {
     },
   });
 
-  await logActivity(`${session.user.name} <${session.user.email}>`, "song_create", song.title);
+  await logActivity(`${session.user.name} <${session.user.email}>`, "song_create", song.title, {
+    type: "Song",
+    label: song.title,
+  });
 
   revalidatePath("/songs");
   redirect(`/admin/songs/${song.id}/edit`);
@@ -100,7 +103,7 @@ export async function updateSongFull(
   sections: SectionInput[],
   lyricSections: LyricSectionInput[]
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   if (!meta.title.trim()) {
     return { error: "Title is required." };
@@ -188,6 +191,12 @@ export async function updateSongFull(
 
   await Promise.all(orphanedUrls.map((url) => deleteMediaFile(url)));
 
+  const updatedTitle = clip(meta.title.trim(), "title");
+  await logActivity(`${session.user.name} <${session.user.email}>`, "song_update", updatedTitle, {
+    type: "Song",
+    label: updatedTitle,
+  });
+
   revalidatePath("/songs");
   revalidatePath(`/songs/${songId}`);
   return {};
@@ -196,7 +205,10 @@ export async function updateSongFull(
 export async function deleteSong(songId: string) {
   const session = await requireAdmin();
   const song = await prisma.song.delete({ where: { id: songId } });
-  await logActivity(`${session.user.name} <${session.user.email}>`, "song_delete", song.title);
+  await logActivity(`${session.user.name} <${session.user.email}>`, "song_delete", song.title, {
+    type: "Song",
+    label: song.title,
+  });
   revalidatePath("/songs");
 }
 

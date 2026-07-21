@@ -186,7 +186,8 @@ export async function updateMemberRole(userId: string, role: string): Promise<{ 
   await logActivity(
     `${session.user.name} <${session.user.email}>`,
     "member_role_change",
-    `${target.name} -> ${resolvedRole}`
+    `${target.name} -> ${resolvedRole}`,
+    { type: "Member", label: target.name }
   );
 
   revalidatePath("/admin/members");
@@ -207,6 +208,13 @@ export async function setMemberStatus(userId: string, status: string): Promise<{
     const adminClient = createAdminClient();
     await adminClient.auth.admin.signOut(target.authUserId, "global");
   }
+
+  await logActivity(
+    `${session.user.name} <${session.user.email}>`,
+    "member_status_change",
+    `${target.name} -> ${resolvedStatus}`,
+    { type: "Member", label: target.name }
+  );
 
   revalidatePath("/admin/members");
   return {};
@@ -233,6 +241,13 @@ export async function deleteMember(userId: string): Promise<{ error?: string }> 
   if (target?.authUserId) {
     const adminClient = createAdminClient();
     await adminClient.auth.admin.deleteUser(target.authUserId);
+  }
+
+  if (target) {
+    await logActivity(`${session.user.name} <${session.user.email}>`, "member_delete", target.name, {
+      type: "Member",
+      label: target.name,
+    });
   }
 
   revalidatePath("/admin/members");

@@ -192,19 +192,31 @@ model AboutPageVideo {
   updatedAt DateTime @updatedAt
 }
 
-// Minimal activity log (#50) — a narrow proof-of-concept slice (login
-// events + a handful of high-value admin mutations), not a full audit
-// trail (see #49 for that separate, broader exploration). userLabel is a
-// snapshot of the actor's name/email at the time of the action, not a live
-// FK to User — an audit-style log should stay meaningful and immutable
-// even after the user who did something is later deleted.
+// Activity/audit log. Started as a narrow proof-of-concept slice at #50
+// (login events + a handful of high-value admin mutations); broadened at
+// #49 into the app's data-change trail (song edits, member status/
+// deletion, logistics creates/deletes) plus request context (IP address,
+// raw User-Agent — browser/OS are parsed from it at render time, not
+// stored separately), sharing this one table rather than a second,
+// near-duplicate one. userLabel is a snapshot of the actor's name/email at
+// the time of the action, not a live FK to User — an audit-style log
+// should stay meaningful and immutable even after the user who did
+// something is later deleted. ipAddress/userAgent/entityType/entityLabel
+// are nullable since rows logged before #49 (and any future best-effort
+// logging failure) won't have them.
 model ActivityLog {
-  id        String   @id @default(cuid())
-  userLabel String
+  id          String   @id @default(cuid())
+  userLabel   String
   // one of ACTIVITY_ACTIONS in src/lib/constants.ts
-  action    String
-  detail    String?
-  createdAt DateTime @default(now())
+  action      String
+  detail      String?
+  // e.g. "Song" | "Member" | "Trip" | "LogisticsDeadline" | "ItineraryItem" | "PracticeSession"
+  entityType  String?
+  // human-readable snapshot of the affected record — e.g. the song title
+  entityLabel String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
 
   @@index([createdAt])
 }
