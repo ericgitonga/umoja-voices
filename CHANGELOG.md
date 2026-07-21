@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.30.0] - 2026-07-22
+
+### Added
+
+- **Markdown-style `[link text](url)` links in About page section bodies** (closes #70): a
+  follow-up to #59 — `LinkifiedText` previously only auto-linkified bare URLs, rendering the raw
+  URL as the link text, with no way to reproduce the old hardcoded copy's custom-labeled links
+  (e.g. "White Ribbon Alliance Kenya" instead of the bare URL). Adds minimal `[text](url)` syntax
+  alongside the existing bare-URL auto-linkify, without pulling in a full markdown parser the
+  admin form doesn't otherwise need. Both admin forms (`/admin/about`'s Add Section form and
+  `AboutSectionEditor`'s edit form) now show a hint describing both link styles.
+
 ## [0.29.0] - 2026-07-21
 
 ### Added

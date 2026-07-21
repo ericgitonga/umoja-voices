@@ -38,6 +38,10 @@ export default async function AdminAboutPage() {
           <label className="flex flex-col gap-1 text-sm">
             Body <span className="text-red-600">*</span>
             <textarea name="body" required rows={4} className="rounded border border-ink/20 px-3 py-2" />
+            <span className="text-xs text-ink/50">
+              Plain text — blank lines start a new paragraph. Links: paste a URL as-is, or write{" "}
+              <code>[link text](url)</code> for custom link text.
+            </span>
           </label>
           <button
             type="submit"

@@ -76,6 +76,10 @@ export default function AboutSectionEditor({ section }: { section: Section }) {
           onChange={(e) => setBody(e.target.value)}
           className="rounded border border-ink/20 px-3 py-2"
         />
+        <span className="text-xs text-ink/50">
+          Plain text — blank lines start a new paragraph. Links: paste a URL as-is, or write{" "}
+          <code>[link text](url)</code> for custom link text.
+        </span>
       </label>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-3">
