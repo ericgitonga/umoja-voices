@@ -2,8 +2,10 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addSheetMusic } from "@/lib/actions/sheet-music-actions";
+import { addSheetMusic, createSheetMusicUploadTicket } from "@/lib/actions/sheet-music-actions";
 import { SHEET_MUSIC_MAX_BYTES, SHEET_MUSIC_ACCEPT } from "@/lib/media-constants";
+import { describeUploadFailure } from "@/lib/upload-error";
+import { uploadFileDirectly } from "@/lib/upload-client";
 
 export default function AddSheetMusicForm({ songId }: { songId: string }) {
   const router = useRouter();
@@ -26,7 +28,18 @@ export default function AddSheetMusicForm({ songId }: { songId: string }) {
     setSaving(true);
     setError(null);
     try {
-      const result = await addSheetMusic(songId, label, file);
+      const ticket = await createSheetMusicUploadTicket(file.name, file.size, file.type);
+      if ("error" in ticket) {
+        setError(ticket.error);
+        return;
+      }
+      const uploaded = await uploadFileDirectly(ticket, file);
+      if (uploaded.error) {
+        setError(uploaded.error);
+        return;
+      }
+
+      const result = await addSheetMusic(songId, label, uploaded.url!);
       if (result.error) {
         setError(result.error);
         return;
@@ -35,8 +48,11 @@ export default function AddSheetMusicForm({ songId }: { songId: string }) {
       setLabel("");
       if (fileInputRef.current) fileInputRef.current.value = "";
       router.refresh();
-    } catch {
-      setError("Something went wrong — please try again.");
+    } catch (err) {
+      // A thrown network/server error (e.g. a dropped connection) must never
+      // leave the button stuck at "Adding…" forever with no way to retry —
+      // matches the other upload forms, which this one was missing (#63).
+      setError(describeUploadFailure(err));
     } finally {
       setSaving(false);
     }

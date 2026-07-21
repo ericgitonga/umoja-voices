@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
-import { uploadVideoFile, deleteVideoFile, isOwnVideoUrl } from "@/lib/video-storage";
+import type { UploadTicket } from "@/lib/media-constants";
+import { createVideoUploadTicket, deleteVideoFile, isOwnVideoUrl } from "@/lib/video-storage";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -14,27 +15,40 @@ async function requireAdmin() {
 }
 
 /**
+ * Mints a signed upload ticket for the About page's featured video (#63) —
+ * the file itself never reaches this action; only its metadata does, so
+ * this call can never hit Vercel's 4.5MB Function body limit the way
+ * sending the actual file would.
+ */
+export async function createAboutVideoUploadTicket(
+  fileName: string,
+  fileSize: number,
+  mimeType: string
+): Promise<UploadTicket | { error: string }> {
+  await requireAdmin();
+  return createVideoUploadTicket(fileName, fileSize, mimeType);
+}
+
+/**
  * Replaces the public About page's single featured video (#55) — a
  * singleton row (fixed id "about"), so this always upserts rather than
  * creating a new row per upload. Cleans up the previous file from Storage
  * once the new one is safely recorded.
  */
-export async function updateAboutVideo(file: File): Promise<{ error?: string }> {
+export async function updateAboutVideo(videoUrl: string): Promise<{ error?: string }> {
   await requireAdmin();
 
-  if (!file || file.size === 0) {
+  const trimmedUrl = videoUrl.trim();
+  if (!trimmedUrl) {
     return { error: "A video file is required." };
   }
-
-  const result = await uploadVideoFile(file);
-  if (result.error) return { error: result.error };
 
   const previous = await prisma.aboutPageVideo.findUnique({ where: { id: "about" } });
 
   await prisma.aboutPageVideo.upsert({
     where: { id: "about" },
-    create: { id: "about", videoUrl: result.url! },
-    update: { videoUrl: result.url! },
+    create: { id: "about", videoUrl: trimmedUrl },
+    update: { videoUrl: trimmedUrl },
   });
 
   if (previous && isOwnVideoUrl(previous.videoUrl)) {

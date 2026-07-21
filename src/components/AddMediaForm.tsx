@@ -2,10 +2,11 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addSongMedia } from "@/lib/actions/song-actions";
+import { addSongMedia, createMediaUploadTicket, verifyAudioUpload } from "@/lib/actions/song-actions";
 import { SONG_PART_OPTIONS, SONG_PART_LABEL_TEXT, type SongPartOption } from "@/lib/constants";
 import { AUDIO_MAX_BYTES, AUDIO_ACCEPT, VIDEO_MAX_BYTES, VIDEO_ACCEPT } from "@/lib/media-constants";
 import { describeUploadFailure } from "@/lib/upload-error";
+import { uploadFileDirectly } from "@/lib/upload-client";
 
 type Mode = "paste" | "upload";
 
@@ -46,7 +47,29 @@ export default function AddMediaForm({ songId }: { songId: string }) {
     setSaving(true);
     setError(null);
     try {
-      const result = await addSongMedia(songId, part, label, mode === "paste" ? url : "", mode === "upload" ? file : null);
+      let mediaUrl = url;
+      if (mode === "upload" && file) {
+        const ticket = await createMediaUploadTicket(file.name, file.size, file.type);
+        if ("error" in ticket) {
+          setError(ticket.error);
+          return;
+        }
+        const uploaded = await uploadFileDirectly(ticket, file);
+        if (uploaded.error) {
+          setError(uploaded.error);
+          return;
+        }
+        if (file.type.startsWith("audio/")) {
+          const verified = await verifyAudioUpload(uploaded.url!);
+          if (verified.error) {
+            setError(verified.error);
+            return;
+          }
+        }
+        mediaUrl = uploaded.url!;
+      }
+
+      const result = await addSongMedia(songId, part, label, mediaUrl);
       if (result.error) {
         setError(result.error);
         return;

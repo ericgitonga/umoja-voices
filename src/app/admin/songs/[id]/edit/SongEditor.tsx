@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { SONG_PART_OPTIONS, LYRIC_SECTION_TYPES, VOICE_TAGS, VOICE_TAG_LABEL, type VoiceTag } from "@/lib/constants";
 import {
   updateSongFull,
+  createMediaUploadTicket,
+  verifyAudioUpload,
   type SectionInput,
   type MediaInput,
   type LyricSectionInput,
 } from "@/lib/actions/song-actions";
 import { AUDIO_MAX_BYTES, AUDIO_ACCEPT, VIDEO_MAX_BYTES, VIDEO_ACCEPT } from "@/lib/media-constants";
 import { describeUploadFailure } from "@/lib/upload-error";
+import { uploadFileDirectly } from "@/lib/upload-client";
 
 // Both direct-upload kinds share the same 20MB cap today; computed rather
 // than hardcoded so this stays correct if either constant ever diverges.
@@ -38,6 +41,12 @@ export default function SongEditor({
   // below. Not part of SectionInput/MediaInput since it's pure UI state,
   // never sent to updateSongFull.
   const [mediaModes, setMediaModes] = useState<MediaMode[][]>(initialSections.map((s) => s.media.map(() => "paste")));
+  // Also mirrors voiceSections[i].media[j] 1:1. A pending Upload-tab file
+  // lives here rather than on MediaInput itself (#63) — the file must be
+  // resolved to a Storage URL client-side (mint ticket + direct upload)
+  // before updateSongFull is ever called, so MediaInput only ever carries a
+  // final mediaUrl by the time it reaches that action.
+  const [pendingFiles, setPendingFiles] = useState<(File | null)[][]>(initialSections.map((s) => s.media.map(() => null)));
   const [sections, setSections] = useState<LyricSectionInput[]>(initialLyricSections);
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -45,6 +54,7 @@ export default function SongEditor({
   function addVoiceSection() {
     setVoiceSections([...voiceSections, { part: "S", sectionLabel: "", labelDescription: "", media: [] }]);
     setMediaModes([...mediaModes, []]);
+    setPendingFiles([...pendingFiles, []]);
   }
   function updateVoiceSection(i: number, patch: Partial<SectionInput>) {
     setVoiceSections(voiceSections.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
@@ -52,12 +62,14 @@ export default function SongEditor({
   function removeVoiceSection(i: number) {
     setVoiceSections(voiceSections.filter((_, idx) => idx !== i));
     setMediaModes(mediaModes.filter((_, idx) => idx !== i));
+    setPendingFiles(pendingFiles.filter((_, idx) => idx !== i));
   }
   function addMedia(i: number) {
     setVoiceSections(
       voiceSections.map((s, idx) => (idx === i ? { ...s, media: [...s.media, { label: "", mediaUrl: "" }] } : s))
     );
     setMediaModes(mediaModes.map((row, idx) => (idx === i ? [...row, "paste"] : row)));
+    setPendingFiles(pendingFiles.map((row, idx) => (idx === i ? [...row, null] : row)));
   }
   function updateMedia(i: number, j: number, patch: Partial<MediaInput>) {
     setVoiceSections(
@@ -66,17 +78,25 @@ export default function SongEditor({
       )
     );
   }
+  function updatePendingFile(i: number, j: number, file: File | null) {
+    setPendingFiles(pendingFiles.map((row, idx) => (idx === i ? row.map((f, mj) => (mj === j ? file : f)) : row)));
+  }
   function removeMedia(i: number, j: number) {
     setVoiceSections(
       voiceSections.map((s, idx) => (idx === i ? { ...s, media: s.media.filter((_, mj) => mj !== j) } : s))
     );
     setMediaModes(mediaModes.map((row, idx) => (idx === i ? row.filter((_, mj) => mj !== j) : row)));
+    setPendingFiles(pendingFiles.map((row, idx) => (idx === i ? row.filter((_, mj) => mj !== j) : row)));
   }
   function setMediaMode(i: number, j: number, mode: MediaMode) {
     setMediaModes(mediaModes.map((row, idx) => (idx === i ? row.map((m, mj) => (mj === j ? mode : m)) : row)));
     // Switching modes discards whatever was in the other mode's field —
     // a row is either a pasted URL or an uploaded file, never both.
-    updateMedia(i, j, mode === "paste" ? { file: null } : { mediaUrl: "" });
+    if (mode === "paste") {
+      updatePendingFile(i, j, null);
+    } else {
+      updateMedia(i, j, { mediaUrl: "" });
+    }
   }
 
   function addSection() {
@@ -100,7 +120,7 @@ export default function SongEditor({
   }
 
   async function handleSave() {
-    const oversized = voiceSections.some((s) => s.media.some((m) => m.file && m.file.size > UPLOAD_MAX_BYTES));
+    const oversized = pendingFiles.some((row) => row.some((f) => f && f.size > UPLOAD_MAX_BYTES));
     if (oversized) {
       setStatus(`One or more uploaded files are too large — max ${UPLOAD_MAX_BYTES / (1024 * 1024)}MB.`);
       return;
@@ -108,11 +128,52 @@ export default function SongEditor({
     setSaving(true);
     setStatus(null);
     try {
-      const result = await updateSongFull(songId, meta, voiceSections, sections);
+      // Resolve every pending Upload-tab file to a Storage URL before
+      // touching the DB (#63) — file bytes go straight from the browser to
+      // Supabase Storage, bypassing Vercel's 4.5MB Function body limit, so
+      // this can no longer happen as part of updateSongFull's own request.
+      // Aborts on the first failed upload, same as the old server-side loop.
+      const resolvedSections: SectionInput[] = [];
+      for (let i = 0; i < voiceSections.length; i++) {
+        const s = voiceSections[i];
+        const resolvedMedia: MediaInput[] = [];
+        for (let j = 0; j < s.media.length; j++) {
+          const m = s.media[j];
+          const file = pendingFiles[i]?.[j];
+          if (file) {
+            const ticket = await createMediaUploadTicket(file.name, file.size, file.type);
+            if ("error" in ticket) {
+              setStatus(ticket.error);
+              return;
+            }
+            const uploaded = await uploadFileDirectly(ticket, file);
+            if (uploaded.error) {
+              setStatus(uploaded.error);
+              return;
+            }
+            if (file.type.startsWith("audio/")) {
+              const verified = await verifyAudioUpload(uploaded.url!);
+              if (verified.error) {
+                setStatus(verified.error);
+                return;
+              }
+            }
+            resolvedMedia.push({ ...m, mediaUrl: uploaded.url! });
+          } else {
+            resolvedMedia.push(m);
+          }
+        }
+        resolvedSections.push({ ...s, media: resolvedMedia });
+      }
+
+      const result = await updateSongFull(songId, meta, resolvedSections, sections);
       if (result.error) {
         setStatus(result.error);
         return;
       }
+      setVoiceSections(resolvedSections);
+      setPendingFiles(resolvedSections.map((s) => s.media.map(() => null)));
+      setMediaModes(resolvedSections.map((s) => s.media.map(() => "paste")));
       setStatus("Saved.");
       router.refresh();
     } catch (err) {
@@ -243,7 +304,7 @@ export default function SongEditor({
                           <input
                             type="file"
                             accept={MEDIA_ACCEPT}
-                            onChange={(e) => updateMedia(i, j, { file: e.target.files?.[0] ?? null })}
+                            onChange={(e) => updatePendingFile(i, j, e.target.files?.[0] ?? null)}
                             className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm"
                           />
                           <span className="text-xs text-ink/40">

@@ -1,3 +1,10 @@
+// Returned by each storage module's createXUploadTicket() (#63) — mints a
+// Supabase signed upload URL server-side so the client can upload directly
+// to Storage, bypassing Vercel's 4.5MB Function body limit. `token` needs no
+// RLS policy to use (see uploadToSignedUrl's own docs); `bucket` is included
+// so client code never needs to hardcode bucket names.
+export type UploadTicket = { bucket: string; path: string; token: string };
+
 // Client-safe constants for direct audio-file uploads (#36) — no Supabase
 // client import here, so this is safe to pull into client components.
 // Server-side upload/delete logic lives in src/lib/storage.ts.
