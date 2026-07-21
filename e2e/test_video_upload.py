@@ -32,13 +32,15 @@ LARGE_FILE_BYTES = 14 * 1024 * 1024
 LABEL = "E2E Large Video Upload Test"
 
 
-def _wait_for_outcome(page, timeout_s=60, interval_s=2):
+def _wait_for_outcome(page, timeout_s=120, interval_s=2):
     """Polls for either the error text or the new label, whichever comes
     first — more reliable here than a single fixed wait (upload time varies
     with system load) or a JS-side wait_for_function poll (both proved
     flaky in practice: the fixed wait was sometimes too short, and
     wait_for_function's document.body.innerText poll didn't reliably fire
-    even once the content had visibly rendered)."""
+    even once the content had visibly rendered). 120s rather than the ~20s
+    typical locally — CI's runner took noticeably longer than local dev for
+    this specific upload (observed directly: 60s wasn't enough there)."""
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
         if page.get_by_text("Something went wrong").count() > 0:
