@@ -15,7 +15,16 @@ fixture. Written to a real temp file rather than passed as an in-memory
 buffer — an in-memory buffer has to be base64-encoded and transferred over
 CDP before the upload itself even starts, which timed out in CI's more
 constrained runner even at a 90s allowance; a real file path lets the
-browser read it directly with no such overhead. Cleans up after itself
+browser read it directly with no such overhead.
+
+File size deliberately kept close to (rather than far above) the 10MB
+threshold the actual bug lived at: confirmed directly that GitHub Actions'
+runner is meaningfully slower/more bandwidth-constrained than local dev for
+this specific upload (a 14MB file passed in ~30s total against a local
+`next start` production build — the exact same server mode CI uses — but
+still hadn't finished after 120s in CI). 11MB is the smallest size that
+still meaningfully exercises the >10MB regression while minimizing time
+spent on infra speed rather than the app itself. Cleans up after itself
 since this suite runs against a shared Preview database.
 """
 
@@ -25,22 +34,23 @@ import time
 
 from _common import admin_page, SEED_SONG_TITLE
 
-# Comfortably over proxy.ts's 10MB default buffering cap (the actual bug),
-# still under this app's 20MB app-side upload cap.
-LARGE_FILE_BYTES = 14 * 1024 * 1024
+# Just over proxy.ts's 10MB default buffering cap (the actual bug), and
+# still under this app's 20MB app-side upload cap — see the module
+# docstring for why this is kept close to 10MB rather than larger.
+LARGE_FILE_BYTES = 11 * 1024 * 1024
 
 LABEL = "E2E Large Video Upload Test"
 
 
-def _wait_for_outcome(page, timeout_s=120, interval_s=2):
+def _wait_for_outcome(page, timeout_s=150, interval_s=2):
     """Polls for either the error text or the new label, whichever comes
     first — more reliable here than a single fixed wait (upload time varies
     with system load) or a JS-side wait_for_function poll (both proved
     flaky in practice: the fixed wait was sometimes too short, and
     wait_for_function's document.body.innerText poll didn't reliably fire
-    even once the content had visibly rendered). 120s rather than the ~20s
-    typical locally — CI's runner took noticeably longer than local dev for
-    this specific upload (observed directly: 60s wasn't enough there)."""
+    even once the content had visibly rendered). Generous relative to local
+    (~20-30s total) since CI's runner has repeatedly needed much longer for
+    this specific upload."""
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
         if page.get_by_text("Something went wrong").count() > 0:
