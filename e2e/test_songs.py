@@ -5,19 +5,17 @@ than mutating data, since this suite may run against a shared Preview
 database (#52) that other work also relies on being in a known state.
 """
 
-from _common import SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD, SEED_SONG_TITLE, browser_page, login
+from _common import SEED_SONG_TITLE, admin_page
 
 
 def test_song_library_lists_seed_song():
-    with browser_page() as page:
-        login(page, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD)
+    with admin_page() as page:
         page.goto("/songs")
         assert page.get_by_text(SEED_SONG_TITLE).count() > 0
 
 
 def test_song_detail_and_media_page_load():
-    with browser_page() as page:
-        login(page, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD)
+    with admin_page() as page:
         page.goto("/songs")
         page.get_by_text(SEED_SONG_TITLE).first.click()
         page.wait_for_url("**/songs/**", timeout=10_000)

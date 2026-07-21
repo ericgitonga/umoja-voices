@@ -10,6 +10,7 @@ import { clip, oneOf } from "@/lib/validation";
 import { checkRateLimit, rateLimitResetMinutes, getClientIp } from "@/lib/rate-limit";
 import { appBaseUrl } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logActivity } from "@/lib/activity-log";
 
 // Admin-only and lower risk than login/forgot-password, so a looser window:
 // generous enough for a legitimate bulk-invite session (a new season's
@@ -181,6 +182,12 @@ export async function updateMemberRole(userId: string, role: string): Promise<{ 
     const adminClient = createAdminClient();
     await adminClient.auth.admin.updateUserById(target.authUserId, { app_metadata: { role: resolvedRole } });
   }
+
+  await logActivity(
+    `${session.user.name} <${session.user.email}>`,
+    "member_role_change",
+    `${target.name} -> ${resolvedRole}`
+  );
 
   revalidatePath("/admin/members");
   return {};

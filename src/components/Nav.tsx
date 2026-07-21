@@ -107,6 +107,18 @@ export default function Nav({ session }: { session: Session | null }) {
           Storage
         </Link>
       )}
+      {isAdmin && (
+        <Link
+          href="/admin/activity"
+          className={
+            pathname?.startsWith("/admin/activity")
+              ? "rounded-full bg-white/15 px-3 py-1.5 text-white"
+              : "px-3 py-1.5 text-gray-300 hover:text-white"
+          }
+        >
+          Activity
+        </Link>
+      )}
       <div className="ml-auto flex items-center gap-4">
         <Link href="/profile" className="text-gray-300 hover:text-white">
           {session.user.name}

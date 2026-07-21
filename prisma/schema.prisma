@@ -179,3 +179,20 @@ model RateLimitBucket {
   count   Int
   resetAt DateTime
 }
+
+// Minimal activity log (#50) — a narrow proof-of-concept slice (login
+// events + a handful of high-value admin mutations), not a full audit
+// trail (see #49 for that separate, broader exploration). userLabel is a
+// snapshot of the actor's name/email at the time of the action, not a live
+// FK to User — an audit-style log should stay meaningful and immutable
+// even after the user who did something is later deleted.
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userLabel String
+  // one of ACTIVITY_ACTIONS in src/lib/constants.ts
+  action    String
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

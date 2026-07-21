@@ -85,6 +85,21 @@ export type LinkCategory = (typeof LINK_CATEGORIES)[number];
 export const DEADLINE_CATEGORIES = ["visa", "tickets", "payment", "other"] as const;
 export type DeadlineCategory = (typeof DEADLINE_CATEGORIES)[number];
 
+/**
+ * A narrow proof-of-concept slice for #50 — login events plus a handful of
+ * high-value admin mutations, not a full audit trail (see #49 for that
+ * separate, broader exploration).
+ */
+export const ACTIVITY_ACTIONS = ["login", "song_create", "song_delete", "member_role_change"] as const;
+export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
+
+export const ACTIVITY_ACTION_LABEL: Record<ActivityAction, string> = {
+  login: "Logged in",
+  song_create: "Created a song",
+  song_delete: "Deleted a song",
+  member_role_change: "Changed a member's role",
+};
+
 export function parseVoiceTags(stored: string): VoiceTag[] {
   return stored
     .split(",")

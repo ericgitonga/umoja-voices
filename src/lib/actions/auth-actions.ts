@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { appBaseUrl } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/get-session";
+import { logActivity } from "@/lib/activity-log";
 
 const LOGIN_WINDOW_MS = 15 * 60_000;
 const LOGIN_MAX_PER_EMAIL = 5; // per email+IP combo
@@ -43,6 +44,11 @@ export async function login(email: string, password: string): Promise<{ error?: 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
   if (error) return { error: "Incorrect email or password." };
+
+  const profile = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (profile) {
+    await logActivity(`${profile.name} <${profile.email}>`, "login");
+  }
 
   return {};
 }
