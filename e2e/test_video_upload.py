@@ -18,14 +18,21 @@ constrained runner even at a 90s allowance; a real file path lets the
 browser read it directly with no such overhead.
 
 File size deliberately kept close to (rather than far above) the 10MB
-threshold the actual bug lived at: confirmed directly that GitHub Actions'
-runner is meaningfully slower/more bandwidth-constrained than local dev for
-this specific upload (a 14MB file passed in ~30s total against a local
-`next start` production build — the exact same server mode CI uses — but
-still hadn't finished after 120s in CI). 11MB is the smallest size that
-still meaningfully exercises the >10MB regression while minimizing time
-spent on infra speed rather than the app itself. Cleans up after itself
-since this suite runs against a shared Preview database.
+threshold the actual bug lived at — 11MB is the smallest size that still
+meaningfully exercises the >10MB regression. Cleans up after itself since
+this suite runs against a shared Preview database.
+
+This test previously appeared to hang for minutes in CI regardless of how
+high timeout_s was raised. That was never a real speed/infra problem: the
+Preview-environment SUPABASE_SECRET_KEY had been stored as a Vercel
+"sensitive" variable, which `vercel env pull` (this repo's CI setup step)
+can never read back — it silently wrote the literal string "[SENSITIVE]"
+into .env.local, so every upload failed auth instantly with "Invalid
+Compact JWS." The failure was invisible because _wait_for_outcome() below
+didn't recognize that error text as a terminal state, so it just polled
+for the full timeout every time. Once the key was fixed (re-added as
+non-sensitive) and _wait_for_outcome() was taught to recognize any inline
+form error, a real successful upload measured ~3s in CI end to end.
 """
 
 import os
@@ -42,14 +49,15 @@ LARGE_FILE_BYTES = 11 * 1024 * 1024
 LABEL = "E2E Large Video Upload Test"
 
 
-def _wait_for_outcome(page, timeout_s=300, interval_s=1):
+def _wait_for_outcome(page, timeout_s=30, interval_s=1):
     """Polls for either an inline form error or the new label, whichever
     comes first — more reliable here than a single fixed wait (upload time
     varies with system load) or a JS-side wait_for_function poll (both
     proved flaky in practice: the fixed wait was sometimes too short, and
     wait_for_function's document.body.innerText poll didn't reliably fire
-    even once the content had visibly rendered). Returns elapsed seconds on
-    success.
+    even once the content had visibly rendered). 30s is ~10x the ~3s a real
+    upload measured in CI — enough headroom for normal variance without
+    masking a real failure behind a multi-minute wait.
 
     Raises immediately on any inline error rather than just returning and
     letting the caller assert afterward: a real failure once surfaced here
@@ -62,13 +70,12 @@ def _wait_for_outcome(page, timeout_s=300, interval_s=1):
     changes again.
     """
     deadline = time.monotonic() + timeout_s
-    start = time.monotonic()
     error_locator = page.locator("p.text-red-600")
     while time.monotonic() < deadline:
         if error_locator.count() > 0:
             raise AssertionError(f"Upload failed: {error_locator.first.inner_text()}")
         if page.get_by_text(LABEL).count() > 0:
-            return time.monotonic() - start
+            return
         page.wait_for_timeout(interval_s * 1000)
     raise TimeoutError(f"Neither an error nor '{LABEL}' appeared within {timeout_s}s")
 
@@ -90,8 +97,7 @@ def test_large_video_upload_succeeds():
             page.set_input_files('input[type="file"]', video_path)
             page.locator('input[placeholder="e.g. Soprano part, Full choir recording"]').fill(LABEL)
             page.get_by_role("button", name="Add Media").click()
-            elapsed = _wait_for_outcome(page)
-            print(f"[test_large_video_upload_succeeds] upload completed in {elapsed:.1f}s")
+            _wait_for_outcome(page)
 
             try:
                 assert page.get_by_text(LABEL).count() > 0
