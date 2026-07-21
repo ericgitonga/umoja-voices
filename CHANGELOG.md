@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.28.1] - 2026-07-21
+
+### Fixed
+
+- **Video (and any >10MB) uploads failing with "Something went wrong"** (closes #58): root-caused
+  to `src/proxy.ts` (this app's global middleware, broadened to every route for #17's per-request
+  CSP nonce) — Next.js clones and buffers every request body a proxy sees, capped at **10MB by
+  default**, separately from and in front of `experimental.serverActions.bodySizeLimit` (already
+  raised to 22MB for #36). Any upload over 10MB — routinely true for video, occasionally for
+  audio/sheet-music, all nominally allowed up to this app's 20MB per-file cap — got silently
+  truncated by the proxy (no error, per Next's own documented behavior) and the Server Action
+  then failed parsing the now-broken multipart body (`Error: Unexpected end of form`), surfacing
+  to the user as a generic, unhelpful message. Confirmed directly: a 14MB test upload reproduced
+  the bug locally on a fast, unthrottled connection with zero packet loss — this was a body-size
+  ceiling, not a network-flakiness issue, ruling out the "slow mobile connection" hypothesis the
+  issue itself raised before the real cause was found. Fixed by setting
+  `experimental.proxyClientMaxBodySize: "22mb"` in `next.config.ts`, matching the existing
+  Server Actions limit. Also improved the client-side error message for the separate, still-real
+  case of an actual dropped connection mid-upload (`src/lib/upload-error.ts`): distinguishes a
+  network-layer failure (`TypeError: Failed to fetch` and equivalents) from any other thrown
+  error and gives the user specific, actionable guidance instead of a generic message — wired
+  into `AddMediaForm`, `AboutVideoForm`, and `SongEditor`'s save handler. Added
+  `e2e/test_video_upload.py` as a regression test — an in-memory 14MB fake file (video uploads
+  aren't content-sniffed, so no real video/ffmpeg dependency is needed for this).
+
 ## [0.28.0] - 2026-07-21
 
 ### Added

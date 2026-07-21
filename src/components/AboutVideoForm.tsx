@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateAboutVideo, removeAboutVideo } from "@/lib/actions/about-actions";
 import { VIDEO_MAX_BYTES, VIDEO_ACCEPT } from "@/lib/media-constants";
+import { describeUploadFailure } from "@/lib/upload-error";
 
 export default function AboutVideoForm({ hasVideo }: { hasVideo: boolean }) {
   const router = useRouter();
@@ -33,8 +34,8 @@ export default function AboutVideoForm({ hasVideo }: { hasVideo: boolean }) {
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       router.refresh();
-    } catch {
-      setError("Something went wrong — please try again.");
+    } catch (err) {
+      setError(describeUploadFailure(err));
     } finally {
       setSaving(false);
     }
