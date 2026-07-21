@@ -5,7 +5,26 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
-## [0.28.2] - 2026-07-21
+## [0.29.0] - 2026-07-21
+
+### Added
+
+- **Admin-configurable About page** (closes #59): the page's text sections and featured media are
+  now fully admin-editable via a new `/admin/about` page (mirroring `/admin/links`'s own
+  separate-editor pattern), instead of hardcoded JSX and a single-video singleton. Replaces the
+  `AboutPageVideo` model with `AboutPageSection` (an ordered list of title+body blocks — title
+  nullable, since the original intro paragraph has no heading; edited in place, unlike Links'
+  add/delete-only rows, since this issue is specifically about not needing to re-file an issue to
+  change existing wording) and `AboutPageMedia` (a flat list mirroring `SongMedia`'s
+  paste-URL-or-upload behavior, minus voice-part grouping — the About page has none). The
+  migration carries the existing featured-video row forward into `AboutPageMedia` rather than
+  dropping it. `src/lib/media-dispatch.ts` factors the audio/video Storage
+  upload-ticket/own-URL/delete dispatch (previously duplicated only in `song-actions.ts`) into one
+  shared module, now used by both Songs and the About page. Section bodies render through a new
+  `LinkifiedText` component (bare URLs auto-linkified) rather than requiring a markdown parser,
+  since the copy being replaced had real hyperlinks (WRAK, Instagram). `AboutVideoForm.tsx` is
+  removed (fully superseded); `/admin/storage`'s quota page now attributes any About-page audio or
+  video file to "About page" via `AboutPageMedia` instead of the old singleton lookup.
 
 ### Fixed
 

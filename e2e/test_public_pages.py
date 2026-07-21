@@ -8,10 +8,12 @@ from _common import browser_page
 
 
 def test_about_page_loads_without_login():
+    # No longer asserts specific copy (#59 made the page's text sections
+    # admin-editable, not hardcoded) — test_admin_about.py covers the actual
+    # content CRUD flow instead.
     with browser_page() as page:
         page.goto("/about")
         assert "/login" not in page.url
-        assert page.get_by_text("White Ribbon Alliance Kenya").count() > 0
 
 
 def test_links_page_loads_without_login():

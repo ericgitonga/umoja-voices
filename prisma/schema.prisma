@@ -180,16 +180,33 @@ model RateLimitBucket {
   resetAt DateTime
 }
 
-// The public About page's single featured video (#55) — a singleton row
-// (fixed id) rather than a generic key-value settings table, since this is
-// the only site-wide setting the app has today. Replaces the About page's
-// old FEATURED_YOUTUBE_URL constant / Instagram link-out with an
-// admin-uploaded video, stored in the "song-video" Storage bucket like any
-// other direct video upload (src/lib/video-storage.ts).
-model AboutPageVideo {
-  id        String   @id @default("about")
-  videoUrl  String
-  updatedAt DateTime @updatedAt
+// The public About page's admin-editable text (#59) — a flat, ordered list
+// of title+body blocks replacing what used to be hardcoded JSX in
+// src/app/about/page.tsx. `title` is nullable since the original intro
+// paragraph has no heading. No reordering UI — append-only via `sortOrder`,
+// matching ExternalLink's own simplicity — but unlike links, sections are
+// editable in place since #59 is specifically about not having to re-file
+// an issue to change existing wording.
+model AboutPageSection {
+  id        String   @id @default(cuid())
+  title     String?
+  body      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// The public About page's media items (#59) — replaces the old singleton
+// AboutPageVideo (#55) with a flat, unordered-by-voice-part list mirroring
+// SongMedia's paste-link-or-upload behavior, since the About page has no
+// voice-part concept to group by. `mediaKind` uses the same MEDIA_KINDS set
+// (src/lib/constants.ts) SongMedia already does.
+model AboutPageMedia {
+  id        String   @id @default(cuid())
+  label     String
+  mediaUrl  String
+  mediaKind String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 // Activity/audit log. Started as a narrow proof-of-concept slice at #50

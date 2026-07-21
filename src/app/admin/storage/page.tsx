@@ -21,7 +21,7 @@ export default async function AdminStoragePage() {
     getVideoStorageUsage(),
   ]);
 
-  const [audioOwners, sheetMusicOwners, videoOwners, aboutVideo] = await Promise.all([
+  const [audioOwners, sheetMusicOwners, videoOwners, aboutMediaOwners] = await Promise.all([
     prisma.songMedia.findMany({
       where: { mediaUrl: { in: audioUsage.files.map((f) => f.url) } },
       select: {
@@ -42,21 +42,28 @@ export default async function AdminStoragePage() {
         section: { select: { part: true, song: { select: { title: true } } } },
       },
     }),
-    prisma.aboutPageVideo.findUnique({ where: { id: "about" } }),
+    // About-page media (#59) can land in either the audio or video bucket,
+    // unlike the old singleton AboutPageVideo which was video-only.
+    prisma.aboutPageMedia.findMany({
+      where: { mediaUrl: { in: [...audioUsage.files.map((f) => f.url), ...videoUsage.files.map((f) => f.url)] } },
+      select: { mediaUrl: true, label: true },
+    }),
   ]);
   const audioOwnerByUrl = new Map(audioOwners.map((o) => [o.mediaUrl, o]));
   const sheetMusicOwnerByUrl = new Map(sheetMusicOwners.map((o) => [o.fileUrl, o]));
   const videoOwnerByUrl = new Map(videoOwners.map((o) => [o.mediaUrl, o]));
+  const aboutMediaOwnerByUrl = new Map(aboutMediaOwners.map((o) => [o.mediaUrl, o]));
 
   const files: StorageFile[] = [
     ...audioUsage.files.map((f) => {
       const owner = audioOwnerByUrl.get(f.url);
+      const aboutOwner = aboutMediaOwnerByUrl.get(f.url);
       return {
         url: f.url,
         bytes: f.bytes,
         kind: "Audio" as const,
-        name: owner?.label ?? f.path,
-        songTitle: owner?.section.song.title ?? "Not attached to any song",
+        name: owner?.label ?? aboutOwner?.label ?? f.path,
+        songTitle: owner?.section.song.title ?? (aboutOwner ? "About page" : "Not attached to any song"),
         part: owner?.section.part,
       };
     }),
@@ -72,13 +79,13 @@ export default async function AdminStoragePage() {
     }),
     ...videoUsage.files.map((f) => {
       const owner = videoOwnerByUrl.get(f.url);
-      const isAboutVideo = aboutVideo?.videoUrl === f.url;
+      const aboutOwner = aboutMediaOwnerByUrl.get(f.url);
       return {
         url: f.url,
         bytes: f.bytes,
         kind: "Video" as const,
-        name: owner?.label ?? (isAboutVideo ? "About page featured video" : f.path),
-        songTitle: owner?.section.song.title ?? (isAboutVideo ? "About page" : "Not attached to any song"),
+        name: owner?.label ?? aboutOwner?.label ?? f.path,
+        songTitle: owner?.section.song.title ?? (aboutOwner ? "About page" : "Not attached to any song"),
         part: owner?.section.part,
       };
     }),

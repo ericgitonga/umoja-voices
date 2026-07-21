@@ -3,8 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
+import { detectMediaKind } from "@/lib/constants";
+import { clip } from "@/lib/validation";
 import type { UploadTicket } from "@/lib/media-constants";
-import { createVideoUploadTicket, deleteVideoFile, isOwnVideoUrl } from "@/lib/video-storage";
+import { verifyUploadedAudioFile, isOwnAudioUrl } from "@/lib/storage";
+import { createAnyMediaUploadTicket, isOwnAnyMediaUrl, deleteAnyMediaFile } from "@/lib/media-dispatch";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -14,61 +17,109 @@ async function requireAdmin() {
   return session;
 }
 
+function revalidateAbout() {
+  revalidatePath("/about");
+  revalidatePath("/admin/about");
+}
+
 /**
- * Mints a signed upload ticket for the About page's featured video (#63) —
- * the file itself never reaches this action; only its metadata does, so
- * this call can never hit Vercel's 4.5MB Function body limit the way
- * sending the actual file would.
+ * Admin-editable About page text (#59) — a flat, ordered list of title+body
+ * blocks replacing what used to be hardcoded JSX. Append-only ordering (no
+ * reorder UI), matching ExternalLink's own simplicity.
  */
-export async function createAboutVideoUploadTicket(
+export async function createAboutSection(formData: FormData) {
+  await requireAdmin();
+
+  const title = clip(String(formData.get("title") ?? "").trim(), "title");
+  const body = clip(String(formData.get("body") ?? "").trim(), "content");
+  if (!body) return;
+
+  const count = await prisma.aboutPageSection.count();
+  await prisma.aboutPageSection.create({
+    data: { title: title || null, body, sortOrder: count },
+  });
+
+  revalidateAbout();
+}
+
+export async function updateAboutSection(id: string, title: string, body: string): Promise<{ error?: string }> {
+  await requireAdmin();
+
+  const trimmedBody = body.trim();
+  if (!trimmedBody) {
+    return { error: "Body text is required." };
+  }
+
+  await prisma.aboutPageSection.update({
+    where: { id },
+    data: { title: clip(title.trim(), "title") || null, body: clip(trimmedBody, "content") },
+  });
+
+  revalidateAbout();
+  return {};
+}
+
+export async function deleteAboutSection(id: string) {
+  await requireAdmin();
+  await prisma.aboutPageSection.delete({ where: { id } });
+  revalidateAbout();
+}
+
+/**
+ * Mints a signed upload ticket for an About-page media Upload-tab file (#59),
+ * routed to the audio or video bucket by its declared MIME type — the file
+ * itself never reaches this action; only its metadata does, mirroring
+ * song-actions.ts's own createMediaUploadTicket (#63).
+ */
+export async function createAboutMediaUploadTicket(
   fileName: string,
   fileSize: number,
   mimeType: string
 ): Promise<UploadTicket | { error: string }> {
   await requireAdmin();
-  return createVideoUploadTicket(fileName, fileSize, mimeType);
+  return createAnyMediaUploadTicket(fileName, fileSize, mimeType);
+}
+
+/** Post-upload content check for a freshly uploaded audio file — see verifyUploadedAudioFile's own docs. */
+export async function verifyAboutAudioUpload(url: string): Promise<{ error?: string }> {
+  await requireAdmin();
+  if (!isOwnAudioUrl(url)) return {};
+  return verifyUploadedAudioFile(url);
 }
 
 /**
- * Replaces the public About page's single featured video (#55) — a
- * singleton row (fixed id "about"), so this always upserts rather than
- * creating a new row per upload. Cleans up the previous file from Storage
- * once the new one is safely recorded.
+ * Appends one media item (audio, video, or a pasted external link) to the
+ * About page's flat media list (#59) — no per-voice-part grouping, unlike
+ * addSongMedia, since the About page has no voice-part concept.
  */
-export async function updateAboutVideo(videoUrl: string): Promise<{ error?: string }> {
+export async function addAboutMedia(label: string, mediaUrl: string): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const trimmedUrl = videoUrl.trim();
-  if (!trimmedUrl) {
-    return { error: "A video file is required." };
+  const trimmedLabel = label.trim();
+  const trimmedUrl = mediaUrl.trim();
+  if (!trimmedLabel || !trimmedUrl) {
+    return { error: "Label and URL (or an uploaded file) are required." };
   }
 
-  const previous = await prisma.aboutPageVideo.findUnique({ where: { id: "about" } });
-
-  await prisma.aboutPageVideo.upsert({
-    where: { id: "about" },
-    create: { id: "about", videoUrl: trimmedUrl },
-    update: { videoUrl: trimmedUrl },
+  const count = await prisma.aboutPageMedia.count();
+  await prisma.aboutPageMedia.create({
+    data: {
+      label: clip(trimmedLabel, "label"),
+      mediaUrl: clip(trimmedUrl, "url"),
+      mediaKind: detectMediaKind(trimmedUrl),
+      sortOrder: count,
+    },
   });
 
-  if (previous && isOwnVideoUrl(previous.videoUrl)) {
-    await deleteVideoFile(previous.videoUrl);
-  }
-
-  revalidatePath("/about");
+  revalidateAbout();
   return {};
 }
 
-export async function removeAboutVideo(): Promise<void> {
+export async function removeAboutMedia(id: string) {
   await requireAdmin();
-
-  const existing = await prisma.aboutPageVideo.findUnique({ where: { id: "about" } });
-  if (!existing) return;
-
-  await prisma.aboutPageVideo.delete({ where: { id: "about" } });
-  if (isOwnVideoUrl(existing.videoUrl)) {
-    await deleteVideoFile(existing.videoUrl);
+  const media = await prisma.aboutPageMedia.delete({ where: { id } });
+  if (isOwnAnyMediaUrl(media.mediaUrl)) {
+    await deleteAnyMediaFile(media.mediaUrl);
   }
-
-  revalidatePath("/about");
+  revalidateAbout();
 }
