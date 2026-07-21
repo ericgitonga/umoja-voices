@@ -225,13 +225,25 @@ export async function addSongMedia(
   mediaUrl: string,
   file?: File | null
 ): Promise<{ error?: string }> {
+  // Temporary instrumentation for the test_large_video_upload_succeeds CI
+  // hang: our earlier logging inside uploadVideoFile() never fired in CI,
+  // meaning execution never reached that point — these checkpoints narrow
+  // down whether the stall is in requireAdmin()/getSession(), or even
+  // earlier (the Server Action never being invoked/its body never fully
+  // parsed). Remove once resolved.
+  const actionStart = Date.now();
+  console.log(`[add-song-media] invoked, file=${file ? `${file.name} (${file.size} bytes)` : "none"}`);
+
   await requireAdmin();
+  console.log(`[add-song-media] requireAdmin() resolved after ${Date.now() - actionStart}ms`);
 
   const trimmedLabel = label.trim();
   let trimmedUrl = mediaUrl.trim();
 
   if (file && file.size > 0) {
+    console.log(`[add-song-media] calling uploadMediaFile() at +${Date.now() - actionStart}ms`);
     const result = await uploadMediaFile(file);
+    console.log(`[add-song-media] uploadMediaFile() resolved after ${Date.now() - actionStart}ms total`);
     if (result.error) return { error: result.error };
     trimmedUrl = result.url!;
   }
