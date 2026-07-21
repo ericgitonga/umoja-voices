@@ -87,6 +87,15 @@ def test_large_video_upload_succeeds():
 
     try:
         with admin_page() as page:
+            # TEMPORARY diagnostic for the direct-to-Storage upload failure
+            # (#63) — surfaces the browser's own console errors and failed
+            # network requests, which should show the real CORS/network
+            # reason "Failed to fetch" doesn't otherwise explain. Remove
+            # once root-caused.
+            page.on("console", lambda msg: print(f"[browser console] {msg.type}: {msg.text}"))
+            page.on("requestfailed", lambda req: print(f"[browser requestfailed] {req.method} {req.url} -> {req.failure}"))
+            page.on("response", lambda res: print(f"[browser response] {res.status} {res.url}") if "supabase" in res.url else None)
+
             page.goto("/songs")
             page.get_by_text(SEED_SONG_TITLE).first.click()
             page.wait_for_url("**/songs/**", timeout=10_000)
