@@ -2,7 +2,8 @@
 
 Choir management app: a song library with per-voice-part media and structured, voice-tagged
 lyrics, admin/chorister accounts with an invite-only signup flow, a travel logistics module,
-and a public external links page.
+a public external links page, and an admin-configurable About page (ordered text sections and
+media, freely interleaved).
 
 Live at **https://umoja-voices.vercel.app**.
 

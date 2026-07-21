@@ -424,6 +424,23 @@ are actually needed.
   every `supabase`/`vercel` CLI call, and any `prisma migrate`/`pg` connection, needs Bash's
   `dangerouslyDisableSandbox: true`. Confirm with the user before disabling it for anything that
   writes to a real cloud resource, same as for `prisma migrate dev` against production.
+- **`prisma.config.ts` loads `.env` then `.env.local` with `override: true`** — this is the "safe
+  env override" gotcha referenced above under "Keeping schema in sync". `.env.local`'s own value
+  for any key it defines (`POSTGRES_URL_NON_POOLING`, etc.) always wins over `.env`'s, even if you
+  set that key at the shell level (`env VAR=... npx prisma ...`) before running the command — a
+  plain shell prefix is **not** enough to target Production, since `.env.local` still clobbers it
+  right back to Preview. The only reliable way to actually run a Production-targeting Prisma
+  command from this repo is to temporarily move `.env.local` out of the way for that one command:
+  `mv .env.local .env.local.tmp && npx prisma migrate deploy; mv .env.local.tmp .env.local`.
+- **A local `.env` file's contents can go stale without any obvious signal** (found 2026-07-22,
+  #59) — this repo's `.env` had drifted to actually contain the *Preview* project's credentials
+  mislabeled as Production (both connect fine, both return "success", so nothing errors). A
+  `prisma migrate deploy` run against it appeared to work, but had silently re-applied to Preview
+  (which already had the migration) while real Production never received it — only surfacing once
+  the deployed app hit a live `500`/`P2021` "table does not exist". Before running anything
+  against "Production" using a local `.env` file that's more than a session or two old, verify it
+  first: `vercel env pull /tmp/check.env --environment=production` and diff the connection-string
+  host/project-ref against what's already in `.env`.
 
 ---
 
