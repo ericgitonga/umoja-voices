@@ -208,28 +208,39 @@ and v0.18.0/v0.18.1/v0.19.0.
 
 ## Effort tracking
 
-Every session of work on this project gets logged to `extras/effort.xlsx` (sheet `time_log`),
-via `extras/log_effort.py` — mirroring the Career Transition project's `log_time_spent.py`
-exactly, so hours across both projects are recorded the same way and comparable when pricing
-similar engagements. One row per day worked; the date is always the EAT (UTC+3,
+Every work SESSION on this project gets logged to `extras/effort.xlsx` (sheet `time_log`), via
+`extras/log_effort.py`. **As of 2026-07-22, this is one row per session, not per day** — the
+sheet has a "Time of Start" column (right after Date) so multiple sessions on the same date get
+their own distinct rows instead of being merged. The date is always the EAT (UTC+3,
 Africa/Nairobi, no DST) calendar date.
 
-```
-# Log today (EAT) directly:
-python extras/log_effort.py 2.5 "v0.1.0 -- repo/tracking setup, POC scaffold"
+Live tracking (no `--date`) auto-detects whether you're continuing the most recent session or
+starting a new one: if the last row is today's date AND `effort.xlsx` was last saved less than 1
+hour ago (a proxy for "last activity"), hours/summary are merged into that row; a longer gap
+means the prior session ended, so a new row is created with "Time of Start" set to now. No more
+manually deciding whether to pass `--amend`.
 
-# Log a specific past date:
+```
+# Start (or continue) tracking today's live session:
+python extras/log_effort.py 0 "#65 -- clarify add song page (session started)"
+python extras/log_effort.py 1.5 "#65 -- voice-part dropdown fix"
+
+# Force a new session row even though <1h has passed since the last save:
+python extras/log_effort.py 0.5 "#66 -- unrelated follow-up" --new
+
+# Backfill a specific past date (never auto-detects by gap — defaults to a new row):
 python extras/log_effort.py 1 "design plan review" --date 2026-07-17
 
-# Update today's row instead of adding a new one:
-python extras/log_effort.py 0.5 "follow-up fix" --amend
+# Merge into a specific past date's existing row instead of adding a new one:
+python extras/log_effort.py 0.5 "follow-up fix" --date 2026-07-17 --amend
 ```
 
 Run it with the `ds` conda environment (`conda run -n ds python extras/log_effort.py ...`),
 which has `openpyxl` installed — do not `pip install` into the system/base interpreter.
 
 Log a session's hours whenever asked to, or proactively at the end of a substantial piece of
-work — do not wait to be reminded twice in the same session.
+work — do not wait to be reminded twice in the same session. Rows from before 2026-07-22 have a
+blank "Time of Start" (day-aggregate rows predating this feature) — leave them as-is.
 
 ---
 
