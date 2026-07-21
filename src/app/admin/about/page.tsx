@@ -1,76 +1,55 @@
-import { prisma } from "@/lib/prisma";
-import { createAboutSection } from "@/lib/actions/about-actions";
+import { getOrderedAboutBlocks } from "@/lib/about-blocks";
 import AboutSectionEditor from "@/components/AboutSectionEditor";
+import AddAboutSectionForm from "@/components/AddAboutSectionForm";
 import AboutMediaForm from "@/components/AboutMediaForm";
 import RemoveAboutMediaButton from "@/components/RemoveAboutMediaButton";
+import MoveAboutMediaButtons from "@/components/MoveAboutMediaButtons";
 
 // This page reads live, admin-editable data — never statically cache it.
 export const dynamic = "force-dynamic";
 
 export default async function AdminAboutPage() {
-  const [sections, media] = await Promise.all([
-    prisma.aboutPageSection.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.aboutPageMedia.findMany({ orderBy: { sortOrder: "asc" } }),
-  ]);
+  const blocks = await getOrderedAboutBlocks();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-6 text-2xl font-semibold text-ink">About page</h1>
 
       <section className="mb-10">
-        <h2 className="mb-3 text-lg font-semibold text-ink">Text sections</h2>
+        <h2 className="mb-3 text-lg font-semibold text-ink">Content</h2>
+        <p className="mb-3 text-sm text-ink/60">
+          Sections and media share one order — use ↑/↓ to interleave a video or recording between
+          paragraphs, or reorder text.
+        </p>
         <div className="flex flex-col gap-3">
-          {sections.map((section) => (
-            <AboutSectionEditor key={section.id} section={section} />
-          ))}
-          {sections.length === 0 && <p className="text-ink/50">No sections yet.</p>}
+          {blocks.map((block) =>
+            block.kind === "section" ? (
+              <AboutSectionEditor key={block.id} section={block} />
+            ) : (
+              <div
+                key={block.id}
+                data-testid={`about-media-${block.id}`}
+                className="flex items-center justify-between rounded-lg border border-ink/10 bg-white px-4 py-3 shadow-sm"
+              >
+                <div>
+                  <p className="font-medium text-ink">{block.label}</p>
+                  <p className="text-xs text-ink/50">{block.mediaKind}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <RemoveAboutMediaButton id={block.id} />
+                  <MoveAboutMediaButtons id={block.id} />
+                </div>
+              </div>
+            )
+          )}
+          {blocks.length === 0 && <p className="text-ink/50">No content yet.</p>}
         </div>
 
-        <form
-          action={createAboutSection}
-          className="mt-4 flex flex-col gap-3 rounded-lg border border-ink/10 bg-white p-4"
-        >
-          <h3 className="font-semibold text-ink">Add Section</h3>
-          <label className="flex flex-col gap-1 text-sm">
-            Title (optional)
-            <input name="title" className="rounded border border-ink/20 px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Body <span className="text-red-600">*</span>
-            <textarea name="body" required rows={4} className="rounded border border-ink/20 px-3 py-2" />
-            <span className="text-xs text-ink/50">
-              Plain text — blank lines start a new paragraph. Links: paste a URL as-is, or write{" "}
-              <code>[link text](url)</code> for custom link text.
-            </span>
-          </label>
-          <button
-            type="submit"
-            className="self-start rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90"
-          >
-            Add Section
-          </button>
-        </form>
+        <AddAboutSectionForm />
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold text-ink">Media</h2>
-        <ul className="mb-4 flex flex-col gap-2">
-          {media.map((item) => (
-            <li
-              key={item.id}
-              data-testid={`about-media-${item.id}`}
-              className="flex items-center justify-between rounded-lg border border-ink/10 bg-white px-4 py-3 shadow-sm"
-            >
-              <div>
-                <p className="font-medium text-ink">{item.label}</p>
-                <p className="text-xs text-ink/50">{item.mediaKind}</p>
-              </div>
-              <RemoveAboutMediaButton id={item.id} />
-            </li>
-          ))}
-          {media.length === 0 && <p className="text-ink/50">No media yet.</p>}
-        </ul>
-
+        <h2 className="mb-3 text-lg font-semibold text-ink">Add Media</h2>
         <AboutMediaForm />
       </section>
     </div>

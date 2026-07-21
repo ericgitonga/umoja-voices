@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateAboutSection, deleteAboutSection } from "@/lib/actions/about-actions";
+import { updateAboutSection, deleteAboutSection, moveAboutSection } from "@/lib/actions/about-actions";
+import LinkInsertField from "@/components/LinkInsertField";
 
 type Section = { id: string; title: string | null; body: string };
 
@@ -14,6 +15,7 @@ export default function AboutSectionEditor({ section }: { section: Section }) {
   const [body, setBody] = useState(section.body);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   async function handleSave() {
     setSaving(true);
@@ -41,18 +43,39 @@ export default function AboutSectionEditor({ section }: { section: Section }) {
     router.refresh();
   }
 
+  async function handleMove(direction: "up" | "down") {
+    await moveAboutSection(section.id, direction);
+    router.refresh();
+  }
+
   if (!editing) {
     return (
       <div data-testid={`about-section-${section.id}`} className="rounded-lg border border-ink/10 bg-white p-4">
         {section.title && <h3 className="font-semibold text-ink">{section.title}</h3>}
         <p className="mt-1 whitespace-pre-line text-sm text-ink/70">{section.body}</p>
-        <div className="mt-3 flex gap-3">
+        <div className="mt-3 flex items-center gap-3">
           <button onClick={() => setEditing(true)} className="text-sm text-ink underline hover:no-underline">
             Edit
           </button>
           <button onClick={handleDelete} className="text-sm text-red-600 hover:underline">
             Delete
           </button>
+          <span className="ml-auto flex gap-1">
+            <button
+              onClick={() => handleMove("up")}
+              aria-label="Move up"
+              className="rounded border border-ink/20 px-2 py-0.5 text-sm text-ink hover:bg-ink/5"
+            >
+              ↑
+            </button>
+            <button
+              onClick={() => handleMove("down")}
+              aria-label="Move down"
+              className="rounded border border-ink/20 px-2 py-0.5 text-sm text-ink hover:bg-ink/5"
+            >
+              ↓
+            </button>
+          </span>
         </div>
       </div>
     );
@@ -70,17 +93,16 @@ export default function AboutSectionEditor({ section }: { section: Section }) {
       <label className="flex flex-col gap-1 text-sm">
         Body <span className="text-red-600">*</span>
         <textarea
+          ref={textareaRef}
           required
           rows={5}
           value={body}
           onChange={(e) => setBody(e.target.value)}
           className="rounded border border-ink/20 px-3 py-2"
         />
-        <span className="text-xs text-ink/50">
-          Plain text — blank lines start a new paragraph. Links: paste a URL as-is, or write{" "}
-          <code>[link text](url)</code> for custom link text.
-        </span>
+        <span className="text-xs text-ink/50">Blank lines start a new paragraph. A pasted URL auto-links.</span>
       </label>
+      <LinkInsertField textareaRef={textareaRef} body={body} setBody={setBody} />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-3">
         <button
