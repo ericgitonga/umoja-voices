@@ -16,6 +16,9 @@ export default function MediaEmbed({
   url,
   kind,
   onPlay,
+  onEnded,
+  loop,
+  mediaRef,
 }: {
   url: string;
   kind: MediaKind;
@@ -24,6 +27,15 @@ export default function MediaEmbed({
   // (youtube/drive/soundcloud) can't be hooked into cross-origin, so this
   // only ever fires for "audio"/"video".
   onPlay?: (el: HTMLMediaElement) => void;
+  // Native "ended" event, for Play All's auto-advance sequencing (#84) —
+  // same cross-origin limitation as onPlay above, audio/video only.
+  onEnded?: (el: HTMLMediaElement) => void;
+  // Native `loop` attribute (#84) — only meaningful for audio/video.
+  loop?: boolean;
+  // Exposes the underlying element so a caller can call .play() on it
+  // externally (#84's Play All auto-advance, and Loop's whole-sequence
+  // restart) — audio/video only, same limitation as onPlay/onEnded above.
+  mediaRef?: (el: HTMLMediaElement | null) => void;
 }) {
   switch (kind) {
     case "youtube": {
@@ -52,17 +64,27 @@ export default function MediaEmbed({
       );
     case "audio":
       return (
-        <audio controls className="w-full" onPlay={(e) => onPlay?.(e.currentTarget)}>
+        <audio
+          ref={mediaRef}
+          controls
+          loop={loop}
+          className="w-full"
+          onPlay={(e) => onPlay?.(e.currentTarget)}
+          onEnded={(e) => onEnded?.(e.currentTarget)}
+        >
           <source src={url} />
         </audio>
       );
     case "video":
       return (
         <video
+          ref={mediaRef}
           controls
+          loop={loop}
           className="w-full rounded"
           src={url}
           onPlay={(e) => onPlay?.(e.currentTarget)}
+          onEnded={(e) => onEnded?.(e.currentTarget)}
         />
       );
     case "direct_url":
