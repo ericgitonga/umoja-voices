@@ -1,3 +1,5 @@
+"use client";
+
 import type { MediaKind } from "@/lib/constants";
 
 function youtubeEmbedUrl(url: string): string | null {

@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.35.1] - 2026-07-23
+
+### Fixed
+
+- **`/about` page crashing with a server error whenever it has an audio or video block** (#89):
+  `MediaEmbed.tsx` gained `onPlay`/`onEnded` handlers at #41/#84 but was never marked
+  `"use client"`. That's harmless when rendered from `MediaGroups.tsx` (already a Client
+  Component), but `/about/page.tsx` is a Server Component — passing event handlers to a
+  native `<audio>`/`<video>` element across that boundary throws ("Event handlers cannot be
+  passed to Client Component props"), a crash latent since #41 (v0.33.0) that only surfaces
+  once an admin actually adds an audio/video block to the About page. Fixed by adding
+  `"use client"` to `MediaEmbed.tsx` itself, the correct scope since it's genuinely
+  interactive. Reproduced directly (before/after) locally against a temporary About-page audio
+  row before and after the fix, matching production's exact error digest.
+
 ## [0.35.0] - 2026-07-22
 
 ### Added
