@@ -12,7 +12,19 @@ function driveEmbedUrl(url: string): string | null {
   return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
 }
 
-export default function MediaEmbed({ url, kind }: { url: string; kind: MediaKind }) {
+export default function MediaEmbed({
+  url,
+  kind,
+  onPlay,
+}: {
+  url: string;
+  kind: MediaKind;
+  // Native <audio>/<video> "play" event, for callers that coordinate
+  // playback across multiple embeds (#41) — iframe-based kinds
+  // (youtube/drive/soundcloud) can't be hooked into cross-origin, so this
+  // only ever fires for "audio"/"video".
+  onPlay?: (el: HTMLMediaElement) => void;
+}) {
   switch (kind) {
     case "youtube": {
       const embed = youtubeEmbedUrl(url);
@@ -40,12 +52,19 @@ export default function MediaEmbed({ url, kind }: { url: string; kind: MediaKind
       );
     case "audio":
       return (
-        <audio controls className="w-full">
+        <audio controls className="w-full" onPlay={(e) => onPlay?.(e.currentTarget)}>
           <source src={url} />
         </audio>
       );
     case "video":
-      return <video controls className="w-full rounded" src={url} />;
+      return (
+        <video
+          controls
+          className="w-full rounded"
+          src={url}
+          onPlay={(e) => onPlay?.(e.currentTarget)}
+        />
+      );
     case "direct_url":
     default:
       break;

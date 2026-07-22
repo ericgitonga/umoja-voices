@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import MediaEmbed from "@/components/MediaEmbed";
 import RemoveMediaButton from "@/components/RemoveMediaButton";
 import {
@@ -37,6 +37,17 @@ export default function MediaGroups({
   songId: string;
 }) {
   const [activeFilter, setActiveFilter] = useState<SongPartOption | null>(null);
+  // #41: only one <audio>/<video> element plays at a time across the whole
+  // media list — starting a new one pauses whichever was previously
+  // playing. Iframe-embedded players (YouTube/Drive/SoundCloud) can't be
+  // programmatically paused cross-origin, so they're a known exception.
+  const nowPlayingRef = useRef<HTMLMediaElement | null>(null);
+  function handlePlay(el: HTMLMediaElement) {
+    if (nowPlayingRef.current && nowPlayingRef.current !== el) {
+      nowPlayingRef.current.pause();
+    }
+    nowPlayingRef.current = el;
+  }
 
   const visible = groups.filter((g) => (activeFilter ? g.part === activeFilter : true) && g.media.length > 0);
   const activeGroup = activeFilter ? groups.find((g) => g.part === activeFilter) : null;
@@ -83,9 +94,9 @@ export default function MediaGroups({
           </h2>
           <div className="flex flex-col gap-4">
             {group.media.map((m) => (
-              <div key={m.id} className="rounded-lg border border-ink/10 bg-white p-3">
+              <div key={m.id} data-testid={`song-media-${m.id}`} className="rounded-lg border border-ink/10 bg-white p-3">
                 <p className="mb-1 text-sm font-medium text-ink/80">{m.label}</p>
-                <MediaEmbed url={m.mediaUrl} kind={m.mediaKind as MediaKind} />
+                <MediaEmbed url={m.mediaUrl} kind={m.mediaKind as MediaKind} onPlay={handlePlay} />
                 {isAdmin && (
                   <div className="mt-2">
                     <RemoveMediaButton songId={songId} mediaId={m.id} />
