@@ -157,11 +157,17 @@ def test_play_all_and_loop_sequence():
             assert audio2.evaluate("el => el.paused") is True
 
             # With Loop off, finishing the last item stops the sequence
-            # rather than restarting it.
+            # rather than restarting it. A real end-of-track natively pauses
+            # the element before the browser fires its own "ended" event; a
+            # synthetic dispatchEvent doesn't, since it's not genuine
+            # playback completion -- pause() explicitly to reproduce that
+            # real-world sequencing (there's no next item this time to pause
+            # it indirectly via #41's onPlay handler, unlike the two cases
+            # above).
             page.get_by_role("button", name="Loop").click()
             audio2.evaluate('el => { el.play().catch(() => {}); }')
             page.wait_for_timeout(200)
-            audio2.evaluate('el => el.dispatchEvent(new Event("ended"))')
+            audio2.evaluate('el => { el.pause(); el.dispatchEvent(new Event("ended")); }')
             page.wait_for_timeout(200)
             assert audio1.evaluate("el => el.paused") is True
             assert audio2.evaluate("el => el.paused") is True
