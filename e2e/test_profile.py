@@ -67,7 +67,7 @@ def _fill_and_save(page, bio, voice_value, instrument, phone):
     page.wait_for_timeout(1000)
 
 
-def _wait_for_photo(page, console_logs, timeout_s=15, interval_s=0.5):
+def _wait_for_photo(page, console_logs, photo_responses, timeout_s=15, interval_s=0.5):
     """Waits for the <img> tag to appear, then confirms it actually decoded
     and rendered (naturalWidth > 0) rather than just existing in the DOM --
     a blocked-by-CSP or otherwise-failed-to-load image still has the right
@@ -99,7 +99,11 @@ def _wait_for_photo(page, console_logs, timeout_s=15, interval_s=0.5):
         # subject to the same CSP as the <img> tag) -- reports the real
         # HTTP status/error rather than leaving CSP as a guess.
         fetch_result = page.evaluate(
-            "url => fetch(url).then(r => `HTTP ${r.status}`).catch(e => `fetch error: ${e}`)",
+            "url => fetch(url).then(r => "
+            "`HTTP ${r.status}, content-type=${r.headers.get('content-type')}, "
+            "content-length=${r.headers.get('content-length')}, "
+            "corp=${r.headers.get('cross-origin-resource-policy')}`"
+            ").catch(e => `fetch error: ${e}`)",
             src,
         )
         # Diagnostic-only: force a fresh reload of the SAME <img> element
@@ -116,13 +120,14 @@ def _wait_for_photo(page, console_logs, timeout_s=15, interval_s=0.5):
             "el.src = url; "
             "})"
         )
-        relevant_logs = [l for l in console_logs if "csp" in l.lower() or "content security" in l.lower() or "refused" in l.lower()]
         raise AssertionError(
             "Photo <img> is present in the DOM but never actually rendered "
             f"(naturalWidth is 0). src={src!r}, direct fetch of that URL from "
             f"the page context: {fetch_result}. Retried reloading the same "
-            f"<img> 1.5s later: naturalWidth={retry_width}. CSP-related "
-            f"console messages: {relevant_logs}"
+            f"<img> 1.5s later: naturalWidth={retry_width}. Real network "
+            f"responses seen for this URL (the actual <img> load attempts, "
+            f"not a diagnostic fetch): {photo_responses}. ALL console "
+            f"messages captured during this test: {console_logs}"
         )
 
 
@@ -144,7 +149,18 @@ def test_profile_view_edit_toggle_fields_and_photo():
     with admin_page() as page:
         page.set_default_timeout(8_000)
         console_logs = []
+        photo_responses = []
         page.on("console", lambda msg: console_logs.append(msg.text))
+        page.on("pageerror", lambda exc: console_logs.append(f"pageerror: {exc}"))
+        page.on(
+            "response",
+            lambda resp: photo_responses.append(
+                f"{resp.status} {resp.url} content-type={resp.headers.get('content-type')} "
+                f"corp={resp.headers.get('cross-origin-resource-policy')}"
+            )
+            if "profile-photos" in resp.url
+            else None,
+        )
         page.goto("/profile")
         _ensure_no_photo(page)  # self-heal any leftover photo from a prior failed run
 
@@ -185,7 +201,7 @@ def test_profile_view_edit_toggle_fields_and_photo():
                 photo_path = f.name
             try:
                 page.set_input_files('input[type="file"]', photo_path)
-                _wait_for_photo(page, console_logs)
+                _wait_for_photo(page, console_logs, photo_responses)
                 assert page.locator('[data-testid="profile-photo"]').count() == 1
                 assert page.locator('[data-testid="profile-photo-placeholder"]').count() == 0
             finally:
