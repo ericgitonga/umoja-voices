@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.32.0] - 2026-07-22
+
+### Added
+
+- **Filter the song media page by voice** (closes #67): the per-song Media page
+  (`src/app/songs/[id]/media/page.tsx`) now has filter buttons — All, S, A, T, B, SATB — so a
+  chorister can jump straight to just their voice part's audio/video instead of scrolling past
+  every other section. "All" (the default) shows every voice part with media, same as before;
+  selecting a specific voice shows only that section, with a "No \<voice\> media yet." message if
+  it's empty. Extracted the group-rendering logic into a new client component,
+  `src/components/MediaGroups.tsx`, so the filter can be interactive without turning the whole
+  (data-fetching, server) page component client-side.
+
 ## [0.31.4] - 2026-07-22
 
 ### Changed
