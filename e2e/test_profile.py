@@ -102,11 +102,27 @@ def _wait_for_photo(page, console_logs, timeout_s=15, interval_s=0.5):
             "url => fetch(url).then(r => `HTTP ${r.status}`).catch(e => `fetch error: ${e}`)",
             src,
         )
+        # Diagnostic-only: force a fresh reload of the SAME <img> element
+        # (rather than just re-reading its already-failed state) after a
+        # short delay, to check whether this is a one-shot race against the
+        # freshly-uploaded file's read-path availability rather than a
+        # permanent failure -- a plain re-read of .naturalWidth wouldn't
+        # tell them apart, since a browser never auto-retries a failed <img>.
+        page.wait_for_timeout(1500)
+        retry_width = photo_img.evaluate(
+            "el => new Promise(resolve => { "
+            "const url = el.src; el.src = ''; "
+            "el.onload = () => resolve(el.naturalWidth); el.onerror = () => resolve(0); "
+            "el.src = url; "
+            "})"
+        )
         relevant_logs = [l for l in console_logs if "csp" in l.lower() or "content security" in l.lower() or "refused" in l.lower()]
         raise AssertionError(
             "Photo <img> is present in the DOM but never actually rendered "
             f"(naturalWidth is 0). src={src!r}, direct fetch of that URL from "
-            f"the page context: {fetch_result}. CSP-related console messages: {relevant_logs}"
+            f"the page context: {fetch_result}. Retried reloading the same "
+            f"<img> 1.5s later: naturalWidth={retry_width}. CSP-related "
+            f"console messages: {relevant_logs}"
         )
 
 
