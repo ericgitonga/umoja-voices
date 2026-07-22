@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.31.3] - 2026-07-22
+
+### Fixed
+
+- **Correct #65's fix — 0.31.2 targeted the wrong page** (closes #65): #65 is about the admin
+  Song Editor's "Voice parts" section (`src/app/admin/songs/[id]/edit/SongEditor.tsx`), where a
+  bare S/A/T/B/All dropdown sat next to an unconnected free-text "Section label" box — but 0.31.2
+  mistakenly modified the unrelated "Add Media" clip-attachment form
+  (`src/components/AddMediaForm.tsx`) instead, which was never the problem. Reverted that change
+  and implemented the actual fix: selecting a Voice now auto-fills Section label with its full
+  display name (e.g. choosing "Alto" fills the label with "Alto"), and the dropdown itself now
+  shows full voice names instead of raw single-letter codes. The label stays editable afterward
+  for custom values (e.g. "Tenor 1").
+- **`VERSION` file left stale after 0.31.2**: separately, the 0.31.2 PR also left the top-level
+  `VERSION` file (which the app's footer reads at request time,
+  `src/components/Footer.tsx`) at `0.31.1`, so production kept showing the old version number
+  after that merge even though `package.json` already said `0.31.2`. Fixed alongside this
+  correction.
+
 ## [0.31.2] - 2026-07-22
 
 ### Fixed
@@ -15,6 +34,9 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   leaving it blank and requiring the same text be typed in manually — the confusion the issue
   reported. The Label field stays editable afterward for cases needing a custom value (e.g. "Full
   choir recording"). Voice now renders above Label so the auto-fill reads in the natural order.
+  **Correction (see 0.31.3): this targeted the wrong page** — #65 was actually about the Song
+  Editor's Voice parts section, not this form. Left here unmodified as the historical record of
+  what 0.31.2 actually shipped.
 
 ## [0.31.1] - 2026-07-22
 
