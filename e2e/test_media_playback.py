@@ -1,14 +1,29 @@
 """Golden path: starting one <audio> item pauses another (#41), and the
 Loop / Play All playback controls (#84).
 
-Adds temporary audio media items to the seeded demo song, exercises
-playback coordination through them, then removes them -- this suite runs
-against a shared Preview database, matching test_admin_about.py's own
-convention of cleaning up after itself. Media cards are located by their
-specific marker label (`has_text=`), never by position (`.nth()`) -- the
-demo song can carry other, unrelated media (real content the app owner
-uploaded while exploring the app, or a golden-path item from another
-spec), so a positional locator would silently pick up the wrong element.
+This suite runs against a shared Preview database (matching
+test_admin_about.py's own convention of cleaning up after itself), so two
+different isolation strategies are used depending on what each test needs:
+
+- test_starting_one_audio_pauses_another adds temporary audio items to the
+  seeded demo song and removes them afterward. Media cards are located by
+  their specific marker label (`has_text=`), never by position (`.nth()`)
+  -- the demo song can carry other, unrelated media (real content the app
+  owner uploaded while exploring the app, or a golden-path item from
+  another spec), so a positional locator would silently pick up the wrong
+  element. This works here because the assertions only ever evaluate the
+  specific audio elements they located, never anything order-dependent.
+
+- test_play_all_and_loop_sequence cannot use that approach: Play All starts
+  the first item in the *entire currently-visible sequence*, and Loop's
+  restart depends on which item is truly last -- both order-dependent
+  across whatever else is visible. Filtering to a specific voice tag (#67)
+  was tried as an isolation mechanism and failed live in CI, twice: first
+  because the seed song carried other real media across all tags, then
+  because filtering to voice "S" (AddMediaForm's default) still collided
+  once real Soprano-tagged content existed too. A brand-new song, created
+  and torn down entirely within the test, is the only isolation that holds
+  regardless of what content exists elsewhere.
 
 Fake same-origin .mp3 URLs (nonexistent paths on BASE_URL itself) are used
 deliberately: detectMediaKind() only needs the URL to end in a recognized
@@ -103,31 +118,36 @@ def test_starting_one_audio_pauses_another():
         assert page.get_by_text(MARKER_LABEL_2).count() == 0
 
 
+PLAYALL_SONG_TITLE = "E2E Play All Test Song"
+
+
 def test_play_all_and_loop_sequence():
     with admin_page() as page:
         page.set_default_timeout(8_000)
         page.on("dialog", lambda d: d.accept())
-        page.goto("/songs")
-        page.get_by_text(SEED_SONG_TITLE).first.click()
-        page.wait_for_url("**/songs/**", timeout=10_000)
-        page.get_by_role("link", name="Media").click()
-        page.wait_for_url("**/songs/**/media", timeout=10_000)
-        media_url = page.url
 
+        # Play All's sequence is "every playable item currently visible" --
+        # the S-voice filter used to isolate this from the seed song's own
+        # real content, but that broke the moment real content also carried
+        # an S tag (confirmed live: the app owner's own Soprano uploads
+        # became part of the "S" sequence, same collision the filter was
+        # trying to avoid in the first place). A brand-new song, created and
+        # torn down entirely within this test, is the only isolation that
+        # holds regardless of what content exists elsewhere -- SongMedia
+        # cascades on Song delete via SongSection's onDelete: Cascade, so
+        # cleanup is a single song deletion, not a per-item Remove click.
+        page.goto("/admin/songs/new")
+        page.get_by_label("Title").fill(PLAYALL_SONG_TITLE)
+        page.get_by_role("button", name="Create and continue").click()
+        page.wait_for_url("**/admin/songs/**/edit", timeout=10_000)
+        song_id = page.url.split("/admin/songs/")[1].split("/edit")[0]
+        media_url = f"{BASE_URL}/songs/{song_id}/media"
+
+        page.goto(media_url)
         _add_audio(page, PLAYALL_URL_1, PLAYALL_LABEL_1)
         page.goto(media_url)
         _add_audio(page, PLAYALL_URL_2, PLAYALL_LABEL_2)
         page.goto(media_url)
-
-        # AddMediaForm defaults every new item to Voice "S" -- filter down to
-        # just that group (#67) so the Play All sequence is exactly these
-        # two items. Unfiltered ("All"), the demo song can carry other real
-        # media the app owner uploaded exploring the app themselves, which
-        # would silently become a third item after these two and break the
-        # "audio2 is the true last item" assumption the Loop-restart check
-        # below depends on -- confirmed live in CI, not a hypothetical.
-        page.get_by_role("button", name="S", exact=True).click()
-        page.wait_for_timeout(200)
 
         try:
             card1 = page.locator('[data-testid^="song-media-"]', has_text=PLAYALL_LABEL_1)
@@ -179,12 +199,16 @@ def test_play_all_and_loop_sequence():
             page.get_by_role("button", name="Loop").click()
             assert audio1.evaluate("el => el.loop") is True
         finally:
-            _remove_by_label(page, PLAYALL_LABEL_1)
-            _remove_by_label(page, PLAYALL_LABEL_2)
+            page.goto(f"{BASE_URL}/songs/{song_id}")
+            # Same router.refresh()-vs-click() race noted in test_admin_about.py.
+            try:
+                page.get_by_role("button", name="Delete").click(no_wait_after=True)
+            except Exception:
+                pass
+            page.wait_for_timeout(1500)
 
-        page.goto(media_url)
-        assert page.get_by_text(PLAYALL_LABEL_1).count() == 0
-        assert page.get_by_text(PLAYALL_LABEL_2).count() == 0
+        page.goto("/songs")
+        assert page.get_by_text(PLAYALL_SONG_TITLE).count() == 0
 
 
 TESTS = [
