@@ -16,6 +16,9 @@ const MAX_LENGTHS = {
   url: 2000,
   notes: 1000,
   name: 200,
+  bio: 2000,
+  phone: 30,
+  instrument: 100,
 } as const;
 
 export function clip(value: string, kind: keyof typeof MAX_LENGTHS): string {
@@ -25,6 +28,12 @@ export function clip(value: string, kind: keyof typeof MAX_LENGTHS): string {
 /** Returns `value` if it's in `allowed`, otherwise `fallback`. */
 export function oneOf<T extends string>(value: string, allowed: readonly T[], fallback: T): T {
   return (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
+}
+
+/** Like `oneOf`, but for an optional enum-like field with no natural
+ *  fallback value — returns null instead of forcing one of `allowed`. */
+export function oneOfOrNull<T extends string>(value: string, allowed: readonly T[]): T | null {
+  return (allowed as readonly string[]).includes(value) ? (value as T) : null;
 }
 
 /** Filters an array down to only values present in `allowed`. */

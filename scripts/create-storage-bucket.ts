@@ -1,6 +1,7 @@
 // One-off setup: creates the Supabase Storage buckets used by direct file
-// uploads — "song-audio" (#36), "song-sheet-music" (#38), and "song-video"
-// (#55). Safe to re-run — no-ops per bucket if it already exists.
+// uploads — "song-audio" (#36), "song-sheet-music" (#38), "song-video"
+// (#55), and "profile-photos" (#73). Safe to re-run — no-ops per bucket if
+// it already exists.
 //
 // Usage: tsx scripts/create-storage-bucket.ts (via `npm run storage:setup`)
 
@@ -12,6 +13,7 @@ import { createClient } from "@supabase/supabase-js";
 import { AUDIO_BUCKET } from "../src/lib/storage";
 import { SHEET_MUSIC_BUCKET } from "../src/lib/sheet-music-storage";
 import { VIDEO_BUCKET } from "../src/lib/video-storage";
+import { PROFILE_PHOTO_BUCKET } from "../src/lib/profile-photo-storage";
 import {
   AUDIO_MAX_BYTES,
   AUDIO_ALLOWED_MIME_TYPES,
@@ -19,12 +21,15 @@ import {
   SHEET_MUSIC_ALLOWED_MIME_TYPES,
   VIDEO_MAX_BYTES,
   VIDEO_ALLOWED_MIME_TYPES,
+  PROFILE_PHOTO_MAX_BYTES,
+  PROFILE_PHOTO_ALLOWED_MIME_TYPES,
 } from "../src/lib/media-constants";
 
 const BUCKETS = [
   { name: AUDIO_BUCKET, maxBytes: AUDIO_MAX_BYTES, allowedMimeTypes: AUDIO_ALLOWED_MIME_TYPES },
   { name: SHEET_MUSIC_BUCKET, maxBytes: SHEET_MUSIC_MAX_BYTES, allowedMimeTypes: SHEET_MUSIC_ALLOWED_MIME_TYPES },
   { name: VIDEO_BUCKET, maxBytes: VIDEO_MAX_BYTES, allowedMimeTypes: VIDEO_ALLOWED_MIME_TYPES },
+  { name: PROFILE_PHOTO_BUCKET, maxBytes: PROFILE_PHOTO_MAX_BYTES, allowedMimeTypes: PROFILE_PHOTO_ALLOWED_MIME_TYPES },
 ];
 
 async function main() {

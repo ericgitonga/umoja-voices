@@ -39,6 +39,12 @@ SEED_CHORISTER_EMAIL = "demo.chorister@example.com"
 SEED_CHORISTER_PASSWORD = "chorister12345"
 SEED_SONG_TITLE = "Rising Together (demo song)"
 
+# Dedicated to test_profile.py (#73) -- see prisma/seed.ts's comment on this
+# account for why it must never be shared with SEED_ADMIN, which the app
+# owner also uses for their own manual Preview testing.
+SEED_E2E_PROFILE_TEST_EMAIL = "e2e.profile.test@example.com"
+SEED_E2E_PROFILE_TEST_PASSWORD = "e2eprofiletest12345"
+
 
 @contextmanager
 def browser_page():
@@ -99,3 +105,7 @@ def admin_page():
 
 def chorister_page():
     return authenticated_page(SEED_CHORISTER_EMAIL, SEED_CHORISTER_PASSWORD)
+
+
+def profile_test_page():
+    return authenticated_page(SEED_E2E_PROFILE_TEST_EMAIL, SEED_E2E_PROFILE_TEST_PASSWORD)

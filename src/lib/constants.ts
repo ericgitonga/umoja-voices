@@ -10,6 +10,13 @@ export type UserStatus = (typeof USER_STATUSES)[number];
 export const VOICE_PARTS = ["S", "A", "T", "B"] as const;
 export type VoicePart = (typeof VOICE_PARTS)[number];
 
+export const VOICE_PART_LABEL_TEXT: Record<VoicePart, string> = {
+  S: "Soprano",
+  A: "Alto",
+  T: "Tenor",
+  B: "Bass",
+};
+
 export const SONG_PART_OPTIONS = ["S", "A", "T", "B", "All"] as const;
 export type SongPartOption = (typeof SONG_PART_OPTIONS)[number];
 

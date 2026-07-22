@@ -5,6 +5,33 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.34.0] - 2026-07-22
+
+### Added
+
+- **Richer account profile** (closes #73): the `/profile` page now supports a bio, voice part
+  (Soprano/Alto/Tenor/Bass), instrument, phone number, and a profile photo, alongside the
+  existing name/password-reset fields. Renders as a flat, read-only view by default (photo,
+  name, email, and any set bio/voice/instrument/phone) — an **Edit** button reveals the editable
+  form, with **Save** and **Cancel** (Cancel discards unsaved changes and returns to the flat
+  view without submitting), matching feedback from trying the initial always-editable version
+  live on the PR's Preview deployment. New `User` schema fields (`photoUrl`, `bio`, `voicePart`,
+  `instrument`, `phone`); a new `profile-photos` Storage bucket and
+  `src/lib/profile-photo-storage.ts` (mirroring the existing audio/video/sheet-music upload
+  modules, 5MB cap, JPG/PNG/WebP); `saveProfilePhoto`/`removeProfilePhoto`/
+  `createProfilePhotoUploadTicket` actions in `src/lib/actions/profile-actions.ts`, all scoped to
+  the caller's own session (no admin override, no client-suppliable user id). Deleting a member
+  now also cleans up their profile-photo file. The admin Storage page's quota accounting includes
+  the new bucket. Email stays read-only (unchanged) and password reset is untouched — both were
+  already covered before this issue. New permanent e2e spec, `e2e/test_profile.py`, running
+  against a new dedicated seed account (`e2e.profile.test@example.com`, `prisma/seed.ts`) rather
+  than the seed admin — the test's cleanup resets its account's fields to blank, which collided
+  with the app owner's own manual Preview testing on the shared admin account before this account
+  existed. Also fixed a real CSP `img-src` gap (`src/proxy.ts`) found live on the deployed
+  Preview: the Supabase Storage origin was missing from `img-src` (already present in
+  `connect-src`/`media-src`), silently blocking every profile photo from ever rendering — the
+  first feature in this app to need an `<img>` from that origin.
+
 ## [0.33.0] - 2026-07-22
 
 ### Added
