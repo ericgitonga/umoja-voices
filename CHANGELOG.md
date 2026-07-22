@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.35.0] - 2026-07-22
+
+### Added
+
+- **Loop and Play All media controls** (closes #84): the song Media page gains two toggles next
+  to the existing All/S/A/T/B/SATB filter (#67) — **Loop** and **Play All**, both scoped to
+  whatever's currently visible per the active filter. Play All auto-advances through the visible
+  native `<audio>`/`<video>` items in order when each one finishes; turning it off doesn't
+  interrupt whatever's currently playing, it just stops auto-advancing. Loop's behavior depends
+  on Play All: with Play All off, the currently-playing single item repeats (native `loop`
+  attribute); with Play All on, reaching the end of the sequence restarts it from the first item.
+  Iframe-embedded items (YouTube/Drive/SoundCloud) are skipped in the Play All sequence — they
+  can't be hooked into cross-origin (#41), full support tracked separately in #86. New `onEnded`/
+  `loop`/`mediaRef` props on `src/components/MediaEmbed.tsx`; sequencing logic lives in
+  `src/components/MediaGroups.tsx`. New e2e coverage in `e2e/test_media_playback.py`.
+
 ## [0.34.0] - 2026-07-22
 
 ### Added
