@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.31.4] - 2026-07-22
+
+### Changed
+
+- **Untrack `CLAUDE.md`, `AGENTS.md`, and `SKILL.md`** from the git repo (`git rm --cached`,
+  added to `.gitignore`). These remain as living local docs on disk, edited and kept up to date
+  as normal, but are no longer committed/pushed — they're AI-assistant instruction files, not
+  app code or shared team documentation. No behavior change; the three files' content is
+  unaffected, only their git-tracking status. (Their prior history remains in past commits.)
+
 ## [0.31.3] - 2026-07-22
 
 ### Fixed
