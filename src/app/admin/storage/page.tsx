@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAudioStorageUsage, AUDIO_MAX_BYTES } from "@/lib/storage";
 import { getSheetMusicStorageUsage, SHEET_MUSIC_MAX_BYTES } from "@/lib/sheet-music-storage";
 import { getVideoStorageUsage, VIDEO_MAX_BYTES } from "@/lib/video-storage";
+import { getProfilePhotoStorageUsage, PROFILE_PHOTO_MAX_BYTES } from "@/lib/profile-photo-storage";
 import StorageFileList, { type StorageFile } from "@/components/StorageFileList";
 
 // Live quota snapshot — never statically cache it.
@@ -15,13 +16,14 @@ function formatMB(bytes: number): string {
 }
 
 export default async function AdminStoragePage() {
-  const [audioUsage, sheetMusicUsage, videoUsage] = await Promise.all([
+  const [audioUsage, sheetMusicUsage, videoUsage, profilePhotoUsage] = await Promise.all([
     getAudioStorageUsage(),
     getSheetMusicStorageUsage(),
     getVideoStorageUsage(),
+    getProfilePhotoStorageUsage(),
   ]);
 
-  const [audioOwners, sheetMusicOwners, videoOwners, aboutMediaOwners] = await Promise.all([
+  const [audioOwners, sheetMusicOwners, videoOwners, aboutMediaOwners, profilePhotoOwners] = await Promise.all([
     prisma.songMedia.findMany({
       where: { mediaUrl: { in: audioUsage.files.map((f) => f.url) } },
       select: {
@@ -48,11 +50,16 @@ export default async function AdminStoragePage() {
       where: { mediaUrl: { in: [...audioUsage.files.map((f) => f.url), ...videoUsage.files.map((f) => f.url)] } },
       select: { mediaUrl: true, label: true },
     }),
+    prisma.user.findMany({
+      where: { photoUrl: { in: profilePhotoUsage.files.map((f) => f.url) } },
+      select: { photoUrl: true, name: true },
+    }),
   ]);
   const audioOwnerByUrl = new Map(audioOwners.map((o) => [o.mediaUrl, o]));
   const sheetMusicOwnerByUrl = new Map(sheetMusicOwners.map((o) => [o.fileUrl, o]));
   const videoOwnerByUrl = new Map(videoOwners.map((o) => [o.mediaUrl, o]));
   const aboutMediaOwnerByUrl = new Map(aboutMediaOwners.map((o) => [o.mediaUrl, o]));
+  const profilePhotoOwnerByUrl = new Map(profilePhotoOwners.map((o) => [o.photoUrl, o]));
 
   const files: StorageFile[] = [
     ...audioUsage.files.map((f) => {
@@ -89,10 +96,22 @@ export default async function AdminStoragePage() {
         part: owner?.section.part,
       };
     }),
+    ...profilePhotoUsage.files.map((f) => {
+      const owner = profilePhotoOwnerByUrl.get(f.url);
+      return {
+        url: f.url,
+        bytes: f.bytes,
+        kind: "Profile Photo" as const,
+        name: owner?.name ?? f.path,
+        songTitle: owner?.name ?? "Not attached to any user",
+      };
+    }),
   ];
 
-  const totalBytes = audioUsage.totalBytes + sheetMusicUsage.totalBytes + videoUsage.totalBytes;
-  const fileCount = audioUsage.fileCount + sheetMusicUsage.fileCount + videoUsage.fileCount;
+  const totalBytes =
+    audioUsage.totalBytes + sheetMusicUsage.totalBytes + videoUsage.totalBytes + profilePhotoUsage.totalBytes;
+  const fileCount =
+    audioUsage.fileCount + sheetMusicUsage.fileCount + videoUsage.fileCount + profilePhotoUsage.fileCount;
   const pctUsed = Math.min(100, Math.round((totalBytes / BUDGET_BYTES) * 100));
   // Nonce-based CSP (#17) doesn't cover inline style attributes — only
   // <style>/<script> elements get Next's automatic nonce tagging — so the
@@ -133,7 +152,8 @@ export default async function AdminStoragePage() {
 
       <p className="mt-6 text-xs text-ink/40">
         App-level per-file caps: {AUDIO_MAX_BYTES / (1024 * 1024)}MB audio, {VIDEO_MAX_BYTES / (1024 * 1024)}MB video,{" "}
-        {SHEET_MUSIC_MAX_BYTES / (1024 * 1024)}MB sheet music — all below Supabase&apos;s 50MB hard limit.
+        {SHEET_MUSIC_MAX_BYTES / (1024 * 1024)}MB sheet music, {PROFILE_PHOTO_MAX_BYTES / (1024 * 1024)}MB profile
+        photo — all below Supabase&apos;s 50MB hard limit.
       </p>
     </div>
   );

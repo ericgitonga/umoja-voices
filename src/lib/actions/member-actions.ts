@@ -11,6 +11,7 @@ import { checkRateLimit, rateLimitResetMinutes, getClientIp } from "@/lib/rate-l
 import { appBaseUrl } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logActivity } from "@/lib/activity-log";
+import { deleteProfilePhotoFile, isOwnProfilePhotoUrl } from "@/lib/profile-photo-storage";
 
 // Admin-only and lower risk than login/forgot-password, so a looser window:
 // generous enough for a legitimate bulk-invite session (a new season's
@@ -241,6 +242,10 @@ export async function deleteMember(userId: string): Promise<{ error?: string }> 
   if (target?.authUserId) {
     const adminClient = createAdminClient();
     await adminClient.auth.admin.deleteUser(target.authUserId);
+  }
+
+  if (target?.photoUrl && isOwnProfilePhotoUrl(target.photoUrl)) {
+    await deleteProfilePhotoFile(target.photoUrl);
   }
 
   if (target) {

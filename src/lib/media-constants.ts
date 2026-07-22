@@ -46,3 +46,13 @@ export const VIDEO_MAX_BYTES = 20 * 1024 * 1024;
 export const VIDEO_ALLOWED_EXTENSIONS = ["mp4", "mov", "webm"] as const;
 export const VIDEO_ALLOWED_MIME_TYPES = ["video/mp4", "video/quicktime", "video/webm"] as const;
 export const VIDEO_ACCEPT = [...VIDEO_ALLOWED_EXTENSIONS.map((e) => `.${e}`), "video/*"].join(",");
+
+// Client-safe constants for profile-photo uploads (#73). Server-side
+// upload/delete logic lives in src/lib/profile-photo-storage.ts. Deliberately
+// smaller than the 20MB media cap above -- a profile photo is a single
+// avatar image, not a recording or PDF. A starting number, not a researched
+// constraint (same caveat as AUDIO_MAX_BYTES), fine to raise later.
+export const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+export const PROFILE_PHOTO_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp"] as const;
+export const PROFILE_PHOTO_ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const PROFILE_PHOTO_ACCEPT = [...PROFILE_PHOTO_ALLOWED_EXTENSIONS.map((e) => `.${e}`), "image/*"].join(",");

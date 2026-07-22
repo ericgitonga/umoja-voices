@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.34.0] - 2026-07-22
+
+### Added
+
+- **Richer account profile** (closes #73): the `/profile` page now supports a bio, voice part
+  (Soprano/Alto/Tenor/Bass), instrument, phone number, and a profile photo, alongside the
+  existing name/password-reset fields. New `User` schema fields (`photoUrl`, `bio`, `voicePart`,
+  `instrument`, `phone`); a new `profile-photos` Storage bucket and
+  `src/lib/profile-photo-storage.ts` (mirroring the existing audio/video/sheet-music upload
+  modules, 5MB cap, JPG/PNG/WebP); `saveProfilePhoto`/`removeProfilePhoto`/
+  `createProfilePhotoUploadTicket` actions in `src/lib/actions/profile-actions.ts`, all scoped to
+  the caller's own session (no admin override, no client-suppliable user id). Deleting a member
+  now also cleans up their profile-photo file. The admin Storage page's quota accounting includes
+  the new bucket. Email stays read-only (unchanged) and password reset is untouched — both were
+  already covered before this issue. New permanent e2e spec, `e2e/test_profile.py`.
+
 ## [0.33.0] - 2026-07-22
 
 ### Added

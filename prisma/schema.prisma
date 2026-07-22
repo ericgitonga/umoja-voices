@@ -30,6 +30,12 @@ model User {
   // "invited" | "active" | "disabled"
   status      String  @default("invited")
   calendarToken String?   @unique
+  photoUrl      String?
+  bio           String?
+  // "S" | "A" | "T" | "B" — see VOICE_PARTS in src/lib/constants.ts
+  voicePart     String?
+  instrument    String?
+  phone         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
