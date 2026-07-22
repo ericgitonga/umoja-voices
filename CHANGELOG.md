@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.33.0] - 2026-07-22
+
+### Added
+
+- **Pause other media playback when a new item starts playing** (closes #41): the song Media
+  page's `<audio>`/`<video>` items now coordinate playback — starting one pauses whichever was
+  previously playing, instead of letting multiple tracks run simultaneously. Implemented as a
+  shared "currently playing" ref in `src/components/MediaGroups.tsx`, wired through a new
+  `onPlay` callback on `src/components/MediaEmbed.tsx`. Known limitation (documented in the
+  issue): iframe-embedded players (YouTube/Drive/SoundCloud) can't be programmatically paused
+  cross-origin, so this only coordinates native `<audio>`/`<video>` elements. Covered by a new
+  permanent e2e spec, `e2e/test_media_playback.py`.
+
 ## [0.32.0] - 2026-07-22
 
 ### Added
