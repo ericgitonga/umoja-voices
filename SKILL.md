@@ -71,10 +71,23 @@ Work no longer lands by pushing straight to `main`. For each issue:
 4. The `E2E (Preview)` GitHub Actions check (`.github/workflows/e2e.yml`, #44) runs automatically
    against the Preview/Development Supabase project (#52) — never production. Wait for it (and
    the Vercel Preview deployment check) to go green.
-5. Only merge to `main` once the E2E check passes. Prefer `gh pr merge --squash` (or whatever
-   keeps history clean) over merging a red PR "to fix forward" — a failing gate that gets merged
-   anyway defeats the entire point of #44/#52.
-6. Delete the branch after merging (`gh pr merge --delete-branch`, or `git branch -d` /
+5. **Manually exercise the actual change on the PR's live Vercel Preview deployment before
+   merging, whatever the change is** — UI, admin action, background behavior, config. Green CI
+   is necessary but not sufficient: `e2e/`'s golden-path suite runs against a locally built
+   server in the CI runner (see the "`BASE_URL`" note above), not the live Preview deployment,
+   and only covers the specific golden paths it was written for, not every detail an issue
+   describes. Get the Preview link from the Vercel bot's PR comment (`gh pr view <N> --json
+   comments`, look for the comment whose body contains
+   `https://umoja-voices-git-<branch>-egm2.vercel.app`) — it stays live for as long as the branch
+   exists. Added after v0.31.2 shipped a fix against the wrong component entirely (#65: modified
+   `AddMediaForm.tsx` instead of `SongEditor.tsx`) — CI was green, typecheck passed, and it still
+   didn't do what the issue asked; only a manual look at the actual behavior would have caught it
+   before merge instead of after. Corrected in v0.31.3.
+6. Only merge to `main` once the E2E check passes and step 5's manual check confirms the actual
+   behavior. Prefer `gh pr merge --squash` (or whatever keeps history clean) over merging a red
+   PR "to fix forward" — a failing gate that gets merged anyway defeats the entire point of
+   #44/#52.
+7. Delete the branch after merging (`gh pr merge --delete-branch`, or `git branch -d` /
    `git push origin --delete` if closed without merging, e.g. a throwaway verification PR).
 
 This applies to every issue going forward, not just large/risky ones — the whole reason #52 and
@@ -466,6 +479,8 @@ are actually needed.
 - [ ] If any new dependency was added, `package-lock.json` was committed alongside it
 
 ### Content / functional checks
+- [ ] The actual change was manually exercised on the PR's live Vercel Preview deployment (see
+      the branch-per-issue workflow's step 5) — not just "CI is green"
 - [ ] `npx tsc --noEmit` and `npm run build` both succeed
 - [ ] `VERSION` and `package.json`'s `version` match
 - [ ] `CHANGELOG.md` has a dated entry referencing the relevant issue number(s)
