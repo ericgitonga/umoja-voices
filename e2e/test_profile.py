@@ -60,10 +60,25 @@ def _wait_for_photo(page, timeout_s=15, interval_s=0.5):
     raise TimeoutError(f"Photo did not appear within {timeout_s}s")
 
 
+def _ensure_no_photo(page):
+    """Self-healing guard against leftover state from a prior run that
+    failed before reaching its own cleanup (this suite shares a Preview
+    database, so a photo left over from an earlier failed run would
+    otherwise break every subsequent run's placeholder assertions, not
+    just report a false failure once)."""
+    _enter_edit_mode(page)
+    remove_button = page.get_by_role("button", name="Remove photo")
+    if remove_button.count() > 0:
+        remove_button.click()
+        page.wait_for_timeout(1500)
+    page.get_by_role("button", name="Cancel").click()
+
+
 def test_profile_view_edit_toggle_fields_and_photo():
     with admin_page() as page:
         page.set_default_timeout(8_000)
         page.goto("/profile")
+        _ensure_no_photo(page)  # self-heal any leftover photo from a prior failed run
 
         try:
             # Flat view by default, no form fields visible.
@@ -114,6 +129,7 @@ def test_profile_view_edit_toggle_fields_and_photo():
             assert page.locator('[data-testid="profile-photo"]').count() == 0
         finally:
             _fill_and_save(page, "", "", "", "")
+            _ensure_no_photo(page)
 
 
 TESTS = [
