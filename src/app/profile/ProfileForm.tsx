@@ -14,6 +14,14 @@ import { describeUploadFailure } from "@/lib/upload-error";
 import { PROFILE_PHOTO_MAX_BYTES, PROFILE_PHOTO_ACCEPT } from "@/lib/media-constants";
 import { VOICE_PARTS, VOICE_PART_LABEL_TEXT, type VoicePart } from "@/lib/constants";
 
+type SavedFields = {
+  name: string;
+  bio: string | null;
+  voicePart: string | null;
+  instrument: string | null;
+  phone: string | null;
+};
+
 export default function ProfileForm({
   name,
   email,
@@ -32,7 +40,9 @@ export default function ProfileForm({
   photoUrl: string | null;
 }) {
   const router = useRouter();
+  const [editing, setEditing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [saved, setSaved] = useState<SavedFields>({ name, bio, voicePart, instrument, phone });
   const [photo, setPhoto] = useState(photoUrl);
   const [photoSaving, setPhotoSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,18 +122,78 @@ export default function ProfileForm({
       }
     }
 
+    setSaved({
+      name: String(formData.get("name") ?? "").trim() || saved.name,
+      bio: String(formData.get("bio") ?? "").trim() || null,
+      voicePart: String(formData.get("voicePart") ?? "").trim() || null,
+      instrument: String(formData.get("instrument") ?? "").trim() || null,
+      phone: String(formData.get("phone") ?? "").trim() || null,
+    });
     setStatus("Saved.");
+    setEditing(false);
+    router.refresh();
+  }
+
+  function handleCancel() {
+    setStatus(null);
+    setEditing(false);
+  }
+
+  const photoBlock = photo ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img data-testid="profile-photo" src={photo} alt="" className="h-16 w-16 rounded-full object-cover" />
+  ) : (
+    <div data-testid="profile-photo-placeholder" className="h-16 w-16 rounded-full bg-ink/10" aria-hidden />
+  );
+
+  if (!editing) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-4">
+          {photoBlock}
+          <div>
+            <h2 className="text-lg font-semibold text-ink">{saved.name}</h2>
+            <p className="text-sm text-ink/50">{email}</p>
+          </div>
+        </div>
+        {saved.bio && <p className="whitespace-pre-line text-sm text-ink/80">{saved.bio}</p>}
+        {(saved.voicePart || saved.instrument || saved.phone) && (
+          <dl className="flex flex-col gap-1 text-sm text-ink/70">
+            {saved.voicePart && (
+              <div>
+                <dt className="inline font-medium">Voice: </dt>
+                <dd className="inline">{VOICE_PART_LABEL_TEXT[saved.voicePart as VoicePart]}</dd>
+              </div>
+            )}
+            {saved.instrument && (
+              <div>
+                <dt className="inline font-medium">Instrument: </dt>
+                <dd className="inline">{saved.instrument}</dd>
+              </div>
+            )}
+            {saved.phone && (
+              <div>
+                <dt className="inline font-medium">Phone: </dt>
+                <dd className="inline">{saved.phone}</dd>
+              </div>
+            )}
+          </dl>
+        )}
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="self-start rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90"
+        >
+          Edit
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
-        {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img data-testid="profile-photo" src={photo} alt="" className="h-16 w-16 rounded-full object-cover" />
-        ) : (
-          <div data-testid="profile-photo-placeholder" className="h-16 w-16 rounded-full bg-ink/10" aria-hidden />
-        )}
+        {photoBlock}
         <div className="flex flex-col gap-1 text-sm">
           <label className="cursor-pointer text-ink hover:underline">
             {photoSaving ? "Uploading…" : "Change photo"}
@@ -156,20 +226,24 @@ export default function ProfileForm({
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Name
-          <input name="name" defaultValue={name} className="rounded border border-ink/20 px-3 py-2" />
+          <input name="name" defaultValue={saved.name} className="rounded border border-ink/20 px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Bio
           <textarea
             name="bio"
-            defaultValue={bio ?? ""}
+            defaultValue={saved.bio ?? ""}
             rows={4}
             className="rounded border border-ink/20 px-3 py-2"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Voice
-          <select name="voicePart" defaultValue={voicePart ?? ""} className="rounded border border-ink/20 px-3 py-2">
+          <select
+            name="voicePart"
+            defaultValue={saved.voicePart ?? ""}
+            className="rounded border border-ink/20 px-3 py-2"
+          >
             <option value="">Not set</option>
             {VOICE_PARTS.map((part: VoicePart) => (
               <option key={part} value={part}>
@@ -180,14 +254,18 @@ export default function ProfileForm({
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Instrument
-          <input name="instrument" defaultValue={instrument ?? ""} className="rounded border border-ink/20 px-3 py-2" />
+          <input
+            name="instrument"
+            defaultValue={saved.instrument ?? ""}
+            className="rounded border border-ink/20 px-3 py-2"
+          />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Phone
           <input
             name="phone"
             type="tel"
-            defaultValue={phone ?? ""}
+            defaultValue={saved.phone ?? ""}
             className="rounded border border-ink/20 px-3 py-2"
           />
         </label>
@@ -200,9 +278,18 @@ export default function ProfileForm({
             {status}
           </p>
         )}
-        <button type="submit" className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90">
-          Save
-        </button>
+        <div className="flex items-center gap-3">
+          <button type="submit" className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90">
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="rounded-full px-4 py-2 text-ink/60 hover:text-ink"
+          >
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );

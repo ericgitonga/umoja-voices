@@ -11,7 +11,11 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
 - **Richer account profile** (closes #73): the `/profile` page now supports a bio, voice part
   (Soprano/Alto/Tenor/Bass), instrument, phone number, and a profile photo, alongside the
-  existing name/password-reset fields. New `User` schema fields (`photoUrl`, `bio`, `voicePart`,
+  existing name/password-reset fields. Renders as a flat, read-only view by default (photo,
+  name, email, and any set bio/voice/instrument/phone) — an **Edit** button reveals the editable
+  form, with **Save** and **Cancel** (Cancel discards unsaved changes and returns to the flat
+  view without submitting), matching feedback from trying the initial always-editable version
+  live on the PR's Preview deployment. New `User` schema fields (`photoUrl`, `bio`, `voicePart`,
   `instrument`, `phone`); a new `profile-photos` Storage bucket and
   `src/lib/profile-photo-storage.ts` (mirroring the existing audio/video/sheet-music upload
   modules, 5MB cap, JPG/PNG/WebP); `saveProfilePhoto`/`removeProfilePhoto`/
