@@ -10,18 +10,40 @@ since it runs against a shared Preview database. Password reset is
 untouched here (already covered implicitly by not exercising it) -- #73
 explicitly didn't change that flow.
 
-Photo upload uses a small fake file with a real .jpg extension (profile
-photos aren't content-sniffed server-side, matching test_video_upload.py's
-own reasoning for its fake .mp4). Written to a real temp file rather than
-an in-memory buffer for the same CDP-transfer-overhead reason documented
-there.
+Photo upload uses a real, tiny (2x2px) decodable JPEG, embedded as base64
+rather than pulled in via a Pillow dependency CI doesn't otherwise install
+-- deliberately a genuine image, not null bytes: profile photos aren't
+content-sniffed server-side, so null bytes would pass the same upload
+checks, but this suite also asserts the photo's `naturalWidth` after
+upload to confirm the browser actually decoded and rendered it, not just
+that an <img> tag with the right src attribute exists in the DOM (the
+latter alone would have missed a real CSP img-src gap found manually on
+the Preview deployment -- see proxy.ts). Written to a real temp file
+rather than passed as an in-memory buffer for the same CDP-transfer-
+overhead reason documented in test_video_upload.py.
 """
 
+import base64
 import os
 import tempfile
 import time
 
 from _common import admin_page
+
+# A genuine 2x2px red JPEG (not null bytes) -- see module docstring.
+TINY_JPEG_BASE64 = (
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwg"
+    "JC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIy"
+    "MjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAACAAIDASIAAhEBAxEB/8QAHwAA"
+    "AQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEG"
+    "E1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZ"
+    "WmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJ"
+    "ytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcI"
+    "CQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLR"
+    "ChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaH"
+    "iImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP0"
+    "9fb3+Pn6/9oADAMBAAIRAxEAPwDnqKKK8k/Qz//Z"
+)
 
 MARKER_BIO = "E2E test bio — temporary, restored after this spec runs."
 MARKER_INSTRUMENT = "E2E Test Piano"
@@ -46,18 +68,37 @@ def _fill_and_save(page, bio, voice_value, instrument, phone):
 
 
 def _wait_for_photo(page, timeout_s=15, interval_s=0.5):
+    """Waits for the <img> tag to appear, then confirms it actually decoded
+    and rendered (naturalWidth > 0) rather than just existing in the DOM --
+    a blocked-by-CSP or otherwise-failed-to-load image still has the right
+    src/data-testid attribute, so checking DOM presence alone would silently
+    pass even when nothing is visually showing (see module docstring)."""
     deadline = time.monotonic() + timeout_s
     photo_img = page.locator('[data-testid="profile-photo"]')
     status = page.locator('[data-testid="profile-status"]')
     while time.monotonic() < deadline:
         if photo_img.count() > 0:
-            return
+            break
         if status.count() > 0:
             text = status.first.inner_text()
             if text and text != "Saved.":
                 raise AssertionError(f"Photo upload failed: {text}")
         page.wait_for_timeout(int(interval_s * 1000))
-    raise TimeoutError(f"Photo did not appear within {timeout_s}s")
+    else:
+        raise TimeoutError(f"Photo <img> did not appear within {timeout_s}s")
+
+    natural_width = photo_img.evaluate(
+        "el => new Promise(resolve => { "
+        "if (el.complete) resolve(el.naturalWidth); "
+        "else { el.onload = () => resolve(el.naturalWidth); el.onerror = () => resolve(0); } "
+        "})"
+    )
+    if not natural_width:
+        raise AssertionError(
+            "Photo <img> is present in the DOM but never actually rendered "
+            "(naturalWidth is 0) -- likely blocked by CSP img-src or a "
+            "broken/inaccessible Storage URL, not just slow to appear."
+        )
 
 
 def _ensure_no_photo(page):
@@ -113,7 +154,7 @@ def test_profile_view_edit_toggle_fields_and_photo():
             # Photo upload/removal (only available in edit mode, already open).
             assert page.locator('[data-testid="profile-photo-placeholder"]').count() == 1
             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
-                f.write(b"\x00" * 1024)
+                f.write(base64.b64decode(TINY_JPEG_BASE64))
                 photo_path = f.name
             try:
                 page.set_input_files('input[type="file"]', photo_path)

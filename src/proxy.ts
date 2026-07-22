@@ -38,7 +38,13 @@ function buildCsp(nonce: string): string {
     // Next's own documented dev/production split for this exact directive)
     // — production gets the real nonce-based restriction.
     `style-src 'self' ${isDev ? "'unsafe-inline'" : `'nonce-${nonce}'`}`,
-    "img-src 'self' data:",
+    // Profile photos (#73) load from Supabase Storage's public URL, same
+    // domain as connect-src/media-src below — without this, an <img> tag
+    // pointing there is silently blocked by the browser with only a
+    // devtools CSP violation to go on (the first feature needing img-src
+    // to reach Supabase, since every other Storage-hosted media type here
+    // is <audio>/<video> under media-src, not <img>).
+    `img-src 'self' data: ${process.env.NEXT_PUBLIC_SUPABASE_URL}`,
     "font-src 'self' data:",
     // Derived from the actual configured project (#63) rather than a
     // hardcoded production hostname — a literal URL here silently blocked
