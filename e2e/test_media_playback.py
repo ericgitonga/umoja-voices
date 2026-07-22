@@ -119,6 +119,16 @@ def test_play_all_and_loop_sequence():
         _add_audio(page, PLAYALL_URL_2, PLAYALL_LABEL_2)
         page.goto(media_url)
 
+        # AddMediaForm defaults every new item to Voice "S" -- filter down to
+        # just that group (#67) so the Play All sequence is exactly these
+        # two items. Unfiltered ("All"), the demo song can carry other real
+        # media the app owner uploaded exploring the app themselves, which
+        # would silently become a third item after these two and break the
+        # "audio2 is the true last item" assumption the Loop-restart check
+        # below depends on -- confirmed live in CI, not a hypothetical.
+        page.get_by_role("button", name="S", exact=True).click()
+        page.wait_for_timeout(200)
+
         try:
             card1 = page.locator('[data-testid^="song-media-"]', has_text=PLAYALL_LABEL_1)
             card2 = page.locator('[data-testid^="song-media-"]', has_text=PLAYALL_LABEL_2)
