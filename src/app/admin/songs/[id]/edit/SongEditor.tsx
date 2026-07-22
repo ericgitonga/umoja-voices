@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SONG_PART_OPTIONS, LYRIC_SECTION_TYPES, VOICE_TAGS, VOICE_TAG_LABEL, type VoiceTag } from "@/lib/constants";
+import {
+  SONG_PART_OPTIONS,
+  SONG_PART_LABEL_TEXT,
+  LYRIC_SECTION_TYPES,
+  VOICE_TAGS,
+  VOICE_TAG_LABEL,
+  type SongPartOption,
+  type VoiceTag,
+} from "@/lib/constants";
 import {
   updateSongFull,
   createMediaUploadTicket,
@@ -52,12 +60,18 @@ export default function SongEditor({
   const [saving, setSaving] = useState(false);
 
   function addVoiceSection() {
-    setVoiceSections([...voiceSections, { part: "S", sectionLabel: "", labelDescription: "", media: [] }]);
+    setVoiceSections([
+      ...voiceSections,
+      { part: "S", sectionLabel: SONG_PART_LABEL_TEXT.S, labelDescription: "", media: [] },
+    ]);
     setMediaModes([...mediaModes, []]);
     setPendingFiles([...pendingFiles, []]);
   }
   function updateVoiceSection(i: number, patch: Partial<SectionInput>) {
     setVoiceSections(voiceSections.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  }
+  function handleVoicePartChange(i: number, next: SongPartOption) {
+    updateVoiceSection(i, { part: next, sectionLabel: SONG_PART_LABEL_TEXT[next] });
   }
   function removeVoiceSection(i: number) {
     setVoiceSections(voiceSections.filter((_, idx) => idx !== i));
@@ -233,17 +247,17 @@ export default function SongEditor({
               <div className="flex gap-2">
                 <select
                   value={s.part}
-                  onChange={(e) => updateVoiceSection(i, { part: e.target.value })}
+                  onChange={(e) => handleVoicePartChange(i, e.target.value as SongPartOption)}
                   className="rounded border border-ink/20 px-2 py-1 text-sm"
                 >
                   {SONG_PART_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>
-                      {opt}
+                      {SONG_PART_LABEL_TEXT[opt]}
                     </option>
                   ))}
                 </select>
                 <input
-                  placeholder="Section label, e.g. Tenor"
+                  placeholder="Auto-filled from Voice — edit for e.g. Tenor 1"
                   value={s.sectionLabel}
                   onChange={(e) => updateVoiceSection(i, { sectionLabel: e.target.value })}
                   className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm"
