@@ -67,7 +67,7 @@ def _fill_and_save(page, bio, voice_value, instrument, phone):
     page.wait_for_timeout(1000)
 
 
-def _wait_for_photo(page, timeout_s=15, interval_s=0.5):
+def _wait_for_photo(page, console_logs, timeout_s=15, interval_s=0.5):
     """Waits for the <img> tag to appear, then confirms it actually decoded
     and rendered (naturalWidth > 0) rather than just existing in the DOM --
     a blocked-by-CSP or otherwise-failed-to-load image still has the right
@@ -94,10 +94,19 @@ def _wait_for_photo(page, timeout_s=15, interval_s=0.5):
         "})"
     )
     if not natural_width:
+        src = photo_img.evaluate("el => el.src")
+        # Diagnostic-only direct fetch from the SAME page context (so it's
+        # subject to the same CSP as the <img> tag) -- reports the real
+        # HTTP status/error rather than leaving CSP as a guess.
+        fetch_result = page.evaluate(
+            "url => fetch(url).then(r => `HTTP ${r.status}`).catch(e => `fetch error: ${e}`)",
+            src,
+        )
+        relevant_logs = [l for l in console_logs if "csp" in l.lower() or "content security" in l.lower() or "refused" in l.lower()]
         raise AssertionError(
             "Photo <img> is present in the DOM but never actually rendered "
-            "(naturalWidth is 0) -- likely blocked by CSP img-src or a "
-            "broken/inaccessible Storage URL, not just slow to appear."
+            f"(naturalWidth is 0). src={src!r}, direct fetch of that URL from "
+            f"the page context: {fetch_result}. CSP-related console messages: {relevant_logs}"
         )
 
 
@@ -118,6 +127,8 @@ def _ensure_no_photo(page):
 def test_profile_view_edit_toggle_fields_and_photo():
     with admin_page() as page:
         page.set_default_timeout(8_000)
+        console_logs = []
+        page.on("console", lambda msg: console_logs.append(msg.text))
         page.goto("/profile")
         _ensure_no_photo(page)  # self-heal any leftover photo from a prior failed run
 
@@ -158,7 +169,7 @@ def test_profile_view_edit_toggle_fields_and_photo():
                 photo_path = f.name
             try:
                 page.set_input_files('input[type="file"]', photo_path)
-                _wait_for_photo(page)
+                _wait_for_photo(page, console_logs)
                 assert page.locator('[data-testid="profile-photo"]').count() == 1
                 assert page.locator('[data-testid="profile-photo-placeholder"]').count() == 0
             finally:
