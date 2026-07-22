@@ -60,6 +60,7 @@ async function seedAccount(opts: { email: string; name: string; role: string; pa
 async function main() {
   const adminPassword = "admin12345";
   const choristerPassword = "chorister12345";
+  const e2eProfileTestPassword = "e2eprofiletest12345";
 
   const admin = await seedAccount({
     email: "gitonga@gmail.com",
@@ -73,6 +74,20 @@ async function main() {
     name: "Demo Chorister",
     role: "chorister",
     password: choristerPassword,
+  });
+
+  // Dedicated to e2e/test_profile.py (#73) -- a chorister account distinct
+  // from the seed admin above, which the app owner also uses for their own
+  // manual Preview testing. That test edits its own account's profile
+  // fields/photo (there's no throwaway target the way other specs create a
+  // throwaway song/section) and resets them to blank when it's done, which
+  // wiped the app owner's real profile data twice before this account
+  // existed. Never use this account for anything but that test.
+  await seedAccount({
+    email: "e2e.profile.test@example.com",
+    name: "E2E Profile Test",
+    role: "chorister",
+    password: e2eProfileTestPassword,
   });
 
   const linkCount = await prisma.externalLink.count();
@@ -213,8 +228,9 @@ async function main() {
   }
 
   console.log("\nSeed complete. Dev login credentials:");
-  console.log(`  Admin:      gitonga@gmail.com / ${adminPassword}`);
-  console.log(`  Chorister:  demo.chorister@example.com / ${choristerPassword}`);
+  console.log(`  Admin:          gitonga@gmail.com / ${adminPassword}`);
+  console.log(`  Chorister:      demo.chorister@example.com / ${choristerPassword}`);
+  console.log(`  E2E profile test (e2e/test_profile.py only): e2e.profile.test@example.com / ${e2eProfileTestPassword}`);
 }
 
 main()

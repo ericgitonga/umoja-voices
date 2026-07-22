@@ -2,13 +2,18 @@
 Edit button reveals the form (bio/voice/instrument/phone + photo), Save
 returns to the flat view, Cancel discards unsaved changes.
 
-This test edits the seed admin's OWN profile (there's no throwaway target
-the way other specs create a throwaway song/section) -- so it restores
-every field back to its original (blank) state in a `finally` block,
-matching this suite's established convention of cleaning up after itself
-since it runs against a shared Preview database. Password reset is
-untouched here (already covered implicitly by not exercising it) -- #73
-explicitly didn't change that flow.
+This test edits a dedicated e2e-only account's own profile (there's no
+throwaway target the way other specs create a throwaway song/section) --
+so it restores every field back to blank in a `finally` block, matching
+this suite's established convention of cleaning up after itself since it
+runs against a shared Preview database. That account (SEED_E2E_PROFILE_
+TEST_EMAIL, see _common.py/prisma/seed.ts) exists specifically so this
+reset-to-blank cleanup can never collide with a human's own manual
+Preview testing again -- it wiped the app owner's real profile data (bio,
+voice, instrument, phone, and separately the photo) twice while this test
+was being built, back when it ran against the shared seed admin account.
+Password reset is untouched here (already covered implicitly by not
+exercising it) -- #73 explicitly didn't change that flow.
 
 Photo upload uses a real, tiny (2x2px) decodable JPEG, embedded as base64
 rather than pulled in via a Pillow dependency CI doesn't otherwise install
@@ -28,7 +33,7 @@ import os
 import tempfile
 import time
 
-from _common import admin_page
+from _common import profile_test_page
 
 # A genuine 2x2px red JPEG (not null bytes) -- see module docstring. Verified
 # to actually decode (PIL round-trip) before being embedded here -- an
@@ -156,7 +161,7 @@ def _ensure_no_photo(page):
 
 
 def test_profile_view_edit_toggle_fields_and_photo():
-    with admin_page() as page:
+    with profile_test_page() as page:
         page.set_default_timeout(8_000)
         console_logs = []
         photo_responses = []

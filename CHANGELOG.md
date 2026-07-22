@@ -23,7 +23,14 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   the caller's own session (no admin override, no client-suppliable user id). Deleting a member
   now also cleans up their profile-photo file. The admin Storage page's quota accounting includes
   the new bucket. Email stays read-only (unchanged) and password reset is untouched — both were
-  already covered before this issue. New permanent e2e spec, `e2e/test_profile.py`.
+  already covered before this issue. New permanent e2e spec, `e2e/test_profile.py`, running
+  against a new dedicated seed account (`e2e.profile.test@example.com`, `prisma/seed.ts`) rather
+  than the seed admin — the test's cleanup resets its account's fields to blank, which collided
+  with the app owner's own manual Preview testing on the shared admin account before this account
+  existed. Also fixed a real CSP `img-src` gap (`src/proxy.ts`) found live on the deployed
+  Preview: the Supabase Storage origin was missing from `img-src` (already present in
+  `connect-src`/`media-src`), silently blocking every profile photo from ever rendering — the
+  first feature in this app to need an `<img>` from that origin.
 
 ## [0.33.0] - 2026-07-22
 
