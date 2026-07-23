@@ -18,6 +18,17 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   `admin/members/page.tsx`) so it can hold its own page/page-size state the same way. Both lists'
   underlying data fetch (`getAudioStorageUsage()` et al., `prisma.user.findMany()`) is unchanged
   — pagination is purely a display concern over data that was already being fetched in full.
+- **Extended #42 to the Activity log at the app owner's request** ("I have a ton of records on
+  there"), added after the original two lists were already reviewed. Architecturally different
+  from Storage/Members: Activity's list is now fetched from the DB one page at a time
+  (`skip`/`take` in `prisma.activityLog.findMany()`, driven by `?page=`/`?pageSize=` in the URL)
+  rather than paginated client-side over an already-fetched array — the previous flat
+  most-recent-100 (`RECENT_LIMIT`, #49) couldn't answer "show me everything" for someone with a
+  genuinely large log. A new `ActivityPaginationControls.tsx` adapts the same shared
+  `Pagination.tsx` UI to navigate via the URL instead of local state. "View all" still caps at
+  1000 rows (`VIEW_ALL_LIMIT`) rather than being truly unbounded, matching the existing
+  precedent of every Storage bucket listing (`getAudioStorageUsage()` et al.) — the page shows a
+  note when the true total exceeds that cap.
 
 ## [0.39.0] - 2026-07-23
 
