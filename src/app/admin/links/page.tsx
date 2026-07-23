@@ -32,14 +32,9 @@ export default async function AdminLinksPage() {
             ))}
           </select>
         </label>
-        <div className="flex gap-2">
-          <button type="submit" className="rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90">
-            Add
-          </button>
-          <button type="reset" className="rounded-full border border-ink/20 px-4 py-2 text-sm text-ink hover:bg-ink/5">
-            Cancel
-          </button>
-        </div>
+        <button type="submit" className="rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90">
+          Add
+        </button>
       </form>
 
       <ul className="flex flex-col gap-2">

@@ -17,11 +17,11 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   local state and by stripping `?draft=1` from the URL via `router.replace`) and Cancel becomes
   a plain "leave without saving" back to the song's page. Previously the only way to abandon a
   just-started song was to finish creating it, then delete it separately.
-- **Cancel/reset buttons added to every plain add-form that lacked one**: `admin/links`,
-  `admin/logistics` (trip, deadline, itinerary, practice-session forms), `AddAboutSectionForm`,
-  `AboutMediaForm`, and `AddMediaForm`. None of these create anything until their own submit, so
-  Cancel just clears the fields back to blank (native `type="reset"` for the plain HTML forms;
-  a state-resetting handler for the controlled-input ones) — no data-cleanup logic needed.
+- Cancel/reset buttons were also drafted for every other plain add-form lacking one
+  (`admin/links`, `admin/logistics`, `AddAboutSectionForm`, `AboutMediaForm`, `AddMediaForm`),
+  but the app owner scoped this issue down to just the song create/edit flow above — Cancel
+  intentionally stays absent from those forms and from `ProfileForm.tsx` (already had its own,
+  unrelated to #78).
 - Filed follow-up issues for the two flows #78 also mentioned that don't fit a plain Cancel
   button: `MemberRow`'s role/status controls (mutate immediately on interaction, no save step
   to cancel) and `inviteMember` (creates a real Supabase Auth user on submit, no one-click undo
