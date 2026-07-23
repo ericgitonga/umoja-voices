@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.37.0] - 2026-07-23
+
+### Added
+
+- **Cancel capability for the song create/edit flow** (#78): `createSong` (`song-actions.ts`)
+  now redirects to `/admin/songs/[id]/edit?draft=1`, flagging that the new `Song` row has no
+  sections/lyrics/media yet. `SongEditor.tsx` gains a Cancel button next to Save — while the
+  song is still a fresh, never-saved draft, Cancel deletes it outright (`deleteSong`) and
+  returns to `/songs`; once the first real save happens, the draft flag is cleared (both in
+  local state and by stripping `?draft=1` from the URL via `router.replace`) and Cancel becomes
+  a plain "leave without saving" back to the song's page. Previously the only way to abandon a
+  just-started song was to finish creating it, then delete it separately.
+- Cancel/reset buttons were also drafted for every other plain add-form lacking one
+  (`admin/links`, `admin/logistics`, `AddAboutSectionForm`, `AboutMediaForm`, `AddMediaForm`),
+  but the app owner scoped this issue down to just the song create/edit flow above — Cancel
+  intentionally stays absent from those forms and from `ProfileForm.tsx` (already had its own,
+  unrelated to #78).
+- Filed follow-up issues for the two flows #78 also mentioned that don't fit a plain Cancel
+  button: `MemberRow`'s role/status controls (mutate immediately on interaction, no save step
+  to cancel) and `inviteMember` (creates a real Supabase Auth user on submit, no one-click undo
+  shown next to the result) — see the GitHub issue tracker.
+
 ## [0.36.0] - 2026-07-23
 
 ### Added

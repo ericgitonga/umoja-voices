@@ -13,6 +13,7 @@ import {
 } from "@/lib/constants";
 import {
   updateSongFull,
+  deleteSong,
   createMediaUploadTicket,
   verifyAudioUpload,
   type SectionInput,
@@ -33,16 +34,22 @@ type MediaMode = "paste" | "upload";
 
 export default function SongEditor({
   songId,
+  isDraft,
   initialMeta,
   initialSections,
   initialLyricSections,
 }: {
   songId: string;
+  isDraft: boolean;
   initialMeta: Meta;
   initialSections: SectionInput[];
   initialLyricSections: LyricSectionInput[];
 }) {
   const router = useRouter();
+  // Local, not just the prop: flips to false after the first successful
+  // save so a later Cancel discards-and-leaves instead of deleting a song
+  // that's no longer a fresh, never-saved draft (#78).
+  const [draftPending, setDraftPending] = useState(isDraft);
   const [meta, setMeta] = useState(initialMeta);
   const [voiceSections, setVoiceSections] = useState<SectionInput[]>(initialSections);
   // Mirrors voiceSections[i].media[j] 1:1 — kept in sync by every mutator
@@ -189,11 +196,31 @@ export default function SongEditor({
       setPendingFiles(resolvedSections.map((s) => s.media.map(() => null)));
       setMediaModes(resolvedSections.map((s) => s.media.map(() => "paste")));
       setStatus("Saved.");
-      router.refresh();
+      if (draftPending) {
+        // No longer a discardable draft — also drop ?draft=1 from the URL so
+        // a later reload of this page can't misread it as one again.
+        setDraftPending(false);
+        router.replace(`/admin/songs/${songId}/edit`);
+      } else {
+        router.refresh();
+      }
     } catch (err) {
       setStatus(describeUploadFailure(err));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleCancel() {
+    if (draftPending) {
+      try {
+        await deleteSong(songId);
+      } catch {
+        // best-effort — still leave the editor either way
+      }
+      router.push("/songs");
+    } else {
+      router.push(`/songs/${songId}`);
     }
   }
 
@@ -405,6 +432,14 @@ export default function SongEditor({
           className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90 disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save song"}
+        </button>
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={saving}
+          className="rounded-full border border-ink/20 px-4 py-2 text-ink hover:bg-ink/5 disabled:opacity-60"
+        >
+          Cancel
         </button>
         {status && <p className="text-sm text-ink/60">{status}</p>}
       </div>

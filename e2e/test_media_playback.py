@@ -139,7 +139,9 @@ def test_play_all_and_loop_sequence():
         page.goto("/admin/songs/new")
         page.get_by_label("Title").fill(PLAYALL_SONG_TITLE)
         page.get_by_role("button", name="Create and continue").click()
-        page.wait_for_url("**/admin/songs/**/edit", timeout=10_000)
+        # Trailing ** tolerates createSong's ?draft=1 redirect (#78) --
+        # without it the pattern requires an exact end-of-URL match.
+        page.wait_for_url("**/admin/songs/**/edit**", timeout=10_000)
         song_id = page.url.split("/admin/songs/")[1].split("/edit")[0]
         media_url = f"{BASE_URL}/songs/{song_id}/media"
 
