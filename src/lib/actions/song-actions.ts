@@ -104,7 +104,11 @@ export async function createSong(formData: FormData) {
   });
 
   revalidatePath("/songs");
-  redirect(`/admin/songs/${song.id}/edit`);
+  // draft=1 tells the edit page this Song was just created and has no
+  // sections/lyrics/media yet — Cancel there deletes it outright instead of
+  // just navigating away (#78: previously the only way to abandon a
+  // just-started song was to finish creating it, then delete it).
+  redirect(`/admin/songs/${song.id}/edit?draft=1`);
 }
 
 export async function updateSongFull(

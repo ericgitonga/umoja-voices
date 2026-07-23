@@ -49,9 +49,14 @@ export default async function AdminLogisticsPage() {
               <input name="endDate" type="date" required className="rounded border border-ink/20 px-3 py-2" />
             </label>
           </div>
-          <button type="submit" className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90">
-            Create trip
-          </button>
+          <div className="flex gap-2">
+            <button type="submit" className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90">
+              Create trip
+            </button>
+            <button type="reset" className="rounded-full border border-ink/20 px-4 py-2 text-ink hover:bg-ink/5">
+              Cancel
+            </button>
+          </div>
         </form>
       </div>
     );
@@ -80,6 +85,7 @@ export default async function AdminLogisticsPage() {
           <input name="dueDate" type="date" required className="rounded border border-ink/20 px-2 py-1 text-sm" />
           <input name="notes" placeholder="Notes (optional)" className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm" />
           <button type="submit" className="rounded-full bg-ink px-3 py-1 text-sm text-white hover:opacity-90">Add</button>
+          <button type="reset" className="rounded-full border border-ink/20 px-3 py-1 text-sm text-ink hover:bg-ink/5">Cancel</button>
         </form>
         <ul className="flex flex-col gap-2">
           {trip.deadlines.map((d) => (
@@ -100,6 +106,7 @@ export default async function AdminLogisticsPage() {
           <input name="location" placeholder="Location" className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm" />
           <input name="notes" placeholder="Notes" className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm" />
           <button type="submit" className="rounded-full bg-ink px-3 py-1 text-sm text-white hover:opacity-90">Add</button>
+          <button type="reset" className="rounded-full border border-ink/20 px-3 py-1 text-sm text-ink hover:bg-ink/5">Cancel</button>
         </form>
         <ul className="flex flex-col gap-2">
           {trip.itineraryItems.map((item) => (
@@ -122,6 +129,7 @@ export default async function AdminLogisticsPage() {
           <input name="location" placeholder="Location" required className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm" />
           <input name="notes" placeholder="Notes" className="flex-1 rounded border border-ink/20 px-2 py-1 text-sm" />
           <button type="submit" className="rounded-full bg-ink px-3 py-1 text-sm text-white hover:opacity-90">Add</button>
+          <button type="reset" className="rounded-full border border-ink/20 px-3 py-1 text-sm text-ink hover:bg-ink/5">Cancel</button>
         </form>
         <ul className="flex flex-col gap-2">
           {trip.practiceSessions.map((s) => (

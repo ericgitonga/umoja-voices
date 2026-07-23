@@ -37,6 +37,15 @@ export default function AboutMediaForm() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  function handleCancel() {
+    setMode("paste");
+    setUrl("");
+    setFile(null);
+    setLabel("");
+    setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!label.trim() || (mode === "paste" ? !url.trim() : !file)) {
@@ -159,13 +168,23 @@ export default function AboutMediaForm() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="self-start rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-60"
-      >
-        {saving ? "Adding…" : "Add Media"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="self-start rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-60"
+        >
+          {saving ? "Adding…" : "Add Media"}
+        </button>
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={saving}
+          className="self-start rounded-full border border-ink/20 px-4 py-2 text-sm text-ink hover:bg-ink/5 disabled:opacity-60"
+        >
+          Cancel
+        </button>
+      </div>
     </form>
   );
 }

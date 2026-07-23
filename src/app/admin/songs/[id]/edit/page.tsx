@@ -4,8 +4,15 @@ import { parseVoiceTags } from "@/lib/constants";
 import Breadcrumb from "@/components/Breadcrumb";
 import SongEditor from "./SongEditor";
 
-export default async function EditSongPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditSongPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ draft?: string }>;
+}) {
   const { id } = await params;
+  const { draft } = await searchParams;
   const song = await prisma.song.findUnique({
     where: { id },
     include: {
@@ -25,6 +32,7 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
       <h1 className="mb-6 text-2xl font-semibold text-ink">Edit song</h1>
       <SongEditor
         songId={song.id}
+        isDraft={draft === "1"}
         initialMeta={{
           title: song.title,
           composer: song.composer ?? "",
