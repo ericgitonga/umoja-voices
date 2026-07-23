@@ -11,6 +11,8 @@ See `extras/umoja_technical_document.pdf` for the full technical reference and `
 versioning/tracking protocol, security posture, and data-handling rules (including deployment
 gotchas worth reading before touching the Vercel/Supabase setup again).
 
+For a full walkthrough of how to use the app, see [`docs/User Guide.pdf`](docs/User%20Guide.pdf).
+
 ## Local development
 
 The database runs on Supabase Postgres; auth is Supabase Auth (see `SKILL.md`'s Security First

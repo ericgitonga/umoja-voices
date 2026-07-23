@@ -66,3 +66,8 @@ Media/
 # authoring tools, not part of the public repo (see SKILL.md's data handling
 # rules)
 extras/*
+
+# docs/User Guide.md/.pdf + its screenshots stay local too (#91, reversed
+# 2026-07-23 from the issue's original "should be public" plan) — a living
+# doc updated as needed, same untracked convention as extras/
+docs/*
