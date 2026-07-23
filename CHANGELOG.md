@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.35.2] - 2026-07-23
+
+### Added
+
+- **User Guide** (#91): `docs/User Guide.pdf` (source: `docs/User Guide.md`), a complete
+  walkthrough of every feature the app has today, written for someone who has never used it
+  before. Chorister-facing sections (getting started, song library, Media/Sheet Music/Lyrics,
+  Logistics, External Links, About, Profile) come first; admin-only sections (managing songs,
+  media/sheet music/lyrics editing, External Links, Logistics, About page editing, Members,
+  Storage, Activity) follow. Real screenshots throughout, captured from a live session against
+  non-production demo accounts (`gitonga@gmail.com`/`demo.chorister@example.com`) — never real
+  member data or production. Documents the app exactly as it behaves today, including the known
+  nav-responsiveness gap already tracked in `extras/ui-ux.md`. `README.md` gains a one-line
+  pointer to the guide. The `topdf` skill's converter (`md_to_pdf_rl.py`, shared across projects,
+  not part of this repo) already supported embedding images from an earlier session — used here
+  for the first time.
+
 ## [0.35.1] - 2026-07-23
 
 ### Fixed
