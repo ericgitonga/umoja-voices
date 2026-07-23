@@ -27,10 +27,10 @@ def test_song_create_and_delete_are_logged():
     with admin_page() as page:
         page.goto("/admin/songs/new")
         page.get_by_label("Title").fill("E2E Activity Log Test Song")
-        page.get_by_role("button", name="Create and continue").click()
-        # Trailing ** tolerates createSong's ?draft=1 redirect (#78) --
-        # without it the pattern requires an exact end-of-URL match.
-        page.wait_for_url("**/admin/songs/**/edit**", timeout=10_000)
+        page.get_by_role("button", name="Create song").click()
+        # Create song now goes straight back to the list (#80), not an
+        # intermediate edit page.
+        page.wait_for_url("**/songs", timeout=10_000)
 
         try:
             page.goto("/admin/activity")

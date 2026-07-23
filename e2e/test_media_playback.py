@@ -138,11 +138,13 @@ def test_play_all_and_loop_sequence():
         # cleanup is a single song deletion, not a per-item Remove click.
         page.goto("/admin/songs/new")
         page.get_by_label("Title").fill(PLAYALL_SONG_TITLE)
-        page.get_by_role("button", name="Create and continue").click()
-        # Trailing ** tolerates createSong's ?draft=1 redirect (#78) --
-        # without it the pattern requires an exact end-of-URL match.
-        page.wait_for_url("**/admin/songs/**/edit**", timeout=10_000)
-        song_id = page.url.split("/admin/songs/")[1].split("/edit")[0]
+        page.get_by_role("button", name="Create song").click()
+        # Create song now goes straight back to the list (#80), not an
+        # intermediate edit page -- find the new song there to get its id.
+        page.wait_for_url("**/songs", timeout=10_000)
+        page.get_by_text(PLAYALL_SONG_TITLE).first.click()
+        page.wait_for_url("**/songs/**", timeout=10_000)
+        song_id = page.url.split("/songs/")[1].rstrip("/")
         media_url = f"{BASE_URL}/songs/{song_id}/media"
 
         page.goto(media_url)
