@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ACTIVITY_ACTION_LABEL, type ActivityAction } from "@/lib/constants";
 import { formatEAT } from "@/lib/format-eat";
 import { parseUserAgent } from "@/lib/user-agent";
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, type PageSize } from "@/components/Pagination";
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, type PageSize } from "@/lib/pagination";
 import ActivityPaginationControls from "./ActivityPaginationControls";
 
 // This page reads live data — never statically cache it.

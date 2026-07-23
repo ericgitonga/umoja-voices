@@ -1,24 +1,15 @@
 "use client";
 
-// The app's first pagination UI (#42) -- shared by the Storage file list and
-// the Members list, the only two unpaginated admin lists in the app. Page
-// size is a plain number or the "all" sentinel; the parent owns page/
-// pageSize state and does its own slicing via `paginate()` below, since
-// each list's items already live in a client component after being fetched
-// server-side (sorting, in Storage's case) -- there's no need for
-// server-side/URL-based pagination here.
-
-export type PageSize = 10 | 20 | 50 | 100 | "all";
-
-export const PAGE_SIZE_OPTIONS: PageSize[] = [10, 20, 50, 100, "all"];
-
-export const DEFAULT_PAGE_SIZE: PageSize = 10;
-
-export function paginate<T>(items: T[], page: number, pageSize: PageSize): T[] {
-  if (pageSize === "all") return items;
-  const start = (page - 1) * pageSize;
-  return items.slice(start, start + pageSize);
-}
+// The app's first pagination UI (#42) -- shared by the Storage file list,
+// the Members list, and the Activity log, the only unpaginated admin lists
+// in the app. Types/constants/the paginate() helper live in @/lib/pagination
+// (a plain module, no "use client"), not here -- every consumer, including
+// this component itself, imports them from there directly. A Server
+// Component (Activity's page.tsx) *must* import them from that plain
+// module: importing a value from a "use client" file into server code
+// doesn't give you the real value in this Next.js version (see
+// lib/pagination.ts's own comment for what that broke).
+import { PAGE_SIZE_OPTIONS, type PageSize } from "@/lib/pagination";
 
 export default function Pagination({
   totalItems,

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Pagination, { paginate, DEFAULT_PAGE_SIZE, type PageSize } from "@/components/Pagination";
+import Pagination from "@/components/Pagination";
+import { paginate, DEFAULT_PAGE_SIZE, type PageSize } from "@/lib/pagination";
 
 export type StorageFile = {
   url: string;

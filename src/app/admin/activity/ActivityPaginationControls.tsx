@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import Pagination, { type PageSize } from "@/components/Pagination";
+import Pagination from "@/components/Pagination";
+import type { PageSize } from "@/lib/pagination";
 
 /**
  * Activity's list is DB-fetched per page (unlike Storage/Members, which

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import MemberRow from "./MemberRow";
-import Pagination, { paginate, DEFAULT_PAGE_SIZE, type PageSize } from "@/components/Pagination";
+import Pagination from "@/components/Pagination";
+import { paginate, DEFAULT_PAGE_SIZE, type PageSize } from "@/lib/pagination";
 
 type Member = { id: string; name: string; email: string; role: string; status: string };
 
