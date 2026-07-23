@@ -12,8 +12,8 @@ import {
   type VoiceTag,
 } from "@/lib/constants";
 import {
+  createSongFull,
   updateSongFull,
-  deleteSong,
   createMediaUploadTicket,
   verifyAudioUpload,
   type SectionInput,
@@ -34,22 +34,19 @@ type MediaMode = "paste" | "upload";
 
 export default function SongEditor({
   songId,
-  isDraft,
   initialMeta,
   initialSections,
   initialLyricSections,
 }: {
-  songId: string;
-  isDraft: boolean;
+  // null means this is the New Song flow (#80) -- nothing exists in the DB
+  // yet, so Save creates the Song, its sections, and its lyrics all at
+  // once, and Cancel has nothing to clean up (just navigate away).
+  songId: string | null;
   initialMeta: Meta;
   initialSections: SectionInput[];
   initialLyricSections: LyricSectionInput[];
 }) {
   const router = useRouter();
-  // Local, not just the prop: flips to false after the first successful
-  // save so a later Cancel discards-and-leaves instead of deleting a song
-  // that's no longer a fresh, never-saved draft (#78).
-  const [draftPending, setDraftPending] = useState(isDraft);
   const [meta, setMeta] = useState(initialMeta);
   const [voiceSections, setVoiceSections] = useState<SectionInput[]>(initialSections);
   // Mirrors voiceSections[i].media[j] 1:1 — kept in sync by every mutator
@@ -187,6 +184,19 @@ export default function SongEditor({
         resolvedSections.push({ ...s, media: resolvedMedia });
       }
 
+      if (songId === null) {
+        // New Song (#80): everything is created in one shot, then straight
+        // back to the song list -- there's no intermediate "song exists but
+        // is empty" state to land on anymore.
+        const result = await createSongFull(meta, resolvedSections, sections);
+        if (result.error) {
+          setStatus(result.error);
+          return;
+        }
+        router.push("/songs");
+        return;
+      }
+
       const result = await updateSongFull(songId, meta, resolvedSections, sections);
       if (result.error) {
         setStatus(result.error);
@@ -196,14 +206,7 @@ export default function SongEditor({
       setPendingFiles(resolvedSections.map((s) => s.media.map(() => null)));
       setMediaModes(resolvedSections.map((s) => s.media.map(() => "paste")));
       setStatus("Saved.");
-      if (draftPending) {
-        // No longer a discardable draft — also drop ?draft=1 from the URL so
-        // a later reload of this page can't misread it as one again.
-        setDraftPending(false);
-        router.replace(`/admin/songs/${songId}/edit`);
-      } else {
-        router.refresh();
-      }
+      router.refresh();
     } catch (err) {
       setStatus(describeUploadFailure(err));
     } finally {
@@ -211,17 +214,8 @@ export default function SongEditor({
     }
   }
 
-  async function handleCancel() {
-    if (draftPending) {
-      try {
-        await deleteSong(songId);
-      } catch {
-        // best-effort — still leave the editor either way
-      }
-      router.push("/songs");
-    } else {
-      router.push(`/songs/${songId}`);
-    }
+  function handleCancel() {
+    router.push(songId === null ? "/songs" : `/songs/${songId}`);
   }
 
   return (
@@ -431,7 +425,7 @@ export default function SongEditor({
           disabled={saving}
           className="rounded-full bg-ink px-4 py-2 text-white hover:opacity-90 disabled:opacity-60"
         >
-          {saving ? "Saving…" : "Save song"}
+          {saving ? "Saving…" : songId === null ? "Create song" : "Save song"}
         </button>
         <button
           type="button"

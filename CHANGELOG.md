@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.38.0] - 2026-07-23
+
+### Added
+
+- **Tighter coupling of Add Song** (#80): `/admin/songs/new` now renders the same full
+  `SongEditor` UI (Title/Writer/Composer/Arranger + Voice parts + Lyrics) used for editing,
+  instead of a bare 4-field form that only set up the song's metadata. A new `createSongFull`
+  action (`song-actions.ts`) creates the `Song` plus its voice-part sections/media and lyric
+  sections in a single transaction, and clicking "Create song" now goes straight back to
+  `/songs` — there's no more intermediate "song exists but has nothing in it yet" page to land
+  on. `SongEditor.tsx` now takes `songId: string | null` (`null` = create mode) and branches
+  `handleSave`/`handleCancel` accordingly.
+- **This supersedes #78's draft/Cancel-deletes-it mechanism entirely** for the create flow: the
+  whole reason that existed was the old two-step `createSong` → redirect-to-edit-page flow,
+  which no longer exists. Removed `createSong`, the `?draft=1` query param, and the
+  `isDraft`/`draftPending` state from `SongEditor.tsx` — Cancel is now unconditionally "navigate
+  away, nothing to clean up" in both create mode (nothing was ever created) and edit mode
+  (nothing is persisted until Save either way).
+- Updated `e2e/test_activity_log.py` and `e2e/test_media_playback.py` for the new Create
+  song → `/songs` redirect (previously asserted an intermediate `/admin/songs/[id]/edit` URL to
+  recover the new song's id; now finds it by clicking the song from the list instead).
+
 ## [0.37.0] - 2026-07-23
 
 ### Added

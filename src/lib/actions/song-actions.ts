@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
@@ -76,26 +75,71 @@ export type LyricSectionInput = {
   voiceTags: VoiceTag[];
 };
 
-export async function createSong(formData: FormData) {
+/**
+ * New Song (#80): creates the Song plus its voice-part sections/media and
+ * lyric sections in one transaction, so nothing lands in the DB until the
+ * admin actually clicks Create song -- no more intermediate "song exists
+ * but has nothing in it yet" state to abandon or clean up (that's what
+ * #78's now-removed draft/Cancel-deletes-it mechanism was working around).
+ */
+export async function createSongFull(
+  meta: { title: string; composer: string; lyricist: string; arranger: string },
+  sections: SectionInput[],
+  lyricSections: LyricSectionInput[]
+): Promise<{ error?: string; songId?: string }> {
   const session = await requireAdmin();
 
-  const title = clip(String(formData.get("title") ?? "").trim(), "title");
-  const composer = clip(String(formData.get("composer") ?? "").trim(), "name");
-  const lyricist = clip(String(formData.get("lyricist") ?? "").trim(), "name");
-  const arranger = clip(String(formData.get("arranger") ?? "").trim(), "name");
-
-  if (!title) {
-    throw new Error("Title is required.");
+  if (!meta.title.trim()) {
+    return { error: "Title is required." };
   }
 
-  const song = await prisma.song.create({
-    data: {
-      title,
-      composer: composer || null,
-      lyricist: lyricist || null,
-      arranger: arranger || null,
-      createdById: session.user.id,
-    },
+  const song = await prisma.$transaction(async (tx) => {
+    const created = await tx.song.create({
+      data: {
+        title: clip(meta.title.trim(), "title"),
+        composer: clip(meta.composer.trim(), "name") || null,
+        lyricist: clip(meta.lyricist.trim(), "name") || null,
+        arranger: clip(meta.arranger.trim(), "name") || null,
+        createdById: session.user.id,
+      },
+    });
+
+    for (const [i, s] of sections.filter((s) => s.media.some((m) => m.mediaUrl.trim())).entries()) {
+      await tx.songSection.create({
+        data: {
+          songId: created.id,
+          part: oneOf(s.part, SONG_PART_OPTIONS, "All"),
+          sectionLabel: clip(s.sectionLabel.trim() || s.part, "label"),
+          labelDescription: clip(s.labelDescription.trim(), "description"),
+          sortOrder: i,
+          media: {
+            create: s.media
+              .filter((m) => m.mediaUrl.trim())
+              .map((m, j) => ({
+                label: clip(m.label.trim() || s.sectionLabel.trim() || s.part, "label"),
+                mediaUrl: clip(m.mediaUrl.trim(), "url"),
+                mediaKind: detectMediaKind(m.mediaUrl.trim()),
+                sortOrder: j,
+              })),
+          },
+        },
+      });
+    }
+
+    await tx.lyricSection.createMany({
+      data: lyricSections
+        .filter((s) => s.content.trim())
+        .map((s, i) => ({
+          songId: created.id,
+          sectionType: oneOf(s.sectionType, LYRIC_SECTION_TYPES, "custom"),
+          sectionLabel: clip(s.sectionLabel.trim() || s.sectionType, "label"),
+          content: clip(s.content.trim(), "content"),
+          voiceTags: serializeVoiceTags(subsetOf(s.voiceTags, VOICE_TAGS)),
+          sortOrder: i,
+        })),
+    });
+
+    return created;
   });
 
   await logActivity(`${session.user.name} <${session.user.email}>`, "song_create", song.title, {
@@ -104,11 +148,7 @@ export async function createSong(formData: FormData) {
   });
 
   revalidatePath("/songs");
-  // draft=1 tells the edit page this Song was just created and has no
-  // sections/lyrics/media yet — Cancel there deletes it outright instead of
-  // just navigating away (#78: previously the only way to abandon a
-  // just-started song was to finish creating it, then delete it).
-  redirect(`/admin/songs/${song.id}/edit?draft=1`);
+  return { songId: song.id };
 }
 
 export async function updateSongFull(
