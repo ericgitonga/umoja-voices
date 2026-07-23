@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.36.0] - 2026-07-23
+
+### Added
+
+- **Sticky top nav bar** (#93): `src/components/Nav.tsx`'s `<nav>` (both the signed-in nav and
+  the logged-out `PublicNav`) now uses `sticky top-0 z-50` instead of scrolling away with the
+  page — requested so the nav stays reachable on pages with a lot of content (Logistics,
+  Songs, lyrics). No other element in the app uses a `z-index` today, so `z-50` introduces no
+  stacking conflicts.
+
 ## [0.35.2] - 2026-07-23
 
 ### Added
