@@ -7,6 +7,7 @@ import { SONG_PART_OPTIONS, SONG_PART_LABEL_TEXT, type SongPartOption } from "@/
 import { AUDIO_MAX_BYTES, AUDIO_ACCEPT, VIDEO_MAX_BYTES, VIDEO_ACCEPT } from "@/lib/media-constants";
 import { describeUploadFailure } from "@/lib/upload-error";
 import { uploadFileDirectly } from "@/lib/upload-client";
+import CircularProgress from "@/components/CircularProgress";
 
 type Mode = "paste" | "upload";
 
@@ -23,6 +24,7 @@ export default function AddMediaForm({ songId }: { songId: string }) {
   const [label, setLabel] = useState("");
   const [part, setPart] = useState<SongPartOption>("S");
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,12 +51,13 @@ export default function AddMediaForm({ songId }: { songId: string }) {
     try {
       let mediaUrl = url;
       if (mode === "upload" && file) {
+        setUploadProgress(0);
         const ticket = await createMediaUploadTicket(file.name, file.size, file.type);
         if ("error" in ticket) {
           setError(ticket.error);
           return;
         }
-        const uploaded = await uploadFileDirectly(ticket, file);
+        const uploaded = await uploadFileDirectly(ticket, file, setUploadProgress);
         if (uploaded.error) {
           setError(uploaded.error);
           return;
@@ -86,6 +89,7 @@ export default function AddMediaForm({ songId }: { songId: string }) {
       setError(describeUploadFailure(err));
     } finally {
       setSaving(false);
+      setUploadProgress(null);
     }
   }
 
@@ -178,9 +182,10 @@ export default function AddMediaForm({ songId }: { songId: string }) {
       <button
         type="submit"
         disabled={saving}
-        className="self-start rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-60"
+        className="flex items-center gap-2 self-start rounded-full bg-ink px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-60"
       >
-        {saving ? "Adding…" : "Add Media"}
+        {uploadProgress !== null && <CircularProgress fraction={uploadProgress} />}
+        {saving ? (uploadProgress !== null ? `Adding… ${Math.round(uploadProgress * 100)}%` : "Adding…") : "Add Media"}
       </button>
     </form>
   );

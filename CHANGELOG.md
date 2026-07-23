@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.39.0] - 2026-07-23
+
+### Added
+
+- **Circular upload-progress tracker** (#66): `AddMediaForm.tsx` (song media) and
+  `AboutMediaForm.tsx` (About page media) now show a Google-Drive-style circular progress ring
+  plus a live percentage while a file uploads, via a new `CircularProgress.tsx` component.
+  Required rewriting `uploadFileDirectly` (`upload-client.ts`) from the Supabase SDK's
+  `uploadToSignedUrl()` (fetch-based, no upload-progress event) to a raw `XMLHttpRequest` PUT
+  against the same signed-upload endpoint, using `xhr.upload.onprogress` — the request shape
+  (URL, FormData fields, headers) is copied exactly from `@supabase/storage-js`'s own
+  implementation to avoid diverging from a working upload path. Verified directly against the
+  real Preview Storage bucket (mint a ticket, raw PUT, byte-for-byte readback, cleanup) before
+  relying on CI/manual Preview testing alone.
+- The button-text-uniformity half of #66 ("one reads Adding, the other Uploading") turned out to
+  already be resolved as a side effect of unrelated work: the About page's old `AboutVideoForm.tsx`
+  (which said "Uploading…") was fully replaced by `AboutMediaForm.tsx` during the About-page
+  overhaul (#59/#70/#72), and it already matches the songs form's "Adding…"/"Add Media" wording.
+  Nothing to change there.
+- Scoped to the two forms the issue names — `AddSheetMusicForm.tsx`, `SongEditor.tsx`'s own
+  inline section-media uploads, and `ProfileForm.tsx`'s photo upload all still call
+  `uploadFileDirectly` (now with an optional third `onProgress` argument, unused by them) but
+  don't show a progress ring; left as a possible follow-up rather than built by default.
+
 ## [0.38.0] - 2026-07-23
 
 ### Added
