@@ -17,10 +17,15 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   Storage, Activity) follow. Real screenshots throughout, captured from a live session against
   non-production demo accounts (`gitonga@gmail.com`/`demo.chorister@example.com`) — never real
   member data or production. Documents the app exactly as it behaves today, including the known
-  nav-responsiveness gap already tracked in `extras/ui-ux.md`. `README.md` gains a one-line
-  pointer to the guide. The `topdf` skill's converter (`md_to_pdf_rl.py`, shared across projects,
-  not part of this repo) already supported embedding images from an earlier session — used here
-  for the first time.
+  nav-responsiveness gap already tracked in `extras/ui-ux.md`. **Reversed from #91's original
+  "public, tracked in `docs/`" plan to a local-only living doc**, same untracked convention as
+  `extras/umoja_technical_document.md` — `docs/*` is now gitignored; `README.md` still gets a
+  one-line pointer to it, matching how the README already points at the gitignored technical
+  document. The `topdf` skill's converter (`md_to_pdf_rl.py`, shared across projects, not part of
+  this repo) already supported embedding images from an earlier session — used here for the first
+  time, plus this issue's own pagination fixes (heading/image-caption `CondPageBreak`/
+  `KeepTogether` handling, a narrower default max image width) to cut down blank-page gaps in
+  image-heavy documents generally.
 
 ## [0.35.1] - 2026-07-23
 
