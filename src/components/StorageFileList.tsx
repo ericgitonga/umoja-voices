@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Pagination, { paginate, DEFAULT_PAGE_SIZE, type PageSize } from "@/components/Pagination";
 
 export type StorageFile = {
   url: string;
@@ -21,8 +22,11 @@ function formatMB(bytes: number): string {
 export default function StorageFileList({ files }: { files: StorageFile[] }) {
   const [sortColumn, setSortColumn] = useState<SortColumn>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
 
   function handleSort(column: SortColumn) {
+    setPage(1);
     if (column === sortColumn) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -40,6 +44,8 @@ export default function StorageFileList({ files }: { files: StorageFile[] }) {
           : a.kind.localeCompare(b.kind);
     return sortDirection === "asc" ? cmp : -cmp;
   });
+
+  const pageItems = paginate(sorted, page, pageSize);
 
   const columns: { key: SortColumn; label: string }[] = [
     { key: "name", label: "File name" },
@@ -64,7 +70,7 @@ export default function StorageFileList({ files }: { files: StorageFile[] }) {
         ))}
       </div>
       <ul className="flex flex-col gap-2">
-        {sorted.map((f) => (
+        {pageItems.map((f) => (
           <li
             key={f.url}
             className="flex items-center justify-between rounded border border-ink/10 bg-white px-3 py-2 text-sm"
@@ -84,6 +90,16 @@ export default function StorageFileList({ files }: { files: StorageFile[] }) {
         ))}
         {sorted.length === 0 && <p className="text-sm text-ink/50">No uploaded files yet.</p>}
       </ul>
+      <Pagination
+        totalItems={sorted.length}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+      />
     </div>
   );
 }

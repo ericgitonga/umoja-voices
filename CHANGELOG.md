@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.40.0] - 2026-07-23
+
+### Added
+
+- **Pagination for the Storage and Members admin lists** (#42): the app's first pagination UI,
+  a new shared `Pagination.tsx` component (page-size selector — 10/20/50/100/"View all",
+  defaulting to 10 — plus Prev/Next) used identically by both lists. `StorageFileList.tsx`
+  paginates its already-fetched, already-sorted file array client-side (changing sort or page
+  size resets to page 1). The Members list gains a new `MembersList.tsx` client component
+  (extracted from what was inline `<ul>` markup directly in the Server Component
+  `admin/members/page.tsx`) so it can hold its own page/page-size state the same way. Both lists'
+  underlying data fetch (`getAudioStorageUsage()` et al., `prisma.user.findMany()`) is unchanged
+  — pagination is purely a display concern over data that was already being fetched in full.
+
 ## [0.39.0] - 2026-07-23
 
 ### Added
