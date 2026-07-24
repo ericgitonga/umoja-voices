@@ -26,10 +26,14 @@ type EmbedCallbacks = {
 };
 
 /**
- * Wires a real YT.Player instance up to the same onPlay/onEnded/mediaRef
- * contract native <audio>/<video> already provide (#86) — YT.Player creates
- * its own iframe in place of the placeholder <div> below, so no hand-authored
- * <iframe src=...> is needed here (unlike the SoundCloud case below).
+ * Renders a real, always-present <iframe> immediately — playable and
+ * embeddable with zero JS, same baseline as before #86 — then progressively
+ * enhances it: the IFrame Player API supports attaching a YT.Player to an
+ * *existing* iframe (rather than only creating its own from a placeholder
+ * element), the same "attach, don't replace" shape SoundCloud's widget uses
+ * below. If the API script never loads (no network, ad blocker, etc.) the
+ * iframe still plays fine on its own — pause-coordination/Play All just
+ * silently don't apply to it, same as any other unregistered item.
  */
 function YouTubeEmbed({ videoId, onPlay, onEnded, loop, mediaRef }: { videoId: string } & EmbedCallbacks) {
   const containerId = useId();
@@ -47,8 +51,6 @@ function YouTubeEmbed({ videoId, onPlay, onEnded, loop, mediaRef }: { videoId: s
       };
 
       player = new ytApi.Player(containerId, {
-        videoId,
-        playerVars: loop ? { loop: 1, playlist: videoId } : undefined,
         events: {
           onStateChange: (event) => {
             if (event.data === ytApi.PlayerState.PLAYING) onPlay?.(handle);
@@ -67,7 +69,16 @@ function YouTubeEmbed({ videoId, onPlay, onEnded, loop, mediaRef }: { videoId: s
     // eslint-disable-next-line react-hooks/exhaustive-deps -- videoId/loop changing would need a full re-mount anyway; callbacks are stable enough in practice for this component's usage
   }, [containerId, videoId]);
 
-  return <div id={containerId} className="aspect-video w-full rounded" />;
+  const src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1${loop ? `&loop=1&playlist=${videoId}` : ""}`;
+  return (
+    <iframe
+      id={containerId}
+      src={src}
+      className="aspect-video w-full rounded"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+    />
+  );
 }
 
 /**

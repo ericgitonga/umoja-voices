@@ -20,10 +20,14 @@ export interface YTPlayer {
 }
 
 export interface YTApi {
+  // videoId/playerVars are omitted when attaching to an existing <iframe>
+  // whose src already encodes them (#86's approach, matching SoundCloud's
+  // "attach, don't replace" shape) — only needed if elementId instead
+  // points at a placeholder element with no src of its own.
   Player: new (
     elementId: string,
     options: {
-      videoId: string;
+      videoId?: string;
       playerVars?: Record<string, unknown>;
       events?: {
         onStateChange?: (event: { data: number }) => void;
