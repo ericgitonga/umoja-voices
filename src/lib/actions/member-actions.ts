@@ -41,8 +41,9 @@ async function requireAdmin() {
  * doesn't depend on Supabase's SMTP/domain setup at all (issue #34,
  * deferred). Built from `hashed_token` rather than the response's
  * `action_link`, which points at Supabase's own hosted redirect (a
- * different, hash-fragment session style than src/app/auth/confirm/route.ts
- * expects — see SKILL.md's gotchas). app_metadata.role is what
+ * different, hash-fragment session style than src/app/auth/confirm/page.tsx's
+ * confirmAuthLink action expects — see SKILL.md's gotchas). app_metadata.role
+ * is what
  * src/proxy.ts reads for route gating.
  */
 export async function inviteMember(

@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.44.0] - 2026-07-24
+
+### Fixed
+
+- **Invite/reset links no longer get silently burned by link-preview crawlers** (#112):
+  invite links are shared manually via WhatsApp (email delivery isn't wired up yet, #34), and
+  WhatsApp's own GET to build a chat preview card was hitting `verifyOtp` immediately and
+  consuming the single-use token before the real recipient ever clicked — landing their actual
+  click on `/login` with a silently swallowed `?error=invalid-link`. `src/app/auth/confirm` is
+  now a page rendering a "Continue" button (invite/recovery-specific copy) instead of a Route
+  Handler that verified on GET; only the explicit click — a real form POST to a new
+  `confirmAuthLink` Server Action (`src/lib/actions/auth-actions.ts`) — calls `verifyOtp` and
+  redirects to `/accept-invite`/`/reset-password`. A crawler's GET now just renders inert HTML,
+  never touching the token.
+
 ## [0.43.0] - 2026-07-24
 
 ### Fixed
