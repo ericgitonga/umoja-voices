@@ -6,10 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import type { Session } from "@/lib/get-session";
 
 const LINKS = [
+  { href: "/about", label: "About" },
   { href: "/songs", label: "Songs" },
   { href: "/logistics", label: "Logistics" },
   { href: "/links", label: "Links" },
-  { href: "/about", label: "About" },
 ];
 
 // Shown instead of the full member nav for anonymous visitors — /about and
