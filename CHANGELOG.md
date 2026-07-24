@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.41.0] - 2026-07-24
+
+### Added
+
+- **"See more" collapse for the Logistics itinerary and About page sections** (#96): a new
+  shared `Expandable.tsx` component caps its children to a pixel height by default (220px for
+  the itinerary list, 120px for each About section body), with a bottom fade and a "See
+  more"/"See less" toggle that only appears if the content actually overflows that height —
+  measured via `scrollHeight` rather than slicing an array or a line-clamp count, so the exact
+  same component works for both a list of itinerary cards and free-form admin-entered paragraph
+  text. `/logistics/page.tsx`'s Itinerary section and each block in `/about/page.tsx` now wrap
+  their content in `<Expandable>`. Bundled two separate UX-feedback screenshots (Logistics
+  itinerary, About page text) into this one issue since the ask was identical.
+
 ## [0.40.0] - 2026-07-23
 
 ### Added
