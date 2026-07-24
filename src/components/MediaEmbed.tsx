@@ -34,9 +34,25 @@ type EmbedCallbacks = {
  * below. If the API script never loads (no network, ad blocker, etc.) the
  * iframe still plays fine on its own — pause-coordination/Play All just
  * silently don't apply to it, same as any other unregistered item.
+ *
+ * The iframe's src is deliberately static (videoId only, never loop) — an
+ * earlier version baked `loop` into a `&loop=1&playlist=...` query param,
+ * which meant toggling Loop/Play All changed the src and reloaded the
+ * iframe out from under the already-attached YT.Player, breaking its
+ * postMessage channel (surfaced as YT "stopping responding" to pause
+ * coordination). Loop is instead handled entirely in JS, replaying on
+ * ENDED, the same shape SoundCloud already uses below. onPlay/onEnded/loop
+ * are read from `latest` (updated every render) rather than closed over at
+ * effect-creation time, so toggling Loop/Play All after this player has
+ * already initialized takes effect immediately instead of being stuck with
+ * whatever the values were at mount.
  */
 function YouTubeEmbed({ videoId, onPlay, onEnded, loop, mediaRef }: { videoId: string } & EmbedCallbacks) {
   const containerId = useId();
+  const latest = useRef({ onPlay, onEnded, loop });
+  useEffect(() => {
+    latest.current = { onPlay, onEnded, loop };
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -53,8 +69,12 @@ function YouTubeEmbed({ videoId, onPlay, onEnded, loop, mediaRef }: { videoId: s
       player = new ytApi.Player(containerId, {
         events: {
           onStateChange: (event) => {
-            if (event.data === ytApi.PlayerState.PLAYING) onPlay?.(handle);
-            else if (event.data === ytApi.PlayerState.ENDED) onEnded?.(handle);
+            if (event.data === ytApi.PlayerState.PLAYING) {
+              latest.current.onPlay?.(handle);
+            } else if (event.data === ytApi.PlayerState.ENDED) {
+              if (latest.current.loop) handle.play();
+              else latest.current.onEnded?.(handle);
+            }
           },
         },
       });
@@ -66,14 +86,13 @@ function YouTubeEmbed({ videoId, onPlay, onEnded, loop, mediaRef }: { videoId: s
       player?.destroy();
       mediaRef?.(null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- videoId/loop changing would need a full re-mount anyway; callbacks are stable enough in practice for this component's usage
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- videoId changing would need a full re-mount anyway; onPlay/onEnded/loop are read from `latest` instead
   }, [containerId, videoId]);
 
-  const src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1${loop ? `&loop=1&playlist=${videoId}` : ""}`;
   return (
     <iframe
       id={containerId}
-      src={src}
+      src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1`}
       className="aspect-video w-full rounded"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowFullScreen
@@ -84,10 +103,17 @@ function YouTubeEmbed({ videoId, onPlay, onEnded, loop, mediaRef }: { videoId: s
 /**
  * SoundCloud's Widget API attaches to an iframe this component already
  * renders, rather than creating its own (#86) — the opposite of YouTube
- * above.
+ * above. Same `latest`-ref pattern as YouTubeEmbed, for the same reason:
+ * without it, toggling Loop/Play All after this widget already bound its
+ * PLAY/FINISH handlers would be stuck with the loop/callback values from
+ * whenever the widget first initialized.
  */
 function SoundCloudEmbed({ url, onPlay, onEnded, loop, mediaRef }: { url: string } & EmbedCallbacks) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const latest = useRef({ onPlay, onEnded, loop });
+  useEffect(() => {
+    latest.current = { onPlay, onEnded, loop };
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -102,19 +128,21 @@ function SoundCloudEmbed({ url, onPlay, onEnded, loop, mediaRef }: { url: string
         pause: () => widget?.pause(),
       };
 
-      widget.bind(window.SC.Widget.Events.PLAY, () => onPlay?.(handle));
+      widget.bind(window.SC.Widget.Events.PLAY, () => latest.current.onPlay?.(handle));
       widget.bind(window.SC.Widget.Events.FINISH, () => {
-        if (loop) handle.play();
-        else onEnded?.(handle);
+        if (latest.current.loop) handle.play();
+        else latest.current.onEnded?.(handle);
       });
       mediaRef?.(handle);
     });
 
     return () => {
       cancelled = true;
+      widget?.unbind(window.SC!.Widget.Events.PLAY);
+      widget?.unbind(window.SC!.Widget.Events.FINISH);
       mediaRef?.(null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- url/loop changing would need a full re-mount anyway; callbacks are stable enough in practice for this component's usage
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- url changing would need a full re-mount anyway; onPlay/onEnded/loop are read from `latest` instead
   }, [url]);
 
   return (
