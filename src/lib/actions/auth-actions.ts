@@ -1,6 +1,8 @@
 "use server";
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { type EmailOtpType } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { appBaseUrl } from "@/lib/email";
@@ -124,4 +126,24 @@ export async function activateInvitedProfile(): Promise<{ error?: string }> {
 
   await prisma.user.update({ where: { id: session.user.id }, data: { status: "active" } });
   return {};
+}
+
+/**
+ * Invoked only by an explicit user click on /auth/confirm's Continue button
+ * (a real form POST) — never by a GET, so a link-preview crawler's GET on a
+ * shared invite/reset URL can no longer burn the single-use token before the
+ * real recipient clicks it (#112).
+ */
+export async function confirmAuthLink(formData: FormData): Promise<void> {
+  const token_hash = formData.get("token_hash");
+  const type = formData.get("type") as EmailOtpType | null;
+  const next = (formData.get("next") as string | null) ?? "/";
+
+  if (typeof token_hash === "string" && token_hash && type) {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
+    if (!error) redirect(next);
+  }
+
+  redirect("/login?error=invalid-link");
 }
