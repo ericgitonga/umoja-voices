@@ -17,6 +17,14 @@ export default async function AboutPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mb-6 flex justify-center">
+        <img
+          src="/logo-full.png"
+          alt="Umoja Voices — One Voice. Many Hearts. One Purpose."
+          className="w-full max-w-sm"
+        />
+      </div>
+
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-ink">About Umoja Voices</h1>
         {isAdmin && (
@@ -30,7 +38,7 @@ export default async function AboutPage() {
         {blocks.map((block) =>
           block.kind === "section" ? (
             <section key={block.id}>
-              {block.title && <h2 className="mb-2 text-lg font-semibold text-ink">{block.title}</h2>}
+              {block.title && <h2 className="mb-2 text-xl font-bold text-ink">{block.title}</h2>}
               <Expandable collapsedHeight={120}>
                 <LinkifiedText text={block.body} />
               </Expandable>

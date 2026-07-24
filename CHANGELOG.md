@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.45.0] - 2026-07-24
+
+### Changed
+
+- **About page section headings are bolder and slightly larger** (#97): `font-semibold` →
+  `font-bold`, `text-lg` → `text-xl`, for clearer visual separation from body text. Chosen after
+  comparing against a weight-only variant with the app owner.
+- **Full Umoja Voices logo added to the top of the About page** (#97): a new transparent-background
+  `public/logo-full.png`, cropped from the app owner's supplied source image and processed with the
+  same color-to-alpha decontamination technique used for the navbar's icon crop at v0.42.0 (avoids
+  the light-halo artifact naive white-strip leaves around anti-aliased edges) — safe against the
+  page's light cream background, unlike the navbar's dark background which is why only the
+  icon-only crop is used there.
+
 ## [0.44.0] - 2026-07-24
 
 ### Fixed
