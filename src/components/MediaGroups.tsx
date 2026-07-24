@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import MediaEmbed from "@/components/MediaEmbed";
 import RemoveMediaButton from "@/components/RemoveMediaButton";
+import type { Pausable, PlayableHandle } from "@/lib/playable";
 import {
   SONG_PART_OPTIONS,
   SONG_PART_LABEL_TEXT,
@@ -27,13 +28,13 @@ type Group = { part: SongPartOption; label: string; media: MediaItem[] };
 // distinct from the "All" filter button below, which means "no filter".
 const FILTER_LABEL = (part: SongPartOption) => (part === "All" ? "SATB" : part);
 
-// Only native <audio>/<video> can participate in Play All's auto-advance
-// sequence or Loop's whole-sequence restart (#84) -- iframe-embedded kinds
-// (youtube/drive/soundcloud) can't be hooked into cross-origin (#41; full
-// embed-API support tracked separately in #86), so they're skipped in the
-// sequence rather than blocking the rest of it.
+// audio/video/youtube/soundcloud can all participate in pause-coordination
+// (#41) and Play All's auto-advance / Loop's whole-sequence restart (#84) --
+// youtube/soundcloud via their public player APIs (#86). drive has no
+// public playback-control API and stays permanently excluded, skipped in
+// the sequence rather than blocking the rest of it.
 function isPlayableKind(kind: string): boolean {
-  return kind === "audio" || kind === "video";
+  return kind === "audio" || kind === "video" || kind === "youtube" || kind === "soundcloud";
 }
 
 export default function MediaGroups({
@@ -48,24 +49,25 @@ export default function MediaGroups({
   const [activeFilter, setActiveFilter] = useState<SongPartOption | null>(null);
   const [loopEnabled, setLoopEnabled] = useState(false);
   const [playAllEnabled, setPlayAllEnabled] = useState(false);
-  // #41: only one <audio>/<video> element plays at a time across the whole
-  // media list — starting a new one pauses whichever was previously
-  // playing. Iframe-embedded players (YouTube/Drive/SoundCloud) can't be
-  // programmatically paused cross-origin, so they're a known exception.
-  const nowPlayingRef = useRef<HTMLMediaElement | null>(null);
-  function handlePlay(el: HTMLMediaElement) {
-    if (nowPlayingRef.current && nowPlayingRef.current !== el) {
+  // #41: only one playable item plays at a time across the whole media
+  // list — starting a new one pauses whichever was previously playing.
+  // Native <audio>/<video> elements and youtube/soundcloud's player-API
+  // adapters (#86) all satisfy Pausable; drive stays a known exception (no
+  // public playback-control API).
+  const nowPlayingRef = useRef<Pausable | null>(null);
+  function handlePlay(handle: PlayableHandle) {
+    if (nowPlayingRef.current && nowPlayingRef.current !== handle) {
       nowPlayingRef.current.pause();
     }
-    nowPlayingRef.current = el;
+    nowPlayingRef.current = handle;
   }
 
-  // #84: every currently-mounted playable (audio/video) element, keyed by
-  // media id, so Play All's auto-advance and Loop's whole-sequence restart
-  // can call .play() on a specific one externally.
-  const mediaElementsRef = useRef<Map<string, HTMLMediaElement>>(new Map());
-  function registerMediaElement(id: string, el: HTMLMediaElement | null) {
-    if (el) mediaElementsRef.current.set(id, el);
+  // #84: every currently-mounted playable item, keyed by media id, so Play
+  // All's auto-advance and Loop's whole-sequence restart can call .play()
+  // on a specific one externally.
+  const mediaElementsRef = useRef<Map<string, PlayableHandle>>(new Map());
+  function registerMediaElement(id: string, handle: PlayableHandle | null) {
+    if (handle) mediaElementsRef.current.set(id, handle);
     else mediaElementsRef.current.delete(id);
   }
 
