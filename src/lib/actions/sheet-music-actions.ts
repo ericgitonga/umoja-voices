@@ -52,7 +52,7 @@ export async function addSheetMusic(
     data: {
       songId,
       label: clip(trimmedLabel, "label"),
-      fileUrl: trimmedUrl,
+      fileUrl: clip(trimmedUrl, "url"),
       sortOrder,
     },
   });

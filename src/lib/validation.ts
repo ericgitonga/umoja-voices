@@ -41,3 +41,13 @@ export function subsetOf<T extends string>(values: string[], allowed: readonly T
   const set = new Set<string>(allowed);
   return values.filter((v): v is T => set.has(v));
 }
+
+/**
+ * Guards a redirect target against open-redirect abuse — a `next` value is
+ * only ever a same-origin path we mint ourselves (e.g. `/accept-invite`),
+ * never a full URL. `//evil.com` is browser-interpreted as protocol-relative
+ * (still off-site) despite starting with `/`, so that's rejected too.
+ */
+export function safeRedirectPath(next: string, fallback: string): string {
+  return next.startsWith("/") && !next.startsWith("//") ? next : fallback;
+}

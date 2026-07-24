@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.47.1] - 2026-07-24
+
+### Security
+
+- **Full security audit refresh** (#45): the previous audit was pinned to v0.3.0, well before
+  the NextAuth→Supabase Auth migration, the Postgres migration, nonce-based CSP, the distributed
+  rate limiter, and environment isolation shipped. Found and fixed:
+  - **Open redirect via an unvalidated `next` param** in `confirmAuthLink` (`src/lib/actions/auth-actions.ts`),
+    introduced by the #112 invite-link rewrite — added `safeRedirectPath()` (`src/lib/validation.ts`)
+    to reject any redirect target that isn't a same-origin path.
+  - **Unclipped `fileUrl` field** in `addSheetMusic` (`src/lib/actions/sheet-music-actions.ts`) —
+    now goes through the same `clip()` length guard every other URL field uses.
+  - **Upgraded `next` 16.2.10 → 16.2.11** (non-breaking patch), closing 8 npm audit advisories
+    including a Turbopack middleware-bypass CVE (confirmed not exploitable here — this app has no
+    `i18n` config, the advisory's trigger condition) and cascading fixes to bundled `postcss`/`sharp`.
+  - **Added a `Strict-Transport-Security` header** (defense-in-depth; Vercel already terminates
+    TLS and redirects http→https at the edge).
+  - `extras/security.pdf` fully regenerated to reflect the current architecture.
+
 ## [0.47.0] - 2026-07-24
 
 ### Changed
