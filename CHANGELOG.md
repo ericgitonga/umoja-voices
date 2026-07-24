@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.46.0] - 2026-07-24
+
+### Changed
+
+- **"About" is now the first item in the signed-in nav bar** (#95): `src/components/Nav.tsx`'s
+  member-facing `LINKS` array reordered from Songs/Logistics/Links/About to
+  About/Songs/Logistics/Links, matching the order the logged-out `PublicNav` has always used.
+
 ## [0.45.0] - 2026-07-24
 
 ### Changed
