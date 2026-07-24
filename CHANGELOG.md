@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.47.0] - 2026-07-24
+
+### Changed
+
+- **Full Umoja Voices logo now shows on every page** (#120): moved the transparent logo banner
+  added to the About page at #97 up into `src/app/layout.tsx`, rendered once between `Nav` and
+  the page content so it appears consistently across every route — public and signed-in alike —
+  without duplicating markup per page. Removed the About page's own now-redundant copy to avoid
+  showing it twice there.
+
 ## [0.46.0] - 2026-07-24
 
 ### Changed

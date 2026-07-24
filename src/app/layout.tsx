@@ -34,6 +34,13 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Nav session={session} />
+        <div className="flex justify-center px-4 py-6">
+          <img
+            src="/logo-full.png"
+            alt="Umoja Voices — One Voice. Many Hearts. One Purpose."
+            className="w-full max-w-sm"
+          />
+        </div>
         <main className="flex-1">{children}</main>
         <Footer />
       </body>
