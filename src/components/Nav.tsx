@@ -24,7 +24,7 @@ function PublicNav({ pathname }: { pathname: string | null }) {
   return (
     <nav className="sticky top-0 z-50 flex items-center gap-2 bg-ink px-6 py-3 text-sm">
       <Link href="/about" className="mr-4 flex items-center gap-2 font-semibold text-white">
-        <span aria-hidden>&#9834;</span> Umoja Voices
+        <img src="/logo-icon.png" alt="" className="h-6 w-auto" /> Umoja Voices
       </Link>
       {PUBLIC_LINKS.map(({ href, label }) => {
         const active = pathname?.startsWith(href);
@@ -66,7 +66,7 @@ export default function Nav({ session }: { session: Session | null }) {
   return (
     <nav className="sticky top-0 z-50 flex items-center gap-2 bg-ink px-6 py-3 text-sm">
       <Link href="/songs" className="mr-4 flex items-center gap-2 font-semibold text-white">
-        <span aria-hidden>&#9834;</span> Umoja Voices
+        <img src="/logo-icon.png" alt="" className="h-6 w-auto" /> Umoja Voices
       </Link>
       {LINKS.map(({ href, label }) => {
         const active = pathname?.startsWith(href);
