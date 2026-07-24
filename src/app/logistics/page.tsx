@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
+import Expandable from "@/components/Expandable";
 
 // This page reads live, admin-editable data — never statically cache it.
 export const dynamic = "force-dynamic";
@@ -82,22 +83,24 @@ export default async function LogisticsPage() {
 
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold text-ink">Itinerary</h2>
-        <ul className="flex flex-col gap-2">
-          {trip.itineraryItems.map((item) => (
-            <li key={item.id} className="rounded-lg border border-ink/10 bg-white px-4 py-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-ink">{item.title}</span>
-                <span className="text-xs text-ink/50">
-                  {fmtDate(item.date)}
-                  {item.time ? ` · ${item.time}` : ""}
-                </span>
-              </div>
-              {item.location && <p className="text-sm text-ink/60">{item.location}</p>}
-              {item.notes && <p className="mt-1 text-sm text-ink/50">{item.notes}</p>}
-            </li>
-          ))}
-          {trip.itineraryItems.length === 0 && <p className="text-ink/50">No itinerary yet.</p>}
-        </ul>
+        <Expandable collapsedHeight={220}>
+          <ul className="flex flex-col gap-2">
+            {trip.itineraryItems.map((item) => (
+              <li key={item.id} className="rounded-lg border border-ink/10 bg-white px-4 py-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-ink">{item.title}</span>
+                  <span className="text-xs text-ink/50">
+                    {fmtDate(item.date)}
+                    {item.time ? ` · ${item.time}` : ""}
+                  </span>
+                </div>
+                {item.location && <p className="text-sm text-ink/60">{item.location}</p>}
+                {item.notes && <p className="mt-1 text-sm text-ink/50">{item.notes}</p>}
+              </li>
+            ))}
+            {trip.itineraryItems.length === 0 && <p className="text-ink/50">No itinerary yet.</p>}
+          </ul>
+        </Expandable>
       </section>
 
       <section className="mt-8">

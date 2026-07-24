@@ -1,6 +1,7 @@
 import Link from "next/link";
 import MediaEmbed from "@/components/MediaEmbed";
 import LinkifiedText from "@/components/LinkifiedText";
+import Expandable from "@/components/Expandable";
 import { getSession } from "@/lib/get-session";
 import { getOrderedAboutBlocks } from "@/lib/about-blocks";
 import type { MediaKind } from "@/lib/constants";
@@ -30,7 +31,9 @@ export default async function AboutPage() {
           block.kind === "section" ? (
             <section key={block.id}>
               {block.title && <h2 className="mb-2 text-lg font-semibold text-ink">{block.title}</h2>}
-              <LinkifiedText text={block.body} />
+              <Expandable collapsedHeight={120}>
+                <LinkifiedText text={block.body} />
+              </Expandable>
             </section>
           ) : (
             <section key={block.id}>
