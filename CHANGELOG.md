@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.43.0] - 2026-07-24
+
+### Fixed
+
+- **Invite/reset links pointed at `localhost:3000` on Preview deployments** (#116): `appBaseUrl()`
+  (`src/lib/email.ts`) only checked `APP_URL`/`NEXTAUTH_URL`, and `NEXTAUTH_URL` is only
+  configured for the Production Vercel environment — so any admin-generated invite/reset link
+  built on a Preview deployment was unusable by anyone but the developer's own machine. Now falls
+  back to Vercel's auto-injected `VERCEL_URL` (set on every deployment — Production, Preview, and
+  Development alike, to that deployment's own hostname) before the final localhost fallback, so
+  it resolves correctly with zero per-branch configuration. Found while manually verifying #112's
+  Preview deployment.
+
 ## [0.42.0] - 2026-07-24
 
 ### Changed
