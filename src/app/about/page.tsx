@@ -17,14 +17,6 @@ export default async function AboutPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="mb-6 flex justify-center">
-        <img
-          src="/logo-full.png"
-          alt="Umoja Voices — One Voice. Many Hearts. One Purpose."
-          className="w-full max-w-sm"
-        />
-      </div>
-
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-ink">About Umoja Voices</h1>
         {isAdmin && (
