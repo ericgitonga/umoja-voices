@@ -15,9 +15,16 @@ export function getResendClient(): Resend | null {
 
 /** Base URL for links inside emails/redirects. APP_URL is the canonical
  *  name; NEXTAUTH_URL is read as a fallback for environments that haven't
- *  been updated since the NextAuth-era env var of the same purpose. */
+ *  been updated since the NextAuth-era env var of the same purpose. Neither
+ *  is configured for Preview/Development (#116) — VERCEL_URL is Vercel's own
+ *  auto-injected per-deployment hostname (set on every environment,
+ *  Production included, with zero per-branch config needed), so it's the
+ *  next fallback before finally assuming local dev. */
 export function appBaseUrl(): string {
-  return process.env.APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  if (process.env.APP_URL) return process.env.APP_URL;
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
 }
 
 /** Branded HTML email shell — invite/password-reset now go through
