@@ -13,7 +13,10 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   added to the About page at #97 up into `src/app/layout.tsx`, rendered once between `Nav` and
   the page content so it appears consistently across every route — public and signed-in alike —
   without duplicating markup per page. Removed the About page's own now-redundant copy to avoid
-  showing it twice there.
+  showing it twice there. Re-cropped `public/logo-full.png` with an alpha-threshold bounding box
+  (the original crop's bbox included large near-invisible low-alpha regions from JPEG-compression
+  noise, inflating the canvas well past the visible mark) and reduced the layout's vertical
+  padding around it, per app-owner feedback that it initially looked too spread out.
 
 ## [0.46.0] - 2026-07-24
 
