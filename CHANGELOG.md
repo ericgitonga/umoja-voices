@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.48.0] - 2026-07-24
+
+### Added
+
+- **Playback coordination extended to YouTube/SoundCloud embeds** (#86): #41's "starting one
+  item pauses whichever was playing" and #84's Play All/Loop auto-advance sequence now cover
+  YouTube and SoundCloud iframe embeds, not just native audio/video. YouTube via a real
+  `YT.Player` instance (its IFrame Player API replaces the placeholder element with its own
+  iframe) and SoundCloud via `SC.Widget` attached to the existing player iframe — both APIs
+  loaded once per page via a singleton `document.createElement`-based script injection
+  (`src/lib/youtube-player.ts`/`soundcloud-widget.ts`), which works under the existing
+  nonce + `'strict-dynamic'` CSP (#17) with zero config changes, verified live against the
+  real APIs. `MediaGroups.tsx`'s coordination refs generalized from `HTMLMediaElement` to a
+  small `Pausable`/`PlayableHandle` interface (`src/lib/playable.ts`) that native elements
+  already satisfy structurally. Google Drive has no public playback-control API and stays
+  permanently excluded from both.
+
 ## [0.47.1] - 2026-07-24
 
 ### Security
