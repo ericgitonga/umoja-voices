@@ -2,9 +2,11 @@
 
 :root {
   --background: #f2ede3;
-  --foreground: #1c1917;
-  --color-ink: #1c1917;
-  --color-gold: #d6a52c;
+  --foreground: #211005;
+  --color-ink: #211005;
+  --color-gold: #bf7a15;
+  --color-olive: #625d25;
+  --color-rust: #a73f13;
   --color-cream: #f2ede3;
 }
 
@@ -13,13 +15,16 @@
   --color-foreground: var(--foreground);
   --color-ink: var(--color-ink);
   --color-gold: var(--color-gold);
+  --color-olive: var(--color-olive);
+  --color-rust: var(--color-rust);
   --color-cream: var(--color-cream);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 /* Umoja Voices commits to one brand look (dark navbar, warm cream page,
-   gold accents) rather than switching with the OS light/dark preference. */
+   gold/olive/rust accents pulled directly from the current logo, #110)
+   rather than switching with the OS light/dark preference. */
 
 body {
   background: var(--background);

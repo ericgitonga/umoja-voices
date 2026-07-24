@@ -85,7 +85,7 @@ export default async function SongDetailPage({
 
         <Link
           href={`/songs/${song.id}/sheet-music`}
-          className="rounded-lg border-l-4 border-ink/20 bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
+          className="rounded-lg border-l-4 border-rust bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
         >
           <p className="font-semibold text-ink">Sheet Music</p>
           <p className="text-sm text-ink/60">
@@ -97,7 +97,7 @@ export default async function SongDetailPage({
 
         <Link
           href={`/songs/${song.id}/lyrics`}
-          className="rounded-lg border-l-4 border-ink/20 bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
+          className="rounded-lg border-l-4 border-olive bg-white px-5 py-4 shadow-sm transition hover:shadow-md"
         >
           <p className="font-semibold text-ink">Lyrics</p>
           <p className="text-sm text-ink/60">
