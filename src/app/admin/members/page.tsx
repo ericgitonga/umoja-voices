@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import InviteForm from "./InviteForm";
-import MemberRow from "./MemberRow";
+import MembersList from "./MembersList";
 
 // This page reads live, admin-editable data — never statically cache it.
 export const dynamic = "force-dynamic";
@@ -14,18 +14,7 @@ export default async function AdminMembersPage() {
 
       <InviteForm />
 
-      <ul className="mt-8 flex flex-col gap-2">
-        {members.map((m) => (
-          <MemberRow
-            key={m.id}
-            id={m.id}
-            name={m.name}
-            email={m.email}
-            role={m.role}
-            status={m.status}
-          />
-        ))}
-      </ul>
+      <MembersList members={members} />
     </div>
   );
 }
