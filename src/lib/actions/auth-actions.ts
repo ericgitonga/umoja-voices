@@ -9,6 +9,7 @@ import { appBaseUrl } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/get-session";
 import { logActivity } from "@/lib/activity-log";
+import { safeRedirectPath } from "@/lib/validation";
 
 const LOGIN_WINDOW_MS = 15 * 60_000;
 const LOGIN_MAX_PER_EMAIL = 5; // per email+IP combo
@@ -137,7 +138,7 @@ export async function activateInvitedProfile(): Promise<{ error?: string }> {
 export async function confirmAuthLink(formData: FormData): Promise<void> {
   const token_hash = formData.get("token_hash");
   const type = formData.get("type") as EmailOtpType | null;
-  const next = (formData.get("next") as string | null) ?? "/";
+  const next = safeRedirectPath((formData.get("next") as string | null) ?? "/", "/");
 
   if (typeof token_hash === "string" && token_hash && type) {
     const supabase = await createClient();
