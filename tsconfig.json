@@ -30,5 +30,10 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    // Runs in ServiceWorkerGlobalScope, which conflicts with this project's
+    // "dom"-lib tsconfig — see the comment at the top of the file itself.
+    "src/app/sw.ts"
+  ]
 }

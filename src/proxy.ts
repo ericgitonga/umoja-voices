@@ -61,6 +61,14 @@ function buildCsp(nonce: string): string {
     // 'self' silently blocks <audio>/<video> tags with only a devtools CSP
     // violation to go on.
     `media-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL}`,
+    // Service worker registration (#124, RegisterServiceWorker.tsx) is a
+    // fetch checked against worker-src, which falls back to script-src if
+    // unset — but under 'strict-dynamic' that fallback ignores the 'self'
+    // host-source expression (there's no way to attach a nonce to a
+    // ServiceWorkerContainer.register() call the way there is for a
+    // <script> tag), silently blocking registration with only a devtools
+    // CSP violation to go on. An explicit worker-src sidesteps that.
+    "worker-src 'self'",
     `frame-src ${FRAME_SRC}`,
     "object-src 'none'",
     "base-uri 'self'",
