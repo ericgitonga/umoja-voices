@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import RegisterServiceWorker from "@/components/RegisterServiceWorker";
 import { getSession } from "@/lib/get-session";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <RegisterServiceWorker />
         <Nav session={session} />
         <div className="flex justify-center px-4 py-2">
           <img

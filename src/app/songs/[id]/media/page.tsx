@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import AddMediaForm from "@/components/AddMediaForm";
 import Breadcrumb from "@/components/Breadcrumb";
 import MediaGroups from "@/components/MediaGroups";
+import OfflineBanner from "@/components/OfflineBanner";
 import { SONG_PART_OPTIONS, SONG_PART_LABEL_TEXT } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +47,8 @@ export default async function SongMediaPage({ params }: { params: Promise<{ id: 
           { label: "Media" },
         ]}
       />
+
+      <OfflineBanner />
 
       <h1 className="mb-6 text-2xl font-semibold text-ink">{song.title} — Media</h1>
 

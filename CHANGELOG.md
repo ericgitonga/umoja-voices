@@ -5,6 +5,34 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.49.0] - 2026-07-25
+
+### Added
+
+- **PWA offline support for sheet music/lyrics while touring** (#124, follow-up to #46's
+  native-app spike): a web app manifest (`src/app/manifest.ts`, Next's native convention) plus a
+  Serwist service worker (`src/app/sw.ts`, built via `serwist.config.ts`'s "configurator mode" —
+  the alternative to `@serwist/next`'s default webpack-plugin integration, which doesn't run at
+  all under Turbopack, this repo's default bundler for both `next dev` and `next build`).
+  Network-first caching for the three song sub-pages that matter offline while travelling
+  (`lyrics`/`sheet-music`/`media` — always fetches fresh when online, matching
+  `@serwist/next`'s own `defaultCache` convention for page/RSC content, falling back to the
+  cached copy only on a genuine network failure; an initial stale-while-revalidate attempt
+  broke CI by serving pre-mutation cached content back to the same admin session that had just
+  changed it), and cache-first for the actual audio/video/PDF files served from Supabase
+  Storage. `sheet-music/page.tsx`'s raw cross-origin
+  `<a href target="_blank">` (uninterceptable by a service worker) replaced with
+  `SheetMusicViewer.tsx`, an in-page fetch+blob viewer. A new `OfflineBanner.tsx` surfaces to the
+  chorister explicitly when they're viewing a cached copy while offline, since song content is
+  admin-editable and a cached copy can go stale until the device reconnects. `RegisterServiceWorker.tsx`
+  registers the worker client-side (configurator mode has no auto-injection, unlike the
+  webpack-plugin mode); `src/proxy.ts`'s CSP gained an explicit `worker-src 'self'` (registration
+  is a fetch checked against that directive, which silently fails under `'strict-dynamic'`'s
+  script-src fallback with no way to attach a nonce to it). Verified live against a real
+  production build: manifest linked, service worker installs/activates/controls the page, the
+  lyrics page genuinely renders from cache after going offline and reloading, and the banner
+  shows/hides correctly.
+
 ## [0.48.0] - 2026-07-24
 
 ### Added

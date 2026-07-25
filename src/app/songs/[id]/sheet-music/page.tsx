@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import RemoveSheetMusicButton from "@/components/RemoveSheetMusicButton";
 import AddSheetMusicForm from "@/components/AddSheetMusicForm";
 import Breadcrumb from "@/components/Breadcrumb";
+import SheetMusicViewer from "@/components/SheetMusicViewer";
+import OfflineBanner from "@/components/OfflineBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +31,8 @@ export default async function SongSheetMusicPage({ params }: { params: Promise<{
         ]}
       />
 
+      <OfflineBanner />
+
       <h1 className="mb-6 text-2xl font-semibold text-ink">{song.title} — Sheet Music</h1>
 
       <div className="flex flex-col gap-3">
@@ -37,14 +41,7 @@ export default async function SongSheetMusicPage({ params }: { params: Promise<{
             key={s.id}
             className="flex items-center justify-between rounded-lg border border-ink/10 bg-white p-3"
           >
-            <a
-              href={s.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-ink hover:underline"
-            >
-              {s.label}
-            </a>
+            <SheetMusicViewer fileUrl={s.fileUrl} label={s.label} />
             {isAdmin && <RemoveSheetMusicButton songId={song.id} sheetMusicId={s.id} />}
           </div>
         ))}

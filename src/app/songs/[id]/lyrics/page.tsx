@@ -4,6 +4,7 @@ import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import LyricsViewer from "@/components/LyricsViewer";
 import Breadcrumb from "@/components/Breadcrumb";
+import OfflineBanner from "@/components/OfflineBanner";
 import { parseVoiceTags } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ export default async function SongLyricsPage({ params }: { params: Promise<{ id:
           { label: "Lyrics" },
         ]}
       />
+
+      <OfflineBanner />
 
       <div className="mb-6 flex items-start justify-between">
         <div>
