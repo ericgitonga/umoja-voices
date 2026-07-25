@@ -34,6 +34,17 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   them, keeping the profile name and Sign out inline and visible rather than hidden behind any
   menu. The mobile panel (below `lg`) is untouched — it still lists every item flatly, admin
   extras included, exactly as #127 left it.
+- **Second follow-up round on #129**: the nav's desktop row still spanned the full viewport width
+  (only its left padding matched the content column, not its overall width) — the app owner
+  wanted it constrained to the same width as the Songs page's own central column
+  (`max-w-5xl`, 1024px — the widest container this app uses, since the Songs grid needs more room
+  than the `max-w-2xl` most other pages use). Applied `mx-auto max-w-5xl` to the nav's content row
+  (both the desktop row and the mobile panel, for consistency), so the nav's left *and* right
+  edges now line up with the page content below it rather than just the left edge. Verified this
+  doesn't reopen the #129-first-pass bug (nav content squeezed too tight) even right at the `lg`
+  breakpoint's boundary, where the viewport width and the `max-w-5xl` constraint are nearly
+  identical (1024px vs. 1040px tested) — the admin case (base links + `AdminMenu` dropdown +
+  profile/sign-out) still fits with room to spare.
 
 ## [0.49.1] - 2026-07-25
 

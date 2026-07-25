@@ -173,7 +173,7 @@ function PublicNav({ pathname }: { pathname: string | null }) {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-ink/10 bg-cream text-sm">
-      <div className="flex items-center gap-2 px-4 py-3">
+      <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3">
         <Logo href="/about" />
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:gap-2">
           {PUBLIC_LINKS.map(({ href, label }) => (
@@ -194,7 +194,7 @@ function PublicNav({ pathname }: { pathname: string | null }) {
         </button>
       </div>
       {menuOpen && (
-        <div className="flex flex-col gap-1 border-t border-ink/10 px-4 py-3 lg:hidden">
+        <div className="mx-auto flex max-w-5xl flex-col gap-1 border-t border-ink/10 px-4 py-3 lg:hidden">
           {PUBLIC_LINKS.map(({ href, label }) => (
             <NavLink key={href} href={href} label={label} active={!!pathname?.startsWith(href)} onClick={close} />
           ))}
@@ -233,7 +233,7 @@ export default function Nav({ session }: { session: Session | null }) {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-ink/10 bg-cream text-sm">
-      <div className="flex items-center gap-2 px-4 py-3">
+      <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3">
         <Logo href="/songs" />
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:gap-2">
           {LINKS.map(({ href, label }) => (
@@ -266,7 +266,7 @@ export default function Nav({ session }: { session: Session | null }) {
         </button>
       </div>
       {menuOpen && (
-        <div className="flex flex-col gap-1 border-t border-ink/10 px-4 py-3 lg:hidden">
+        <div className="mx-auto flex max-w-5xl flex-col gap-1 border-t border-ink/10 px-4 py-3 lg:hidden">
           {mobileLinks.map(({ href, label }) => (
             <NavLink
               key={href}
