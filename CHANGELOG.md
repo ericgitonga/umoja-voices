@@ -14,9 +14,13 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   Serwist service worker (`src/app/sw.ts`, built via `serwist.config.ts`'s "configurator mode" —
   the alternative to `@serwist/next`'s default webpack-plugin integration, which doesn't run at
   all under Turbopack, this repo's default bundler for both `next dev` and `next build`).
-  Stale-while-revalidate caching for the three song sub-pages that matter offline while
-  travelling (`lyrics`/`sheet-music`/`media`), and cache-first for the actual audio/video/PDF
-  files served from Supabase Storage. `sheet-music/page.tsx`'s raw cross-origin
+  Network-first caching for the three song sub-pages that matter offline while travelling
+  (`lyrics`/`sheet-music`/`media` — always fetches fresh when online, matching
+  `@serwist/next`'s own `defaultCache` convention for page/RSC content, falling back to the
+  cached copy only on a genuine network failure; an initial stale-while-revalidate attempt
+  broke CI by serving pre-mutation cached content back to the same admin session that had just
+  changed it), and cache-first for the actual audio/video/PDF files served from Supabase
+  Storage. `sheet-music/page.tsx`'s raw cross-origin
   `<a href target="_blank">` (uninterceptable by a service worker) replaced with
   `SheetMusicViewer.tsx`, an in-page fetch+blob viewer. A new `OfflineBanner.tsx` surfaces to the
   chorister explicitly when they're viewing a cached copy while offline, since song content is
