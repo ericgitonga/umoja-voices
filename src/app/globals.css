@@ -30,4 +30,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* #127: defense-in-depth against any single element overflowing a narrow
+     viewport's width (the root cause found and fixed was Nav.tsx's nav row,
+     see that file) -- this guarantees a future one can never again drag the
+     whole page into horizontal scroll on a phone. */
+  overflow-x: hidden;
 }

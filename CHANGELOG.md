@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.49.1] - 2026-07-25
+
+### Fixed
+
+- **Mobile nav overflow** (#127): `Nav.tsx`'s single unwrapped flex row (up to 7 links for an
+  admin, plus the logo/wordmark and profile/sign-out) was wider than any phone viewport in
+  either orientation, and nothing constrained it — the whole page inherited horizontal scroll
+  as a result, cutting off content on both edges regardless of what page was open. Below a new
+  `lg` (1024px) breakpoint, the sticky bar now shows only the logo and a hamburger toggle;
+  everything else moves into a stacked panel that closes automatically on navigation (adjusting
+  state during render off the changing route, not via a `useEffect`, since `Nav` never unmounts
+  between client-side navigations). Above `lg`, the row renders exactly as before — verified via
+  Playwright at four viewport sizes (matching the issue's own screenshot dimensions in both
+  orientations, plus a small-phone case) confirming zero horizontal overflow (`scrollWidth <=
+  clientWidth`) at every one, and confirmed live against a real production build. `globals.css`
+  also gained a defensive `overflow-x: hidden` on `body` as a backstop against any future
+  single-element overflow, independent of the nav fix itself.
+
 ## [0.49.0] - 2026-07-25
 
 ### Added
