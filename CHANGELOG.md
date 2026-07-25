@@ -5,6 +5,47 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.50.0] - 2026-07-25
+
+### Changed
+
+- **Navbar redesign, inspired by akili-ai.com** (#129, app owner reference): the nav now shares
+  the page's own cream background instead of a dark `bg-ink` bar, with link/text colors switched
+  from white/gray-300 to ink-toned equivalents for contrast on the lighter background. The
+  separate large `logo-full.png` banner that used to render centered below the nav on every page
+  (`src/app/layout.tsx`) is gone — there is now exactly one logo on the site, a shrunk instance of
+  the same full logo+wordmark image (with the tagline baked into the graphic itself) sitting at
+  the left edge of the nav bar, sharing the same left padding as the page's own content column so
+  the two line up. First pass over-applied a `max-w-2xl` (672px) constraint to the nav's *entire*
+  content row (not just to keep the logo's left edge aligned with the content column) — that's
+  far too narrow to hold an admin's 7 links plus the logo and profile/sign-out, so the row got
+  flex-squeezed until the logo effectively vanished and "Sign out"/the profile name wrapped onto
+  two lines; caught before shipping via a real screenshot at desktop width, not just the mobile
+  viewports #127 already covered. Fixed by dropping the width constraint from the nav row itself
+  (keeping only the shared padding) and adding `shrink-0` to the logo as a backstop against the
+  same class of bug recurring. #127's mobile hamburger/collapse behavior is unchanged, just
+  recolored.
+- **Follow-up round on #129**, after the app owner reviewed the first pass: the logo is
+  noticeably larger (`h-8` → `h-12`) so the tagline baked into the graphic reads clearly, not
+  just the wordmark. The admin-only desktop nav (7 links total) no longer collapses to a
+  hamburger at any width, nor stays flatly inline with everything else — the base links
+  (About/Songs/Logistics/Links) stay always-inline exactly like the chorister view, and just the
+  three admin-only extras (Members/Storage/Activity) move into a small "Admin ▾" dropdown next to
+  them, keeping the profile name and Sign out inline and visible rather than hidden behind any
+  menu. The mobile panel (below `lg`) is untouched — it still lists every item flatly, admin
+  extras included, exactly as #127 left it.
+- **Second follow-up round on #129**: the nav's desktop row still spanned the full viewport width
+  (only its left padding matched the content column, not its overall width) — the app owner
+  wanted it constrained to the same width as the Songs page's own central column
+  (`max-w-5xl`, 1024px — the widest container this app uses, since the Songs grid needs more room
+  than the `max-w-2xl` most other pages use). Applied `mx-auto max-w-5xl` to the nav's content row
+  (both the desktop row and the mobile panel, for consistency), so the nav's left *and* right
+  edges now line up with the page content below it rather than just the left edge. Verified this
+  doesn't reopen the #129-first-pass bug (nav content squeezed too tight) even right at the `lg`
+  breakpoint's boundary, where the viewport width and the `max-w-5xl` constraint are nearly
+  identical (1024px vs. 1040px tested) — the admin case (base links + `AdminMenu` dropdown +
+  profile/sign-out) still fits with room to spare.
+
 ## [0.49.1] - 2026-07-25
 
 ### Fixed
