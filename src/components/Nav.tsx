@@ -13,6 +13,12 @@ const LINKS = [
   { href: "/links", label: "Links" },
 ];
 
+const ADMIN_LINKS = [
+  { href: "/admin/members", label: "Members" },
+  { href: "/admin/storage", label: "Storage" },
+  { href: "/admin/activity", label: "Activity" },
+];
+
 // Shown instead of the full member nav for anonymous visitors — /about and
 // /links are public by design (#43), so logged-out visitors need a way to
 // find them rather than seeing no nav at all.
@@ -24,32 +30,33 @@ const PUBLIC_LINKS = [
 // #129: the logo shown here is the ONE logo on the site (akili-ai.com
 // reference) -- layout.tsx used to also render a large standalone
 // logo-full.png banner below the nav on every page; that's gone, and this
-// shrunk instance carries the full logo+wordmark (including the tagline
-// baked into the graphic itself) in its place.
+// larger instance carries the full logo+wordmark (including the tagline
+// baked into the graphic itself, kept legible at this size) in its place.
 function Logo({ href }: { href: string }) {
   return (
     <Link href={href} className="mr-4 flex shrink-0 items-center">
       <img
         src="/logo-full.png"
         alt="Umoja Voices — One Voice. Many Hearts. One Purpose."
-        className="h-8 w-auto shrink-0"
+        className="h-12 w-auto shrink-0"
       />
     </Link>
   );
 }
 
-// Closes the mobile nav panel whenever the route changes -- adjusting state
-// in response to a changing prop during render (React's documented pattern
-// for this, see "Adjusting some state when a prop changes"), not inside a
+// Toggle state that resets whenever the route changes -- adjusting state in
+// response to a changing prop during render (React's documented pattern for
+// this, see "Adjusting some state when a prop changes"), not inside a
 // useEffect, since Nav never unmounts between client-side navigations.
-function useMobileMenu(pathname: string | null) {
-  const [menuOpen, setMenuOpen] = useState(false);
+// Shared by the mobile panel and the desktop admin dropdown below.
+function useToggle(pathname: string | null) {
+  const [open, setOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
   if (pathname !== prevPathname) {
     setPrevPathname(pathname);
-    setMenuOpen(false);
+    setOpen(false);
   }
-  return { menuOpen, toggle: () => setMenuOpen((open) => !open), close: () => setMenuOpen(false) };
+  return [open, setOpen] as const;
 }
 
 // #127: below `lg`, the full set of nav items (up to 7 for an admin, plus
@@ -73,6 +80,14 @@ function MenuIcon({ open }: { open: boolean }) {
       className="shrink-0"
     >
       {open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M6 9l6 6 6-6" />
     </svg>
   );
 }
@@ -101,8 +116,60 @@ function NavLink({
   );
 }
 
+// #129 (follow-up): the base LINKS (About/Songs/Logistics/Links) always fit
+// inline at `lg` regardless of role, so only the admin-only extras
+// (Members/Storage/Activity) need to make way -- tucked behind this small
+// dropdown instead of collapsing the *entire* desktop nav to a hamburger
+// for admins. Desktop-only; the mobile panel below `lg` still lists these
+// three flatly alongside everything else, unchanged from #127.
+function AdminMenu({ pathname }: { pathname: string | null }) {
+  const [open, setOpen] = useToggle(pathname);
+  const active = ADMIN_LINKS.some(({ href }) => pathname?.startsWith(href));
+
+  return (
+    <div
+      className="relative"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={
+          active
+            ? "flex items-center gap-1 rounded-full bg-ink/10 px-3 py-1.5 text-ink"
+            : "flex items-center gap-1 px-3 py-1.5 text-ink/60 hover:text-ink"
+        }
+        aria-expanded={open}
+      >
+        Admin <ChevronIcon />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-10 mt-1 flex min-w-32 flex-col rounded-lg border border-ink/10 bg-cream py-1 shadow-md">
+          {ADMIN_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setOpen(false)}
+              className={
+                pathname?.startsWith(href)
+                  ? "bg-ink/10 px-4 py-2 text-ink"
+                  : "px-4 py-2 text-ink/60 hover:bg-ink/5 hover:text-ink"
+              }
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PublicNav({ pathname }: { pathname: string | null }) {
-  const { menuOpen, toggle, close } = useMobileMenu(pathname);
+  const [menuOpen, setMenuOpen] = useToggle(pathname);
+  const close = () => setMenuOpen(false);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-ink/10 bg-cream text-sm">
@@ -118,7 +185,7 @@ function PublicNav({ pathname }: { pathname: string | null }) {
         </div>
         <button
           type="button"
-          onClick={toggle}
+          onClick={() => setMenuOpen((o) => !o)}
           className="ml-auto text-ink/60 hover:text-ink lg:hidden"
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
@@ -143,7 +210,8 @@ function PublicNav({ pathname }: { pathname: string | null }) {
 export default function Nav({ session }: { session: Session | null }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { menuOpen, toggle, close } = useMobileMenu(pathname);
+  const [menuOpen, setMenuOpen] = useToggle(pathname);
+  const close = () => setMenuOpen(false);
 
   if (!session) return <PublicNav pathname={pathname} />;
 
@@ -157,23 +225,18 @@ export default function Nav({ session }: { session: Session | null }) {
     router.refresh();
   }
 
-  const navLinks = [
-    ...LINKS,
-    ...(isAdmin
-      ? [
-          { href: "/admin/members", label: "Members" },
-          { href: "/admin/storage", label: "Storage" },
-          { href: "/admin/activity", label: "Activity" },
-        ]
-      : []),
-  ];
+  // Mobile panel (below `lg`) lists every item flatly, admin extras included
+  // -- unchanged from #127. The desktop row (`lg` and up) only ever shows
+  // the base links here; admin extras render via <AdminMenu> instead (see
+  // its own comment above).
+  const mobileLinks = [...LINKS, ...(isAdmin ? ADMIN_LINKS : [])];
 
   return (
     <nav className="sticky top-0 z-50 border-b border-ink/10 bg-cream text-sm">
       <div className="flex items-center gap-2 px-4 py-3">
         <Logo href="/songs" />
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:gap-2">
-          {navLinks.map(({ href, label }) => (
+          {LINKS.map(({ href, label }) => (
             <NavLink
               key={href}
               href={href}
@@ -182,6 +245,7 @@ export default function Nav({ session }: { session: Session | null }) {
               onClick={close}
             />
           ))}
+          {isAdmin && <AdminMenu pathname={pathname} />}
           <div className="ml-auto flex items-center gap-4">
             <Link href="/profile" className="text-ink/60 hover:text-ink">
               {session.user.name}
@@ -193,7 +257,7 @@ export default function Nav({ session }: { session: Session | null }) {
         </div>
         <button
           type="button"
-          onClick={toggle}
+          onClick={() => setMenuOpen((o) => !o)}
           className="ml-auto text-ink/60 hover:text-ink lg:hidden"
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
@@ -203,7 +267,7 @@ export default function Nav({ session }: { session: Session | null }) {
       </div>
       {menuOpen && (
         <div className="flex flex-col gap-1 border-t border-ink/10 px-4 py-3 lg:hidden">
-          {navLinks.map(({ href, label }) => (
+          {mobileLinks.map(({ href, label }) => (
             <NavLink
               key={href}
               href={href}

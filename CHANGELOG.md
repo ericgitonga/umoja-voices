@@ -25,6 +25,15 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   (keeping only the shared padding) and adding `shrink-0` to the logo as a backstop against the
   same class of bug recurring. #127's mobile hamburger/collapse behavior is unchanged, just
   recolored.
+- **Follow-up round on #129**, after the app owner reviewed the first pass: the logo is
+  noticeably larger (`h-8` → `h-12`) so the tagline baked into the graphic reads clearly, not
+  just the wordmark. The admin-only desktop nav (7 links total) no longer collapses to a
+  hamburger at any width, nor stays flatly inline with everything else — the base links
+  (About/Songs/Logistics/Links) stay always-inline exactly like the chorister view, and just the
+  three admin-only extras (Members/Storage/Activity) move into a small "Admin ▾" dropdown next to
+  them, keeping the profile name and Sign out inline and visible rather than hidden behind any
+  menu. The mobile panel (below `lg`) is untouched — it still lists every item flatly, admin
+  extras included, exactly as #127 left it.
 
 ## [0.49.1] - 2026-07-25
 
