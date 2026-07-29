@@ -5,6 +5,26 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.50.1] - 2026-07-29
+
+### Security
+
+- Enabled Row Level Security on all 16 public-schema tables, closing a
+  CRITICAL Supabase Security Advisor finding (`rls_disabled_in_public`):
+  with RLS off, anyone with the project URL and anon key could read,
+  write, or delete all data via the auto-generated PostgREST API,
+  bypassing the app's own auth/authorization entirely — confirmed live by
+  hitting `/rest/v1/User` with the anon key and getting real rows back.
+  No policies were added because none are needed: this app never queries
+  these tables via the Supabase JS client (`.from(...)`) — only Storage
+  buckets and `auth.*` — so Prisma (which connects via a privileged
+  Postgres role that bypasses RLS) remains the sole access path, with zero
+  functional impact from this change. Applied directly to production
+  first (a live, actively-exploitable hole), then landed here as a proper
+  migration for migration-history consistency. (closes #131)
+
+tag: `v0.50.1`
+
 ## [0.50.0] - 2026-07-25
 
 ### Changed
