@@ -17,6 +17,7 @@ import type { ParsedLyricSection } from "@/lib/lyrics-parser";
 import type { UploadTicket } from "@/lib/media-constants";
 import { verifyUploadedAudioFile, isOwnAudioUrl } from "@/lib/storage";
 import { createAnyMediaUploadTicket, isOwnAnyMediaUrl, deleteAnyMediaFile } from "@/lib/media-dispatch";
+import { isOwnSheetMusicUrl, deleteSheetMusicFile } from "@/lib/sheet-music-storage";
 import { logActivity } from "@/lib/activity-log";
 
 /**
@@ -242,7 +243,26 @@ export async function updateSongFull(
 
 export async function deleteSong(songId: string) {
   const session = await requireAdmin();
+
+  // Postgres cascades the SongSection/SongMedia/SongSheetMusic rows on
+  // delete (schema's onDelete: Cascade), but that leaves their Storage
+  // objects behind forever — fetch every URL first so they can be cleaned
+  // up after the row delete succeeds, the same pattern updateSongFull uses
+  // for media dropped from an edit.
+  const mediaUrls = (
+    await prisma.songMedia.findMany({ where: { section: { songId } }, select: { mediaUrl: true } })
+  ).map((m) => m.mediaUrl);
+  const sheetMusicUrls = (
+    await prisma.songSheetMusic.findMany({ where: { songId }, select: { fileUrl: true } })
+  ).map((s) => s.fileUrl);
+
   const song = await prisma.song.delete({ where: { id: songId } });
+
+  await Promise.all([
+    ...mediaUrls.filter(isOwnAnyMediaUrl).map((url) => deleteAnyMediaFile(url)),
+    ...sheetMusicUrls.filter(isOwnSheetMusicUrl).map((url) => deleteSheetMusicFile(url)),
+  ]);
+
   await logActivity(`${session.user.name} <${session.user.email}>`, "song_delete", song.title, {
     type: "Song",
     label: song.title,

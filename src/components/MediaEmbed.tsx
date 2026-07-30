@@ -199,6 +199,7 @@ export default function MediaEmbed({
           ref={mediaRef}
           controls
           loop={loop}
+          preload="none"
           className="w-full"
           onPlay={(e) => onPlay?.(e.currentTarget)}
           onEnded={(e) => onEnded?.(e.currentTarget)}
@@ -212,6 +213,7 @@ export default function MediaEmbed({
           ref={mediaRef}
           controls
           loop={loop}
+          preload="none"
           className="w-full rounded"
           src={url}
           onPlay={(e) => onPlay?.(e.currentTarget)}

@@ -61,7 +61,31 @@ jobs:
           pip install playwright
           playwright install --with-deps chromium
 
+      - name: Compute today's UTC date
+        id: date
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      # test_video_upload.py uploads/plays/deletes a real ~11MB file against
+      # the hosted dev Supabase project (#52) -- disproportionate egress cost
+      # to pay on every push to an active PR, since the proxy body-size
+      # regression it guards (#58) doesn't change from run to run. A daily
+      # marker, keyed by UTC date and restored via cache, lets it run once
+      # per calendar day and skip on every other trigger that same day; every
+      # other spec is unaffected and still runs on every trigger.
+      - name: Restore today's video-upload-test marker
+        id: video-marker
+        uses: actions/cache@v4
+        with:
+          path: .ci-cache/video-upload-ran
+          key: video-upload-e2e-${{ steps.date.outputs.date }}
+
+      - name: Create today's video-upload-test marker
+        if: steps.video-marker.outputs.cache-hit != 'true'
+        run: mkdir -p .ci-cache && touch .ci-cache/video-upload-ran
+
       - name: Run E2E suite
+        env:
+          E2E_SKIP_MODULES: ${{ steps.video-marker.outputs.cache-hit == 'true' && 'test_video_upload' || '' }}
         run: python e2e/run.py
 
       - name: Print server log
