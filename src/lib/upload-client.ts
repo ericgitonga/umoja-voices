@@ -39,7 +39,10 @@ export function uploadFileDirectly(
     url.searchParams.set("token", ticket.token);
 
     const body = new FormData();
-    body.append("cacheControl", "3600");
+    // Files are stored under crypto.randomUUID() paths that are never
+    // overwritten, so a long TTL is safe — the previous 1-hour value forced
+    // needless re-fetches from Storage's origin/CDN for content that never changes.
+    body.append("cacheControl", "31536000");
     body.append("", file);
 
     const xhr = new XMLHttpRequest();
