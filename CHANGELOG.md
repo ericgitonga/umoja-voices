@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.51.0] - 2026-08-03
+
+### Added
+
+- Added `@vercel/analytics` and `@vercel/speed-insights` to the root layout,
+  feeding the cross-project `vercel-metrics` data pipeline. (closes #134)
+
 ## [0.50.1] - 2026-07-29
 
 ### Security
