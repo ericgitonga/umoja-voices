@@ -29,9 +29,9 @@ Preview-environment SUPABASE_SECRET_KEY had been stored as a Vercel
 can never read back — it silently wrote the literal string "[SENSITIVE]"
 into .env.local, so every upload failed auth instantly with "Invalid
 Compact JWS." The failure was invisible because _wait_for_outcome() below
-didn't recognize that error text as a terminal state, so it just polled
+didn't recognise that error text as a terminal state, so it just polled
 for the full timeout every time. Once the key was fixed (re-added as
-non-sensitive) and _wait_for_outcome() was taught to recognize any inline
+non-sensitive) and _wait_for_outcome() was taught to recognise any inline
 form error, a real successful upload measured ~3s in CI end to end.
 """
 

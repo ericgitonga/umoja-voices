@@ -71,12 +71,12 @@ export const VOICE_TAG_LABEL: Record<VoiceTag, string> = {
 };
 
 /**
- * Pastel voice-part color tokens (#40): S-red, A-green, T-yellow, B-blue,
+ * Pastel voice-part colour tokens (#40): S-red, A-green, T-yellow, B-blue,
  * SATB/All-orange. `pill` is the low-emphasis default; `solid` is for a
  * badge's active/selected state; `border` is for a section's left-border bar
  * (`border-l-4 border-*`, matching the card style already used elsewhere in
  * the app). Reused by every voice-part badge/tag/section render site instead
- * of each rolling its own gray `bg-ink/*` pill.
+ * of each rolling its own grey `bg-ink/*` pill.
  */
 export const VOICE_TAG_COLOR: Record<VoiceTag, { pill: string; solid: string; border: string }> = {
   S: { pill: "bg-red-100 text-red-700", solid: "bg-red-500 text-white", border: "border-red-400" },

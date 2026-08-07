@@ -115,7 +115,7 @@ export async function createAudioUploadTicket(
  * upload happens (#63). Deletes the object and returns the same error as
  * before on a mismatch, so a mislabeled file never lingers in Storage.
  * No-ops (returns no error) for anything that isn't one of our own audio
- * files with a recognized extension — nothing for this check to do there.
+ * files with a recognised extension — nothing for this check to do there.
  */
 export async function verifyUploadedAudioFile(url: string): Promise<{ error?: string }> {
   const path = storagePathFromUrl(url);

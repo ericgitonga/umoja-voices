@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
 
 // Next's native manifest route (App Router convention) — served at /manifest.webmanifest.
-// Colors mirror src/app/globals.css: theme_color matches Nav.tsx's bg-ink navbar, background_color
-// matches the page's cream background (the splash-screen color shown before first paint).
+// Colours mirror src/app/globals.css: theme_color matches Nav.tsx's bg-ink navbar, background_color
+// matches the page's cream background (the splash-screen colour shown before first paint).
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Umoja Voices",

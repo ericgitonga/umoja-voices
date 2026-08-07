@@ -26,7 +26,7 @@ different isolation strategies are used depending on what each test needs:
   regardless of what content exists elsewhere.
 
 Fake same-origin .mp3 URLs (nonexistent paths on BASE_URL itself) are used
-deliberately: detectMediaKind() only needs the URL to end in a recognized
+deliberately: detectMediaKind() only needs the URL to end in a recognised
 audio extension to render a real <audio> element -- the underlying
 resource never needs to actually load or even exist. Same-origin matters:
 this suite may run in network-sandboxed environments where a real external
@@ -36,7 +36,7 @@ starts -- awaiting it (directly or via Locator.evaluate's own promise
 handling) can hang far longer than any reasonable timeout if that fetch
 never settles. `.play()` is therefore called fire-and-forget below (its
 promise deliberately not returned/awaited): the native "play" event this
-behavior depends on fires synchronously as part of the play() algorithm,
+behaviour depends on fires synchronously as part of the play() algorithm,
 before the browser even knows whether the source is playable. Simulating
 an item finishing (`dispatchEvent(new Event("ended"))`) is a plain
 synchronous DOM event, not a Promise, so it needs no such care. Iframe-

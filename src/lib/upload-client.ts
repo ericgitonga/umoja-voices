@@ -62,7 +62,7 @@ export function uploadFileDirectly(
     };
     // XHR's error/timeout/abort events carry no message text (unlike a
     // rejected fetch promise) -- synthesize one describeUploadFailure
-    // already recognizes as network-caused, so the same actionable copy
+    // already recognises as network-caused, so the same actionable copy
     // (#58) still shows instead of falling through to the generic message.
     xhr.onerror = () => resolve({ error: describeUploadFailure(new Error("Failed to fetch")) });
     xhr.ontimeout = () => resolve({ error: describeUploadFailure(new Error("Failed to fetch")) });
