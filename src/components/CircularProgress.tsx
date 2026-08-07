@@ -3,8 +3,8 @@
 /**
  * A Google-Drive-style circular progress ring (#66) -- an SVG stroke that
  * fills clockwise from the top as `fraction` goes 0 to 1. Uses `currentColor`
- * so it inherits whatever text color its parent (e.g. a submit button) is
- * already set to, rather than needing its own color prop.
+ * so it inherits whatever text colour its parent (e.g. a submit button) is
+ * already set to, rather than needing its own colour prop.
  */
 export default function CircularProgress({ fraction }: { fraction: number }) {
   const size = 16;

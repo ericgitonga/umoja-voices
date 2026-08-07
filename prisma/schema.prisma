@@ -203,7 +203,7 @@ model AboutPageSection {
 
 // The public About page's media items (#59) — replaces the old singleton
 // AboutPageVideo (#55) with a flat, unordered-by-voice-part list mirroring
-// SongMedia's paste-link-or-upload behavior, since the About page has no
+// SongMedia's paste-link-or-upload behaviour, since the About page has no
 // voice-part concept to group by. `mediaKind` uses the same MEDIA_KINDS set
 // (src/lib/constants.ts) SongMedia already does.
 model AboutPageMedia {

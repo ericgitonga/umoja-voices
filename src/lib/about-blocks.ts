@@ -34,7 +34,7 @@ export async function nextAboutSortOrder(): Promise<number> {
   return blocks[blocks.length - 1].sortOrder + 1;
 }
 
-/** No-ops if `id`/`kind` doesn't have a neighbor in that direction (already first/last). */
+/** No-ops if `id`/`kind` doesn't have a neighbour in that direction (already first/last). */
 export async function moveAboutBlock(kind: "section" | "media", id: string, direction: "up" | "down"): Promise<void> {
   const blocks = await getOrderedAboutBlocks();
   const index = blocks.findIndex((b) => b.kind === kind && b.id === id);

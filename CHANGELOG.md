@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.51.1] - 2026-08-07
+
+### Fixed
+
+- Standardised remaining American spellings to British spelling (colour, behaviour, neighbour,
+  recognised, grey, etc.) across the changelog, e2e docstrings, a Prisma schema comment, and
+  several `src/` comments. (closes #137)
+
 ## [0.51.0] - 2026-08-03
 
 ### Added
@@ -37,9 +45,9 @@ tag: `v0.50.1`
 ### Changed
 
 - **Navbar redesign, inspired by akili-ai.com** (#129, app owner reference): the nav now shares
-  the page's own cream background instead of a dark `bg-ink` bar, with link/text colors switched
+  the page's own cream background instead of a dark `bg-ink` bar, with link/text colours switched
   from white/gray-300 to ink-toned equivalents for contrast on the lighter background. The
-  separate large `logo-full.png` banner that used to render centered below the nav on every page
+  separate large `logo-full.png` banner that used to render centred below the nav on every page
   (`src/app/layout.tsx`) is gone — there is now exactly one logo on the site, a shrunk instance of
   the same full logo+wordmark image (with the tagline baked into the graphic itself) sitting at
   the left edge of the nav bar, sharing the same left padding as the page's own content column so
@@ -50,8 +58,8 @@ tag: `v0.50.1`
   two lines; caught before shipping via a real screenshot at desktop width, not just the mobile
   viewports #127 already covered. Fixed by dropping the width constraint from the nav row itself
   (keeping only the shared padding) and adding `shrink-0` to the logo as a backstop against the
-  same class of bug recurring. #127's mobile hamburger/collapse behavior is unchanged, just
-  recolored.
+  same class of bug recurring. #127's mobile hamburger/collapse behaviour is unchanged, just
+  recoloured.
 - **Follow-up round on #129**, after the app owner reviewed the first pass: the logo is
   noticeably larger (`h-8` → `h-12`) so the tagline baked into the graphic reads clearly, not
   just the wordmark. The admin-only desktop nav (7 links total) no longer collapses to a
@@ -151,7 +159,7 @@ tag: `v0.50.1`
   - **Upgraded `next` 16.2.10 → 16.2.11** (non-breaking patch), closing 8 npm audit advisories
     including a Turbopack middleware-bypass CVE (confirmed not exploitable here — this app has no
     `i18n` config, the advisory's trigger condition) and cascading fixes to bundled `postcss`/`sharp`.
-  - **Added a `Strict-Transport-Security` header** (defense-in-depth; Vercel already terminates
+  - **Added a `Strict-Transport-Security` header** (defence-in-depth; Vercel already terminates
     TLS and redirects http→https at the edge).
   - `extras/security.pdf` fully regenerated to reflect the current architecture.
 
@@ -222,17 +230,17 @@ tag: `v0.50.1`
 
 ### Changed
 
-- **Rethemed to match the current logo** (#110): extracted the logo's actual colors directly
+- **Rethemed to match the current logo** (#110): extracted the logo's actual colours directly
   from the source image (olive `#625d25`, rust `#a73f13`, gold `#bf7a15`, dark brown `#211005`)
   rather than eyeballing them. `--color-ink` and `--foreground` move from the old near-black
   (`#1c1917`) to the logo's dark brown; `--color-gold` moves from the old bright mustard-yellow
   (`#d6a52c`) to the logo's more muted gold; two new tokens, `--color-olive` and `--color-rust`,
-  join the theme. Applied the new 3-color figure motif to the one place it maps naturally: the
+  join the theme. Applied the new 3-colour figure motif to the one place it maps naturally: the
   song detail page's Media/Sheet Music/Lyrics card grid (exactly 3 cards) now uses
-  gold/rust/olive respectively, instead of only Media having an accent color and the other two
-  being neutral gray. Left the S/A/T/B/SATB voice-tag colors untouched — those are a functional
+  gold/rust/olive respectively, instead of only Media having an accent colour and the other two
+  being neutral grey. Left the S/A/T/B/SATB voice-tag colours untouched — those are a functional
   5-way distinction (`VOICE_TAG_COLOR`), not brand decoration, and don't map cleanly onto a
-  3-color palette without hurting distinguishability.
+  3-colour palette without hurting distinguishability.
 - **Navbar logo**: both the signed-in `Nav` and the logged-out `PublicNav` now show
   `public/logo-icon.png` (a new transparent-background crop of just the icon mark — the three
   soundwave figures, no wordmark text, since the full 872×492 logo is far too wide/detailed to
@@ -404,7 +412,7 @@ tag: `v0.50.1`
   to the existing All/S/A/T/B/SATB filter (#67) — **Loop** and **Play All**, both scoped to
   whatever's currently visible per the active filter. Play All auto-advances through the visible
   native `<audio>`/`<video>` items in order when each one finishes; turning it off doesn't
-  interrupt whatever's currently playing, it just stops auto-advancing. Loop's behavior depends
+  interrupt whatever's currently playing, it just stops auto-advancing. Loop's behaviour depends
   on Play All: with Play All off, the currently-playing single item repeats (native `loop`
   attribute); with Play All on, reaching the end of the sequence restarts it from the first item.
   Iframe-embedded items (YouTube/Drive/SoundCloud) are skipped in the Play All sequence — they
@@ -472,7 +480,7 @@ tag: `v0.50.1`
 - **Untrack `CLAUDE.md`, `AGENTS.md`, and `SKILL.md`** from the git repo (`git rm --cached`,
   added to `.gitignore`). These remain as living local docs on disk, edited and kept up to date
   as normal, but are no longer committed/pushed — they're AI-assistant instruction files, not
-  app code or shared team documentation. No behavior change; the three files' content is
+  app code or shared team documentation. No behaviour change; the three files' content is
   unaffected, only their git-tracking status. (Their prior history remains in past commits.)
 
 ## [0.31.3] - 2026-07-22
@@ -531,7 +539,7 @@ tag: `v0.50.1`
   (e.g. a video between two paragraphs) — no schema change needed, since both already had their
   own `sortOrder Int`. Both `/about` and `/admin/about` render one merged, ordered list. New ↑/↓
   buttons (`AboutSectionEditor`, new `MoveAboutMediaButtons`) reposition an item by swapping
-  `sortOrder` with its immediate neighbor in the shared order, regardless of which table it
+  `sortOrder` with its immediate neighbour in the shared order, regardless of which table it
   belongs to — new content still appends to the end and gets repositioned afterward, rather than
   an "insert at position N" control on the add forms. New `LinkInsertField` component gives admins
   a text+URL input for links instead of typing #70's `[text](url)` syntax by hand — it still
@@ -566,7 +574,7 @@ tag: `v0.50.1`
   nullable, since the original intro paragraph has no heading; edited in place, unlike Links'
   add/delete-only rows, since this issue is specifically about not needing to re-file an issue to
   change existing wording) and `AboutPageMedia` (a flat list mirroring `SongMedia`'s
-  paste-URL-or-upload behavior, minus voice-part grouping — the About page has none). The
+  paste-URL-or-upload behaviour, minus voice-part grouping — the About page has none). The
   migration carries the existing featured-video row forward into `AboutPageMedia` rather than
   dropping it. `src/lib/media-dispatch.ts` factors the audio/video Storage
   upload-ticket/own-URL/delete dispatch (previously duplicated only in `song-actions.ts`) into one
@@ -601,7 +609,7 @@ tag: `v0.50.1`
   Audio's pre-upload binary content sniff (catching a mislabeled AAC-as-.mp3 file) moved to a
   post-upload check (`verifyUploadedAudioFile`, a ranged fetch of the first 12 bytes back from
   Storage) since the file's bytes no longer reach the server before the upload happens — same
-  detection, same rejection-and-delete behavior, just after the direct upload instead of
+  detection, same rejection-and-delete behaviour, just after the direct upload instead of
   before. Also fixed `AddSheetMusicForm.tsx` never using `describeUploadFailure` for a thrown
   error like the other three upload forms already did, noticed while rewriting its handler
   anyway.
@@ -626,7 +634,7 @@ tag: `v0.50.1`
   default**, separately from and in front of `experimental.serverActions.bodySizeLimit` (already
   raised to 22MB for #36). Any upload over 10MB — routinely true for video, occasionally for
   audio/sheet-music, all nominally allowed up to this app's 20MB per-file cap — got silently
-  truncated by the proxy (no error, per Next's own documented behavior) and the Server Action
+  truncated by the proxy (no error, per Next's own documented behaviour) and the Server Action
   then failed parsing the now-broken multipart body (`Error: Unexpected end of form`), surfacing
   to the user as a generic, unhelpful message. Confirmed directly: a 14MB test upload reproduced
   the bug locally on a fast, unthrottled connection with zero packet loss — this was a body-size
@@ -646,7 +654,7 @@ tag: `v0.50.1`
   variable, which is unreadable by `vercel env pull` (this repo's CI setup step) and was
   silently resolving to the literal string `"[SENSITIVE]"`, so every Storage upload failed auth
   in under a second (fixed by re-adding the key as non-sensitive); and the test's own
-  `_wait_for_outcome()` only recognized one specific error string as a failure signal, so that
+  `_wait_for_outcome()` only recognised one specific error string as a failure signal, so that
   near-instant auth failure was invisible to it and it just polled the full timeout instead
   (fixed by anchoring on the error paragraph's own CSS class so any inline form error is caught
   generically, and raising immediately with the real message instead of returning silently).
@@ -831,10 +839,10 @@ tag: `v0.50.1`
 
 ### Added
 
-- **Colored left-border bar per voice-part section on the Media page** (closes #40, follow-up):
+- **Coloured left-border bar per voice-part section on the Media page** (closes #40, follow-up):
   reopened after the initial pass — each section on `/songs/[id]/media` now has a `border-l-4`
-  bar spanning its full height (badge, heading, and every media card underneath), colored to
-  match that section's voice color from `VOICE_TAG_COLOR`'s new `border` variant, matching the
+  bar spanning its full height (badge, heading, and every media card underneath), coloured to
+  match that section's voice colour from `VOICE_TAG_COLOR`'s new `border` variant, matching the
   `border-l-4 border-*` card style already used elsewhere in the app (e.g. the song detail
   page's Media/Sheet Music/Lyrics cards).
 
@@ -842,16 +850,16 @@ tag: `v0.50.1`
 
 ### Added
 
-- **Pastel color-coded voice-part badges/tags, consistent app-wide** (closes #40): added
+- **Pastel colour-coded voice-part badges/tags, consistent app-wide** (closes #40): added
   `VOICE_TAG_COLOR` to `src/lib/constants.ts` — a shared `{ pill, solid }` Tailwind class map
-  keyed by `VoiceTag` (S-red, A-green, T-yellow, B-blue, SATB/All-orange). Replaces the flat gray
+  keyed by `VoiceTag` (S-red, A-green, T-yellow, B-blue, SATB/All-orange). Replaces the flat grey
   `bg-ink/*` pills at all three render sites: the media page's per-`SongSection` group badge
   (`songs/[id]/media/page.tsx`, mapped through `SONG_PART_TO_VOICE_TAG` since that page keys off
   `SONG_PART_OPTIONS` not `VOICE_TAGS`), the song detail page's `partsPresent` badges
   (`songs/[id]/page.tsx`), and `LyricsViewer`'s per-section voice tags plus its filter tabs and
   "ALL"/active-filter indicator (using `solid` for the selected state, `pill` otherwise). Media
   grouping per voice section already existed via `SongSection`/`part` — confirmed and left as-is
-  per the issue's scope, only the badge coloring changed.
+  per the issue's scope, only the badge colouring changed.
 
 ## [0.21.0] - 2026-07-20
 
