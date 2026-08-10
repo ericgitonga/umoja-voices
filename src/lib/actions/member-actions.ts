@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import { getSession } from "@/lib/get-session";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { ROLES, USER_STATUSES } from "@/lib/constants";
@@ -12,6 +11,7 @@ import { appBaseUrl } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logActivity } from "@/lib/activity-log";
 import { deleteProfilePhotoFile, isOwnProfilePhotoUrl } from "@/lib/profile-photo-storage";
+import { orphanAdminsError, requireAdmin } from "@/lib/actions/member-guards";
 
 // Admin-only and lower risk than login/forgot-password, so a looser window:
 // generous enough for a legitimate bulk-invite session (a new season's
@@ -25,14 +25,6 @@ const INVITE_MAX_PER_IP = 40; // covers a few admins sharing an office network
 const RESET_LINK_WINDOW_MS = 60 * 60_000; // 1 hour
 const RESET_LINK_MAX_PER_ADMIN = 20;
 const RESET_LINK_MAX_PER_IP = 40;
-
-async function requireAdmin() {
-  const session = await getSession();
-  if (!session || session.user.role !== "admin") {
-    throw new Error("Admin access required.");
-  }
-  return session;
-}
 
 /**
  * Creates the Supabase Auth user via the admin API and returns a
@@ -141,31 +133,6 @@ export async function generateMemberResetLink(userId: string): Promise<{ error?:
 
   const resetLink = `${appBaseUrl()}/auth/confirm?token_hash=${data.properties.hashed_token}&type=recovery&next=/reset-password`;
   return { resetLink };
-}
-
-/**
- * Refuses to let an admin change their own role, and refuses to leave the
- * choir with zero active admins — otherwise the last admin standing could
- * demote themselves (or another admin) and permanently lock everyone out
- * of /admin, since only an admin can promote someone back.
- */
-async function orphanAdminsError(
-  session: { user: { id: string } },
-  targetUserId: string
-): Promise<string | null> {
-  if (targetUserId === session.user.id) {
-    return "You can't change your own role or status here — ask another admin.";
-  }
-  const target = await prisma.user.findUnique({ where: { id: targetUserId } });
-  if (target?.role === "admin" && target.status === "active") {
-    const otherActiveAdmins = await prisma.user.count({
-      where: { role: "admin", status: "active", id: { not: targetUserId } },
-    });
-    if (otherActiveAdmins === 0) {
-      return "Can't remove the last active admin.";
-    }
-  }
-  return null;
 }
 
 export async function updateMemberRole(userId: string, role: string): Promise<{ error?: string }> {
