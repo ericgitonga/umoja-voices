@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.52.0] - 2026-08-10
+
+### Added
+
+- Added a Vitest unit-test layer, colocated as `*.test.ts` next to each module: pure `lib/`
+  logic (validation, pagination, EAT formatting, upload-error classification, lyrics parsing,
+  constants helpers, rate-limit's client-IP resolution, media bucket-URL routing) and, via a
+  mocked `prisma`/`getSession`, the invite/role-gating RBAC guard (last-active-admin and
+  self-demotion checks) factored out of `member-actions.ts` into a new `member-guards.ts`
+  module. Wired `npm run test` into a new `unit.yml` required check, and fixed a pre-existing
+  gap where `e2e` wasn't actually enforced as a required status check on `main`. (closes #139)
+
 ## [0.51.1] - 2026-08-07
 
 ### Fixed
