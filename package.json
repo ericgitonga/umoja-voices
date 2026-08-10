@@ -7,6 +7,7 @@
     "build": "next build && serwist build serwist.config.ts",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
     "db:seed": "tsx prisma/seed.ts",
     "storage:setup": "tsx scripts/create-storage-bucket.ts",
     "postinstall": "prisma generate"
@@ -44,6 +45,7 @@
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
