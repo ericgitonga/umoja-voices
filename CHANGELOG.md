@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.53.0] - 2026-08-11
+
+### Added
+
+- Added `e2e/test_rls_security.py`, a regression test for the prior Supabase
+  RLS incident: asserts the anon/publishable key — the exact credential a
+  misconfigured or accidentally-disabled RLS policy would expose — cannot
+  read real seeded data (`Song`, `User`) or insert a row through the
+  auto-generated PostgREST REST API. This app's own code never queries
+  through that path (Prisma, over a privileged direct connection, is the
+  sole access path), so no existing test — including the app-level route
+  gating in `test_auth.py` — would catch a regression at this layer. Talks
+  to Supabase's REST API directly via `requests`, no browser needed; reads
+  Supabase credentials from the environment or `.env.local`. (closes #142)
+
+tag: `v0.53.0`
+
 ## [0.52.0] - 2026-08-10
 
 ### Added
