@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.54.0] - 2026-08-12
+
+### Security
+
+- Fixed an authentication bypass found in a cross-repo security audit
+  (closes #144): `src/proxy.ts`'s middleware matcher exempts requests
+  carrying a `next-router-prefetch`/`purpose: prefetch` header (needed so
+  Next's own Link prefetching doesn't regenerate a CSP nonce per prefetch)
+  — but that same middleware was also the *only* place the Supabase
+  auth/role check ran, so a request with either header skipped auth
+  entirely. Added independent `requireSessionOrRedirect()`/
+  `requireAdminOrRedirect()` guards (`src/lib/get-session.ts`) at the
+  layout level for `/admin`, `/songs`, `/logistics`, and `/profile`,
+  matching the pattern every Server Action already uses correctly —
+  authorization for these routes no longer depends on middleware alone.
+
 ## [0.53.0] - 2026-08-11
 
 ### Added
