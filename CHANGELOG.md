@@ -21,6 +21,8 @@ adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
   matching the pattern every Server Action already uses correctly —
   authorization for these routes no longer depends on middleware alone.
 
+tag: `v0.54.0`
+
 ## [0.53.0] - 2026-08-11
 
 ### Added
