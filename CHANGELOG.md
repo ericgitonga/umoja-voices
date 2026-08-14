@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.54.1] - 2026-08-14
+
+### Security
+
+- Bumped `next` (and matching `eslint-config-next`) from `16.2.11` to `16.3.0`
+  to clear the `postcss`/`sharp` advisories from a cross-repo npm audit
+  cluster (closes #148) — a routine minor version bump, no functional
+  changes; build and full test suite pass unchanged. `npm audit` dropped
+  from 11 advisories (6 high, 5 moderate) to 8 (3 high, 5 moderate). The
+  remaining 8 are dev/build-tooling-only transitive dependencies
+  (`brace-expansion`, `fast-uri`, `js-yaml`, `hono`/`@hono/node-server`,
+  `valibot`, nested under `eslint`, `prisma`'s bundled dev server, and
+  `@serwist/cli`) with no runtime-reachable path; clearing them would
+  require forcing a `prisma`/`eslint` version bump outside their declared
+  ranges, deferred as a separate, deliberate call rather than bundled into
+  this routine bump.
+
+tag: `v0.54.1`
+
 ## [0.54.0] - 2026-08-12
 
 ### Security
