@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.54.2] - 2026-09-05
+
+### Security
+
+- Cleared 12 of the 18 Dependabot alerts tracked under #150: `fast-uri`
+  (6 alerts, #4/#13/#22/#23/#25/#26), `hono` (4 alerts,
+  #14/#16/#17/#18), and `@hono/node-server` (2 alerts, #1/#19) — closes
+  sub-issues #151, #152, #155-#164 — via `package.json` `overrides`,
+  pinning `fast-uri` to `3.1.6`, `hono` to `4.12.34`, and
+  `@hono/node-server` to `1.19.15`. All three are nested under
+  `prisma`'s bundled `@prisma/dev` dev-server tooling (used only by the
+  `prisma dev` CLI subcommand, which this project's scripts never invoke)
+  — not runtime-reachable, and `prisma` itself has no newer 7.x release
+  to bump to, so `overrides` forces the patched versions without waiting
+  on upstream. Build and full test suite pass unchanged. The remaining
+  6 alerts under #150 (`mysql2`, `brace-expansion`, `deepmerge-ts`,
+  `js-yaml`, `valibot`), also dev-tooling-only transitive deps, are
+  deferred as separate follow-ups.
+
+tag: `v0.54.2`
+
 ## [0.54.1] - 2026-08-14
 
 ### Security

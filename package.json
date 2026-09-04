@@ -1,7 +1,12 @@
 {
   "name": "umoja-voices",
-  "version": "0.54.1",
+  "version": "0.54.2",
   "private": true,
+  "overrides": {
+    "fast-uri": "3.1.6",
+    "hono": "4.12.34",
+    "@hono/node-server": "1.19.15"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build && serwist build serwist.config.ts",
