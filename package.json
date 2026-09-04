@@ -1,11 +1,18 @@
 {
   "name": "umoja-voices",
-  "version": "0.54.3",
+  "version": "0.54.4",
   "private": true,
   "overrides": {
     "fast-uri": "3.1.6",
     "hono": "4.12.34",
-    "@hono/node-server": "1.19.15"
+    "@hono/node-server": "1.19.15",
+    "minimatch@10.2.5": {
+      "brace-expansion": "5.0.9"
+    },
+    "js-yaml": "4.3.1",
+    "deepmerge-ts": "8.0.0",
+    "valibot": "1.4.2",
+    "mysql2": "3.23.1"
   },
   "scripts": {
     "dev": "next dev",

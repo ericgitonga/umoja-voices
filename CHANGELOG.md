@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.54.4] - 2026-09-05
+
+### Security
+
+- Cleared the remaining 6 of #150's 18 Dependabot alerts (closes #172,
+  sub-issues #6, #11, #15, #20, #21, #24): `mysql2` (3.15.3 → 3.23.1, direct
+  `prisma` dep), `js-yaml` (4.3.0 → 4.3.1, under `eslint`), `deepmerge-ts`
+  (7.1.5 → 8.0.0, under `prisma`'s config), `valibot` (1.2.0 → 1.4.2, under
+  `prisma`'s bundled dev server), and `brace-expansion` (5.0.7/5.0.8 →
+  5.0.9, under `@serwist/cli`/`eslint-config-next`'s `minimatch@10.2.5`) —
+  via `package.json` `overrides`, same mechanism as #169. `brace-expansion`
+  needed a scoped override keyed to `minimatch@10.2.5` specifically, since
+  an older non-vulnerable 1.x line of `brace-expansion` also exists in the
+  tree (under `eslint`'s own `minimatch@3.1.5`) and must not be
+  force-upgraded. All five are dev/build-tooling-only transitive deps, not
+  runtime-reachable. Build and full test suite pass unchanged. Parent #150
+  is now fully closed — all 18 originally-tracked alerts resolved.
+- `npm audit` separately flags 3 unrelated high-severity issues not part of
+  #150's original 18 (a newer `brace-expansion` 1.x advisory under
+  `eslint`'s `minimatch@3.1.5`, and `browserslist`/`@serwist/next`) —
+  deferred as a new follow-up, not bundled into this fix.
+
+tag: `v0.54.4`
+
 ## [0.54.3] - 2026-09-05
 
 ### Fixed
