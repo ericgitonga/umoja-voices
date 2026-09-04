@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.54.3] - 2026-09-05
+
+### Fixed
+
+- The E2E (Preview) CI gate had been broken for an unknown stretch of time:
+  the dedicated Preview/Development Supabase project from #52
+  (`icmqcqmqvuqyzrjwxfcb`) had died entirely — not just paused, its
+  Supavisor pooler tenant no longer recognized at all — despite the daily
+  keepalive cron, and nothing had replaced it. Every Preview deployment's
+  Auth, DB access, and Storage were silently broken, not just CI (closes
+  #170). Fixed by provisioning a fresh dedicated Supabase project
+  (`nthrnjoweetndevqtqng` / "supabase-preview-umoja-voices") scoped to
+  Preview+Development only, reapplying all migrations, storage buckets, and
+  seed data, and updating `SKILL.md`'s environment-isolation section
+  accordingly — no application code changes. See the issue for the full
+  incident writeup, including a since-corrected mistake where a manual
+  `prisma/seed.ts` run briefly wrote two demo/test accounts into the live
+  Production database (caught and cleaned up same-session).
+
+tag: `v0.54.3`
+
 ## [0.54.2] - 2026-09-05
 
 ### Security

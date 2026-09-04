@@ -1,6 +1,6 @@
 {
   "name": "umoja-voices",
-  "version": "0.54.2",
+  "version": "0.54.3",
   "private": true,
   "overrides": {
     "fast-uri": "3.1.6",
