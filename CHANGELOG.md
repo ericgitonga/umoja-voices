@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org) (pre-1.0, see `SKILL.md`).
 
+## [0.54.5] - 2026-09-05
+
+### Security
+
+- Cleared 2 new Dependabot alerts (closes #174, #27, #28): `browserslist`
+  4.28.6 → 4.28.7 (uncaught crash/prototype write via untrusted
+  `browserslist-stats.json`, and unbounded memory growth leading to OOM),
+  reached via `@serwist/next`, `@serwist/cli`, and
+  `eslint-config-next`'s Babel toolchain. `browserslist` is a build-time
+  -only tool (target-resolution for `autoprefixer`/Babel, not shipped in
+  the runtime bundle) — confirmed via a clean production build after the
+  bump. Via `package.json` `overrides`, same mechanism as #150/#169/#172.
+  Build and full test suite pass unchanged. `npm audit` now shows a single
+  remaining finding (`brace-expansion` 1.x under `eslint`'s own
+  `minimatch@3.1.5`, a different advisory than the 5.x one fixed in #172),
+  not yet ticketed.
+
+tag: `v0.54.5`
+
 ## [0.54.4] - 2026-09-05
 
 ### Security
